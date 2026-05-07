@@ -55,6 +55,11 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::prefix('templates')->name('templates.')->group(function () {
         Route::get('/', [TemplateController::class, 'index'])->name('index');
+        Route::get('/create', [TemplateController::class, 'create'])->name('create');
+        Route::post('/', [TemplateController::class, 'store'])->name('store');
+        Route::get('/{template}', [TemplateController::class, 'edit'])->name('edit');
+        Route::patch('/{template}', [TemplateController::class, 'update'])->name('update');
+        Route::delete('/{template}', [TemplateController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
