@@ -17,6 +17,7 @@ import DebugIndex from './pages/debug/Index.vue';
 import InboundIndex from './pages/inbound/Index.vue';
 import InboundEdit from './pages/inbound/Edit.vue';
 import RulesIndex from './pages/rules/Index.vue';
+import RulesEdit from './pages/rules/Edit.vue';
 import TemplatesIndex from './pages/templates/Index.vue';
 
 Statamic.booting(() => {
@@ -31,5 +32,6 @@ Statamic.booting(() => {
     Statamic.$inertia.register('webhook-manager::Inbound/Index', InboundIndex);
     Statamic.$inertia.register('webhook-manager::Inbound/Edit', InboundEdit);
     Statamic.$inertia.register('webhook-manager::Rules/Index', RulesIndex);
+    Statamic.$inertia.register('webhook-manager::Rules/Edit', RulesEdit);
     Statamic.$inertia.register('webhook-manager::Templates/Index', TemplatesIndex);
 });
