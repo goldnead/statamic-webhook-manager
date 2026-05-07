@@ -2,10 +2,9 @@
 
 namespace Goldnead\WebhookManager\Services;
 
-use Goldnead\WebhookManager\Domain\Delivery\Actions\CreateDeliverySnapshotAction;
+use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Queries\ResolveOutboundWebhookQuery;
-use Goldnead\WebhookManager\Jobs\ProcessOutboundDeliveryJob;
 use Goldnead\WebhookManager\Rules\RuleEngine;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
@@ -15,19 +14,21 @@ use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
  * pipeline.
  *
  * 1. Build an ExecutionContext from the trigger
- * 2. Resolve matching outbound webhooks (trigger + conditions)
- * 3. Create a Delivery snapshot for each
- * 4. Either dispatch onto the queue or send synchronously
+ * 2. Run the rule engine — rules may dispatch outbound webhooks of their
+ *    own via the `send_outbound_webhook` action
+ * 3. Resolve directly-attached outbound webhooks (matching trigger +
+ *    own conditions) and snapshot+dispatch each one
  *
- * The RuleEngine is invoked for parity with the future iteration but its
- * `evaluate()` is a no-op for now (TODO: REVIEW).
+ * Rules and direct-attached outbound webhooks are intentionally separate
+ * dispatch paths (PRD §39 REVIEW): Rules give "When→If→Then" composition,
+ * direct outbound hooks remain the simple "fire on trigger" path that
+ * works without authoring a rule.
  */
 class TriggerDispatcher
 {
     public function __construct(
         protected ResolveOutboundWebhookQuery $resolveOutbound,
-        protected CreateDeliverySnapshotAction $snapshot,
-        protected DeliveryEngine $engine,
+        protected DispatchOutboundWebhookAction $dispatchOutbound,
         protected RuleEngine $rules,
     ) {
     }
@@ -36,8 +37,8 @@ class TriggerDispatcher
     {
         $context = new ExecutionContext($trigger);
 
-        // TODO: REVIEW — evaluating rules first will allow rules to short-circuit
-        // outbound execution once the engine ships.
+        // Rules may dispatch outbound webhooks of their own via the
+        // send_outbound_webhook action. Direct hooks below run regardless.
         $this->rules->evaluate($context);
 
         $hooks = ($this->resolveOutbound)($context);
@@ -48,15 +49,6 @@ class TriggerDispatcher
 
     protected function dispatchHook(OutboundWebhook $hook, ExecutionContext $context): void
     {
-        $delivery = ($this->snapshot)($hook, $context);
-
-        if ($hook->isQueueEnabled()) {
-            ProcessOutboundDeliveryJob::dispatch($delivery->id)
-                ->onConnection(config('webhook-manager.queue.connection'))
-                ->onQueue(config('webhook-manager.queue.name', 'default'));
-            return;
-        }
-
-        $this->engine->send($delivery);
+        ($this->dispatchOutbound)($hook, $context);
     }
 }
