@@ -10,12 +10,24 @@ return [
     'replayed' => 'Delivery replayed.',
     'pruned' => ':count records pruned.',
 
+    'endpoint_created' => 'Endpoint created.',
+    'endpoint_updated' => 'Endpoint updated.',
+    'endpoint_deleted' => 'Endpoint deleted.',
+    'endpoint_enabled' => 'Endpoint enabled.',
+    'endpoint_disabled' => 'Endpoint disabled.',
+
     'errors' => [
-        'inbound_not_implemented' => 'Inbound endpoints are not yet implemented in this build.',
         'rule_engine_not_implemented' => 'Rule engine is not yet implemented in this build.',
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',
         'unsupported_method' => 'HTTP method :method is not supported.',
+        'inbound_endpoint_not_found' => 'Endpoint not found or disabled.',
+        'inbound_unauthorized' => 'Unauthorized.',
+        'inbound_method_not_allowed' => 'Method not allowed.',
+        'inbound_payload_too_large' => 'Payload too large.',
+        'inbound_bad_request' => 'Bad request.',
+        'inbound_replay_blocked' => 'Duplicate request blocked by replay protection.',
+        'inbound_mapping_failed' => 'Mapping failed.',
     ],
 
     'failure_types' => [

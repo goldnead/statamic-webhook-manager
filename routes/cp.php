@@ -26,6 +26,12 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::prefix('inbound')->name('inbound.')->group(function () {
         Route::get('/', [InboundController::class, 'index'])->name('index');
+        Route::get('/create', [InboundController::class, 'create'])->name('create');
+        Route::post('/', [InboundController::class, 'store'])->name('store');
+        Route::get('/{endpoint}', [InboundController::class, 'edit'])->name('edit');
+        Route::patch('/{endpoint}', [InboundController::class, 'update'])->name('update');
+        Route::delete('/{endpoint}', [InboundController::class, 'destroy'])->name('destroy');
+        Route::patch('/{endpoint}/toggle', [InboundController::class, 'toggle'])->name('toggle');
     });
 
     Route::prefix('rules')->name('rules.')->group(function () {
