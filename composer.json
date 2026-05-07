@@ -1,0 +1,60 @@
+{
+    "name": "goldnead/statamic-webhook-manager",
+    "description": "Statamic 5 Webhook Manager — central CP-native integration layer for outbound hooks, inbound endpoints, deliveries, retries, rules and templates.",
+    "type": "statamic-addon",
+    "license": "MIT",
+    "keywords": [
+        "statamic",
+        "statamic-addon",
+        "webhooks",
+        "integration",
+        "automation"
+    ],
+    "authors": [
+        {
+            "name": "goldnead"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "statamic/cms": "^5.0",
+        "illuminate/support": "^10.0|^11.0",
+        "illuminate/database": "^10.0|^11.0",
+        "illuminate/http": "^10.0|^11.0",
+        "illuminate/queue": "^10.0|^11.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0",
+        "phpunit/phpunit": "^10.0|^11.0",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Goldnead\\WebhookManager\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Goldnead\\WebhookManager\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Webhook Manager",
+            "description": "Central integration layer for inbound and outbound webhooks with deliveries, retries, rules and templates."
+        },
+        "laravel": {
+            "providers": [
+                "Goldnead\\WebhookManager\\WebhookManagerServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
