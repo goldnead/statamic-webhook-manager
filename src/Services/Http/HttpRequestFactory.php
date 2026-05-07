@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Auth\Support\SecretMasker;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
+use Goldnead\WebhookManager\Repositories\TemplateRepository;
 use Goldnead\WebhookManager\Templates\TemplateRenderer;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Illuminate\Support\Str;
@@ -20,6 +21,7 @@ class HttpRequestFactory
     public function __construct(
         protected TemplateRenderer $renderer,
         protected AuthSchemeRegistry $authSchemes,
+        protected TemplateRepository $templates,
     ) {
     }
 
@@ -62,14 +64,38 @@ class HttpRequestFactory
         ];
     }
 
+    /**
+     * Resolve the template body in this priority order:
+     *
+     *   1. Library template referenced by `payload_template_handle`
+     *   2. Inline `payload_template` text
+     *   3. JSON-encoded TriggerEvent as a sensible default
+     *
+     * The library template wins if both are set so an operator can
+     * "promote" an inline body to a library entry without having to
+     * also clear the inline field on every hook.
+     */
     protected function buildBody(OutboundWebhook $hook, ExecutionContext $context): string
     {
-        $template = (string) ($hook->payload_template ?? '');
-        if ($template === '') {
+        $libraryHandle = (string) ($hook->payload_template_handle ?? '');
+        if ($libraryHandle !== '') {
+            $template = $this->templates->findByHandle($libraryHandle);
+            if ($template && (string) $template->body !== '') {
+                return $this->renderer->render((string) $template->body, $context);
+            }
+            // TODO: REVIEW — silently falling back to the inline body when
+            // a referenced library template is missing keeps deliveries
+            // alive but hides the misconfiguration. Consider classifying
+            // this as a configuration failure once a centralised observer
+            // exists.
+        }
+
+        $inline = (string) ($hook->payload_template ?? '');
+        if ($inline === '') {
             // sensible default: JSON-encoded payload from the trigger
             return (string) json_encode($context->event->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         }
-        return $this->renderer->render($template, $context);
+        return $this->renderer->render($inline, $context);
     }
 
     protected function idempotencyKey(OutboundWebhook $hook, ExecutionContext $context): string
