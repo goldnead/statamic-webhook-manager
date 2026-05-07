@@ -18,6 +18,7 @@ use Goldnead\WebhookManager\Listeners\HandleUserSavedListener;
 use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\ConditionRegistry;
+use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
@@ -126,6 +127,14 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->app->singleton(ActionRegistry::class);
         $this->app->singleton(VariableResolverRegistry::class);
         $this->app->singleton(SuccessEvaluatorRegistry::class);
+        $this->app->singleton(InboundActionHandlerRegistry::class);
+
+        $this->app->singleton(\Goldnead\WebhookManager\Auth\Support\ReplayProtectionService::class, function ($app) {
+            return new \Goldnead\WebhookManager\Auth\Support\ReplayProtectionService(
+                $app['cache.store'],
+                (int) config('webhook-manager.inbound.replay_protection_ttl_seconds', 600),
+            );
+        });
 
         $this->app->singleton('webhook-manager', WebhookManager::class);
     }
@@ -198,6 +207,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         /** @var SuccessEvaluatorRegistry $eval */
         $eval = $this->app->make(SuccessEvaluatorRegistry::class);
         $eval->registerDefaults();
+
+        /** @var InboundActionHandlerRegistry $inboundActions */
+        $inboundActions = $this->app->make(InboundActionHandlerRegistry::class);
+        $inboundActions->registerDefaults();
     }
 
     protected function bootPublishables(): void
