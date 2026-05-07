@@ -5,6 +5,75 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — Templates CRUD + outbound library reuse
+
+Templates move from "renderer is usable but UI is a placeholder" to a
+fully editable library. Outbound webhooks can now reference a template
+by handle, so the same body lives in one place and updates propagate
+to every hook that uses it.
+
+### Added
+
+- **CRUD domain actions** for templates: `Create`, `Update`, `Delete`.
+  `Delete` detaches outbound webhooks that reference the template by
+  handle so removing a library entry never silently disables a hook —
+  the success notice surfaces the detach count to the operator.
+- **`TemplateRepository`** gains `paginate(int, ?string $search, ?string $type)`,
+  `find()`, `findByUuid()` to mirror the Outbound / Inbound / Rule
+  repository surfaces.
+- **`Cp\TemplateController`** grows from listing-only to full CRUD
+  (`index/create/store/edit/update/destroy`). Index supports search +
+  type filter; edit screen lists the registered variable resolver
+  namespaces inline so authors discover them without leaving the page.
+- **Vue pages.**
+  - `pages/templates/Index.vue` — real list with search, type filter,
+    and per-row edit links.
+  - `pages/templates/Edit.vue` (new) — sectioned form (Identity / Body)
+    plus a Preview panel that posts the current body to
+    `actions.preview-template` and renders the result alongside any
+    validation issues.
+- **Outbound library reuse.** New nullable column
+  `payload_template_handle` on `webhook_outbounds`. When set, the
+  `HttpRequestFactory` resolves the body from the referenced template
+  instead of the inline `payload_template`. The body source is selected
+  via a new "Inline template / Library template" radio in the
+  Outbound edit panel.
+- **Tests.**
+  - `tests/Feature/TemplateCrudTest.php` — Create / Update / Delete
+    actions, default-handle slugification, detach behaviour on delete.
+  - `tests/Feature/OutboundUsesLibraryTemplateTest.php` — body source
+    precedence (library → inline → JSON event), missing-template fallback
+    to inline, template-edit propagation to subsequent renders.
+- **i18n.** `template_*` notices for CRUD success messages plus a
+  detach-count variant for the delete flow.
+- **Routes.** `routes/cp.php` adds the templates CRUD routes (the
+  `actions.preview-template` route already existed).
+
+### Changed
+
+- **`HttpRequestFactory`** now takes the `TemplateRepository` as a third
+  constructor dependency and resolves the body in this order:
+  `payload_template_handle` → `payload_template` → JSON-encoded
+  TriggerEvent. The library handle wins when both are set so an operator
+  can promote an inline body to a library entry without having to also
+  clear the inline field on every hook.
+- **`SaveOutboundWebhookRequest`** allows `payload_template_handle`
+  (nullable, must exist in `webhook_templates.handle`) and skips inline-body
+  validation when the hook delegates to a library template — that body
+  is validated on the Template edit screen instead.
+
+### TODO: REVIEW
+
+- A dangling `payload_template_handle` (where the referenced template
+  was removed by a path that bypasses `DeleteTemplateAction`) silently
+  falls back to the inline body. This keeps deliveries alive but hides
+  the misconfiguration; classify as a configuration failure once the
+  centralised observer mentioned in PRD §54 lands.
+- The Edit screen's preview always uses `source_type=entry`. Future
+  iteration: surface the four supported source types (entry / form /
+  user / asset) so a notification template author can preview against
+  the right resolver.
+
 ## [0.4.0] — Rule engine
 
 The rule engine moves from no-op stub to fully functional. Rules can
