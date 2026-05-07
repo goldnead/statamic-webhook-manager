@@ -21,7 +21,6 @@ use Goldnead\WebhookManager\Registries\ConditionRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
-use Illuminate\Contracts\Events\Dispatcher;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
@@ -29,20 +28,30 @@ use Statamic\Providers\AddonServiceProvider;
 /**
  * Service provider for the Statamic Webhook Manager addon.
  *
- * Bootstraps configuration, migrations, routes, navigation, permissions
- * and the central registries that power triggers, auth schemes, variable
- * resolvers and success evaluators.
- *
- * TODO: REVIEW — exact CP UI technology (pure Blade vs. Vue components).
- * Current first pass uses Blade with Statamic CP layout helpers.
+ * Bootstraps configuration, migrations, routes, navigation, permissions,
+ * the central registries that power triggers/auth schemes/variable
+ * resolvers/success evaluators, and ships the Vite-built Vue/Inertia
+ * pages into the Statamic 6 Control Panel.
  */
 class WebhookManagerServiceProvider extends AddonServiceProvider
 {
     /**
-     * Event listeners. Statamic's AddonServiceProvider auto-binds these.
-     * Concrete Statamic event classes are referenced by string so the
-     * package boots even when Statamic 5 isn't installed (during unit
-     * tests that don't need full Statamic boot).
+     * Vite configuration for the addon's CP bundle. Statamic 6 uses this
+     * to load the addon's compiled JS/CSS into the Inertia SPA.
+     */
+    protected $vite = [
+        'hotFile' => __DIR__.'/../resources/dist/hot',
+        'publicDirectory' => 'resources/dist',
+        'input' => [
+            'resources/js/cp.js',
+            'resources/css/cp.css',
+        ],
+    ];
+
+    /**
+     * Event listeners. Statamic event class FQCNs are referenced as
+     * strings so the package boots even when running unit tests against
+     * a stripped-down Laravel without full Statamic boot.
      */
     protected $listen = [
         'Statamic\Events\EntrySaved' => [
@@ -67,30 +76,17 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         ],
     ];
 
-    /**
-     * Route file mappings handled by Statamic's AddonServiceProvider.
-     */
     protected $routes = [
         'cp' => __DIR__.'/../routes/cp.php',
         'actions' => __DIR__.'/../routes/actions.php',
         'web' => __DIR__.'/../routes/inbound.php',
     ];
 
-    /**
-     * Console commands.
-     */
     protected $commands = [
         PruneWebhookDataCommand::class,
         ReplayFailedDeliveriesCommand::class,
         InspectWebhookHealthCommand::class,
         SeedWebhookExamplesCommand::class,
-    ];
-
-    /**
-     * Stylesheets the addon publishes to the CP.
-     */
-    protected $stylesheets = [
-        __DIR__.'/../resources/css/webhook-manager.css',
     ];
 
     public function bootAddon(): void
@@ -211,6 +207,5 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         ], 'webhook-manager-lang');
 
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'webhook-manager');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'webhook-manager');
     }
 }

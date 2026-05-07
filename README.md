@@ -1,8 +1,8 @@
 # Statamic Webhook Manager
 
-A central, CP-native integration layer for [Statamic 5](https://statamic.com/). Manage **outbound webhooks**, **inbound endpoints**, **deliveries**, **retries**, **replays**, **rules** and **templates** — all from one place inside the Control Panel.
+A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)**. Manage **outbound webhooks**, **inbound endpoints**, **deliveries**, **retries**, **replays**, **rules** and **templates** — all from one place inside the Control Panel.
 
-> **Status:** First pass — the **outbound module + delivery engine + CP grounding** are functionally implemented. Inbound, rules and templates ship as architectural stubs marked `TODO: REVIEW` and will be filled in iteratively.
+> **Status:** v0.2.0 — Statamic 6 / Vue + Inertia migration. The **outbound module + delivery engine + Vue CP screens** are functional. Inbound, rules and template CRUD ship as architectural stubs marked `TODO: REVIEW`.
 
 ---
 
@@ -14,12 +14,14 @@ A central, CP-native integration layer for [Statamic 5](https://statamic.com/). 
 - **Auth schemes**: none, bearer token, basic auth, custom header, HMAC SHA256 signature.
 - **Token-based template renderer** (`{{ entry:title }}`, `{{ system:timestamp_iso }}`, …) with variable resolver registry.
 - **Permissions** for granular access to outbound config, sensitive payloads, replays, debug tools.
-- **Inbound endpoints**, **rules**, **template management** in CP — scaffolded as stubs in v0.1.0.
+- **Native Statamic 6 CP** — built with Vue 3, Inertia.js and Statamic's `@ui` component library; fits seamlessly into the CP look & feel.
 
 ## Requirements
 
 - PHP **8.2+**
-- Statamic **5.x**
+- Statamic **6.0+**
+- Laravel **11+**
+- Node **18+** (for building the CP bundle)
 - A queue driver other than `sync` is strongly recommended.
 
 ## Installation
@@ -31,6 +33,13 @@ php artisan migrate
 ```
 
 The Webhook Manager appears in the CP sidebar as **Webhooks**.
+
+> **Note:** The pre-built CP bundle (`resources/dist/build/`) ships with the package. If you cloned the repo directly (e.g. via path repository) you'll need to build it yourself:
+>
+> ```bash
+> npm install
+> npm run build
+> ```
 
 ## Configuration
 
@@ -64,31 +73,38 @@ See `config/webhook-manager.php` after publishing — feature toggles, retry pol
 
 ## Extending
 
-The addon is intentionally registry-driven. Register your own:
+The addon is intentionally registry-driven. Register your own from any service provider:
 
 ```php
 use Goldnead\WebhookManager\Facades\WebhookManager;
 
-WebhookManager::registerTrigger(...);
-WebhookManager::registerCondition(...);
-WebhookManager::registerAction(...);
-WebhookManager::registerAuthScheme(...);
-WebhookManager::registerVariableResolver(...);
-WebhookManager::registerSuccessEvaluator(...);
+WebhookManager::registerTrigger(new MyCustomTrigger());
+WebhookManager::registerCondition(new MyCustomCondition());
+WebhookManager::registerAction(new MyCustomAction());
+WebhookManager::registerAuthScheme(new MyCustomAuthScheme());
+WebhookManager::registerVariableResolver(new MyCustomResolver());
+WebhookManager::registerSuccessEvaluator(new MyCustomEvaluator());
 ```
 
 Each registry has its own contract under `Goldnead\WebhookManager\Contracts`.
+
+## Architecture
+
+- **Controllers** return `Inertia::render('webhook-manager::Page/Name', $props)` — they never render Blade for the CP.
+- **Vue pages** live under `resources/js/pages/` and are registered to Inertia in `resources/js/cp.js` via `Statamic.$inertia.register(...)`.
+- **Service Provider** ships a `$vite` configuration so Statamic loads the addon's bundled JS/CSS in the CP.
+- **Build** uses Vite + the `@statamic/cms/vite-plugin` to consume Statamic's `dist-package` (`@statamic/cms/ui`, `@statamic/cms/inertia`).
+- **Domain layer** (controllers, models, services, jobs, queue) is pure Laravel — no Vue, no Inertia coupling. The same code path serves both async deliveries and the CP test button.
 
 ## Open architecture decisions
 
 These are deliberately marked `TODO: REVIEW` in code and will be revisited:
 
-1. CP UI technology — Blade vs. Vue components.
-2. Antlers/Tokens vs. a dedicated mini-template language.
-3. Whether outbound hooks are modeled as specialised rules or kept separate.
-4. How editable replay snapshots should be.
-5. Whether inbound directly writes content or always goes through the action layer.
-6. Final extensibility API surface.
+1. Antlers/Tokens vs. a dedicated mini-template language.
+2. Whether outbound hooks are modeled as specialised rules or kept separate.
+3. How editable replay snapshots should be.
+4. Whether inbound directly writes content or always goes through the action layer.
+5. Final extensibility API surface.
 
 ## Console commands
 

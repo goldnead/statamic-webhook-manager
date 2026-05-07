@@ -7,9 +7,10 @@ use Goldnead\WebhookManager\Repositories\DeliveryRepository;
 use Goldnead\WebhookManager\Repositories\InboundEndpointRepository;
 use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use Inertia\Inertia;
+use Statamic\Http\Controllers\CP\CpController;
 
-class OverviewController extends Controller
+class OverviewController extends CpController
 {
     public function index(
         Request $request,
@@ -24,9 +25,18 @@ class OverviewController extends Controller
             ->where('status', Delivery::STATUS_FAILED)
             ->orderByDesc('created_at')
             ->limit(8)
-            ->get();
+            ->get(['id', 'uuid', 'trigger_type', 'request_url', 'error_type', 'created_at'])
+            ->map(fn (Delivery $d) => [
+                'id' => $d->id,
+                'uuid' => $d->uuid,
+                'trigger_type' => $d->trigger_type,
+                'request_url' => $d->request_url,
+                'error_type' => $d->error_type,
+                'created_at_human' => $d->created_at?->diffForHumans(),
+                'show_url' => cp_route('webhook-manager.deliveries.show', $d),
+            ]);
 
-        return view('webhook-manager::cp.overview.index', [
+        return Inertia::render('webhook-manager::Overview/Index', [
             'activeOutbound' => $outbound->countActive(),
             'activeInbound' => $inbound->countActive(),
             'counts' => $counts,
