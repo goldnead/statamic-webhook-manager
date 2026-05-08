@@ -67,7 +67,7 @@ async function preview() {
     <Panel :heading="__('Variable resolvers')" :subheading="__('Available namespaces in payload templates.')" class="mb-4">
         <ul class="list-disc list-inside p-4">
             <li v-for="r in resolvers" :key="r.namespace">
-                <code>{{ '{{ ' + r.namespace + ':key }}' }}</code>
+                <code>{{ '{{ ' + r.namespace + ':key \x7d\x7d' }}</code>
             </li>
         </ul>
     </Panel>

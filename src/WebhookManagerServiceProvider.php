@@ -91,16 +91,16 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
     public function bootAddon(): void
     {
-        $this->bootConfig();
+        $this->bootWebhookConfig();
         $this->bootMigrations();
         $this->bootBindings();
-        $this->bootPublishables();
+        $this->bootWebhookPublishables();
         $this->bootPermissions();
         $this->bootNavigation();
         $this->bootRegistries();
     }
 
-    protected function bootConfig(): void
+    protected function bootWebhookConfig(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/webhook-manager.php', 'webhook-manager');
 
@@ -200,7 +200,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $eval->registerDefaults();
     }
 
-    protected function bootPublishables(): void
+    protected function bootWebhookPublishables(): void
     {
         $this->publishes([
             __DIR__.'/../resources/lang' => resource_path('lang/vendor/webhook-manager'),
