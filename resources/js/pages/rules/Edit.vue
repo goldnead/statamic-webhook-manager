@@ -1,21 +1,58 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
-import { Header, Button, Panel, Field, Input, Badge, Alert, ConfirmationModal } from '@statamic/cms/ui';
+import {
+    Header,
+    Button,
+    Badge,
+    Alert,
+    Field,
+    Input,
+    Textarea,
+    Select,
+    Switch,
+    CodeEditor,
+    Tabs,
+    TabList,
+    TabTrigger,
+    TabContent,
+    Panel,
+    ConfirmationModal,
+    StatusIndicator,
+    CommandPaletteItem,
+} from '@statamic/cms/ui';
 import ConditionGroup from '../../components/rules/ConditionGroup.vue';
 
+/**
+ * Rule edit/create page.
+ *
+ * Tabs: General | Trigger | Conditions | Actions | Settings | Test
+ *
+ * The existing ConditionGroup component is retained as-is and mounted
+ * into the Conditions tab. It operates on a normalised tree structure
+ * (`{ logic, conditions }`) which we serialise back to form.conditions
+ * on save. Builder/JSON-Toggle from the old Edit.vue is preserved via
+ * a lightweight "Show JSON" Switch — the toggle no longer controls
+ * navigation (tabs do that now) but remains available for power users.
+ *
+ * Actions stay JSON-only in v1. A per-action form builder is a v2 candidate.
+ */
 const props = defineProps({
     rule: { type: Object, required: true },
     triggerOptions: { type: Object, required: true },
     actionOptions: { type: Object, required: true },
     isNew: { type: Boolean, default: false },
+    canDelete: { type: Boolean, default: false },
+    canTest: { type: Boolean, default: false },
     saveUrl: { type: String, required: true },
     deleteUrl: { type: String, default: null },
     toggleUrl: { type: String, default: null },
     testUrl: { type: String, default: null },
     indexUrl: { type: String, required: true },
 });
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 function jsonOrNull(value) {
     if (value === null || value === undefined || value === '') return null;
@@ -29,39 +66,11 @@ function jsonOrEmpty(value) {
     catch (e) { return ''; }
 }
 
-const form = useForm({
-    name: props.rule.name ?? '',
-    handle: props.rule.handle ?? '',
-    enabled: props.rule.enabled ?? true,
-    trigger_type: props.rule.trigger_type ?? Object.keys(props.triggerOptions)[0] ?? '',
-    trigger_config: props.rule.trigger_config ?? null,
-    conditions: props.rule.conditions ?? null,
-    actions: props.rule.actions ?? [],
-    stop_on_failure: props.rule.stop_on_failure ?? false,
-    order_index: props.rule.order_index ?? 0,
-});
-
-// Editor state. Conditions have two editor modes:
-//   - 'builder' (default): the ConditionGroup component drives a tree.
-//   - 'json':    raw JSON textarea for power users who want to paste a
-//                tree from another rule or hand-edit beyond what the
-//                builder offers.
-// Actions stay JSON-only — a per-action form generator is a v2 candidate.
-const conditionMode = ref('builder');
-const conditionTree = ref(normaliseTree(form.conditions));
-const conditionsJson = ref(jsonOrEmpty(form.conditions));
-const conditionsError = ref('');
-
-const actionsJson = ref(jsonOrEmpty(form.actions));
-const actionsError = ref('');
-
 function normaliseTree(value) {
-    // The builder always works on a root group node. If an existing
-    // rule has a single leaf at the top, wrap it; if it's missing,
-    // start with an empty AND group.
-    if (!value) {
-        return { logic: 'and', conditions: [] };
-    }
+    // The ConditionGroup always works on a root group node. If an existing
+    // rule has a single leaf at the top, wrap it; if missing, start with
+    // an empty AND group.
+    if (!value) return { logic: 'and', conditions: [] };
     if (Array.isArray(value.conditions)) {
         return { logic: value.logic ?? 'and', conditions: value.conditions };
     }
@@ -78,36 +87,105 @@ function treeOrNull(tree) {
     return tree;
 }
 
-function toggleMode(next) {
+// ─── form ─────────────────────────────────────────────────────────────────────
+
+const form = useForm({
+    name: props.rule.name ?? '',
+    handle: props.rule.handle ?? '',
+    enabled: props.rule.enabled ?? true,
+    description: props.rule.description ?? '',
+    trigger_type: props.rule.trigger_type ?? Object.keys(props.triggerOptions)[0] ?? '',
+    trigger_config: props.rule.trigger_config ?? null,
+    conditions: props.rule.conditions ?? null,
+    actions: props.rule.actions ?? [],
+    stop_on_failure: props.rule.stop_on_failure ?? false,
+    order_index: props.rule.order_index ?? 0,
+});
+
+// ─── conditions editor state ──────────────────────────────────────────────────
+
+// Two editing modes:
+// - 'builder' (default): ConditionGroup drives a tree in conditionTree.
+// - 'json': raw CodeEditor for power users or copy-paste from another rule.
+// A Switch on the Conditions tab toggles between them without affecting
+// navigation. The two representations are kept in sync on switch.
+const conditionMode = ref('builder');
+const showConditionJson = ref(false);
+const conditionTree = ref(normaliseTree(form.conditions));
+const conditionsJson = ref(jsonOrEmpty(form.conditions));
+const conditionsError = ref('');
+
+watch(showConditionJson, show => {
     conditionsError.value = '';
-    if (next === 'json' && conditionMode.value === 'builder') {
+    if (show) {
+        // Switching to JSON: serialise the current tree.
         conditionsJson.value = jsonOrEmpty(treeOrNull(conditionTree.value));
-    } else if (next === 'builder' && conditionMode.value === 'json') {
+    } else {
+        // Switching back to builder: parse the JSON.
         const parsed = jsonOrNull(conditionsJson.value);
         if (parsed === undefined) {
             conditionsError.value = __('Invalid JSON — fix it before switching back to the builder.');
+            // Revert the switch state without triggering the watcher again.
+            showConditionJson.value = true;
             return;
         }
         conditionTree.value = normaliseTree(parsed);
     }
-    conditionMode.value = next;
-}
+});
 
-const showDelete = ref(false);
+// ─── actions editor state ─────────────────────────────────────────────────────
+
+const actionsJson = ref(jsonOrEmpty(form.actions));
+const actionsError = ref('');
+
+// ─── test tab state ───────────────────────────────────────────────────────────
+
 const testing = ref(false);
 const testResult = ref(null);
 const samplePayload = ref('{\n  "id": 1,\n  "title": "Sample"\n}');
 
-const pageTitle = computed(() => props.isNew
-    ? __('Create rule')
-    : props.rule.name);
+// ─── tab / page state ─────────────────────────────────────────────────────────
 
-function syncJsonInputs() {
+const activeTab = ref('general');
+const showDelete = ref(false);
+
+const pageTitle = computed(() =>
+    props.isNew ? __('Create rule') : (props.rule.name || __('Rule'))
+);
+const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+
+// Surface server-side validation errors on the right tab so users don't
+// miss them when they are on a different tab.
+const tabsWithErrors = computed(() => {
+    const map = {
+        general:    ['name', 'handle', 'enabled', 'order_index'],
+        trigger:    ['trigger_type', 'trigger_config'],
+        conditions: ['conditions'],
+        actions:    ['actions'],
+        settings:   ['stop_on_failure'],
+    };
+    const tabs = new Set();
+    for (const [tab, keys] of Object.entries(map)) {
+        if (keys.some(k => form.errors[k])) tabs.add(tab);
+    }
+    return tabs;
+});
+
+watch(() => form.hasErrors, hasErrors => {
+    if (!hasErrors) return;
+    const firstTabWithError = ['general', 'trigger', 'conditions', 'actions', 'settings']
+        .find(t => tabsWithErrors.value.has(t));
+    if (firstTabWithError) activeTab.value = firstTabWithError;
+});
+
+// ─── save / submit ────────────────────────────────────────────────────────────
+
+function syncFormFields() {
     conditionsError.value = '';
     actionsError.value = '';
 
-    // Conditions: pull from whichever editor is active.
-    if (conditionMode.value === 'builder') {
+    // Conditions: pull from whichever editor is currently visible.
+    if (!showConditionJson.value) {
         form.conditions = treeOrNull(conditionTree.value);
     } else {
         if (conditionsJson.value.trim() === '') {
@@ -122,6 +200,7 @@ function syncJsonInputs() {
         }
     }
 
+    // Actions: always JSON.
     if (actionsJson.value.trim() === '') {
         form.actions = [];
     } else {
@@ -132,20 +211,33 @@ function syncJsonInputs() {
                 return false;
             }
             form.actions = parsed;
-        } catch (e) { actionsError.value = __('Invalid JSON in actions.'); return false; }
+        } catch (e) {
+            actionsError.value = __('Invalid JSON in actions.');
+            return false;
+        }
     }
+
     return true;
 }
 
 function save() {
-    if (!syncJsonInputs()) return;
+    if (!syncFormFields()) return;
     const verb = props.isNew ? 'post' : 'patch';
     form[verb](props.saveUrl, { preserveScroll: true });
 }
 
+function destroy() {
+    router.delete(props.deleteUrl, {
+        preserveScroll: true,
+        onSuccess: () => { showDelete.value = false; },
+    });
+}
+
+// ─── test ─────────────────────────────────────────────────────────────────────
+
 async function runTest() {
     if (!props.testUrl) return;
-    if (!syncJsonInputs()) return;
+    if (!syncFormFields()) return;
 
     testing.value = true;
     testResult.value = null;
@@ -165,180 +257,343 @@ async function runTest() {
         testing.value = false;
     }
 }
-
-function destroy() {
-    router.delete(props.deleteUrl, {
-        preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
-    });
-}
 </script>
 
 <template>
-    <Head :title="pageTitle" />
+    <Head :title="[pageTitle, __('Rules'), __('Webhook Manager')]" />
 
-    <Header :title="pageTitle" icon="instructions">
-        <Badge v-if="!isNew" :color="rule.enabled ? 'green' : 'gray'">
-            {{ rule.enabled ? __('Enabled') : __('Disabled') }}
-        </Badge>
-        <Button variant="primary" :loading="form.processing" @click="save">
-            {{ __('Save') }}
-        </Button>
-    </Header>
+    <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
+        <Header :title="pageTitle" icon="filter">
+            <template v-if="!isNew" #subtitle>
+                <StatusIndicator :status="rule.enabled ? 'published' : 'draft'" />
+                <Badge
+                    :color="rule.enabled ? 'green' : 'gray'"
+                    :text="rule.enabled ? __('Active') : __('Disabled')"
+                />
+            </template>
 
-    <Alert v-if="form.hasErrors" variant="error" :heading="__('Validation failed')" class="mb-4">
-        <ul class="list-disc list-inside text-sm">
-            <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
-        </ul>
-    </Alert>
-
-    <Panel :heading="__('Identity')" class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <Field :label="__('Name')" id="name" :required="true" :error="form.errors.name">
-                <Input id="name" v-model="form.name" />
-            </Field>
-            <Field :label="__('Handle')" id="handle" :required="true" :error="form.errors.handle">
-                <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
-            </Field>
-            <Field :label="__('Status')" id="enabled">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" v-model="form.enabled" />
-                    <span>{{ __('Enabled') }}</span>
-                </label>
-            </Field>
-            <Field :label="__('Order index')" id="order_index"
-                   :instructions="__('Lower values run first within the same trigger.')">
-                <Input id="order_index" v-model.number="form.order_index" type="number" min="0" />
-            </Field>
-        </div>
-    </Panel>
-
-    <Panel :heading="__('Trigger')" class="mb-4">
-        <Field :label="__('Trigger type')" id="trigger_type" :required="true" class="p-4"
-               :error="form.errors.trigger_type"
-               :instructions="__('Internal event that this rule listens for.')">
-            <select id="trigger_type" v-model="form.trigger_type" class="input-text">
-                <option v-for="(label, value) in triggerOptions" :key="value" :value="value">
-                    {{ label }} ({{ value }})
-                </option>
-            </select>
-        </Field>
-    </Panel>
-
-    <Panel :heading="__('Conditions')" class="mb-4">
-        <div class="p-4 space-y-3">
-            <!-- Mode toggle -->
-            <div class="flex items-center justify-between">
-                <p class="text-sm text-gray-600">
-                    {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
-                </p>
-                <div class="inline-flex rounded border border-gray-300 overflow-hidden text-xs">
-                    <button type="button"
-                            class="px-3 py-1"
-                            :class="conditionMode === 'builder'
-                                ? 'bg-gray-900 text-white'
-                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
-                            @click="toggleMode('builder')">
-                        {{ __('Builder') }}
-                    </button>
-                    <button type="button"
-                            class="px-3 py-1 border-l border-gray-300"
-                            :class="conditionMode === 'json'
-                                ? 'bg-gray-900 text-white'
-                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
-                            @click="toggleMode('json')">
-                        {{ __('JSON') }}
-                    </button>
-                </div>
-            </div>
-
-            <Alert v-if="conditionsError" variant="error" :text="conditionsError" />
-
-            <!-- Visual builder -->
-            <ConditionGroup
-                v-if="conditionMode === 'builder'"
-                v-model="conditionTree"
-                :is-root="true"
+            <Button
+                v-if="!isNew && canTest && testUrl"
+                :loading="testing"
+                :text="__('Test')"
+                icon="paper-airplane"
+                @click="() => { activeTab = 'test'; }"
+            />
+            <Button
+                variant="primary"
+                :loading="form.processing"
+                :text="saveLabel"
+                @click="save"
             />
 
-            <!-- Raw JSON for power users -->
-            <Field v-else :label="__('Condition tree (JSON)')" id="conditions_json">
-                <textarea id="conditions_json" v-model="conditionsJson" rows="10"
-                          class="input-text w-full font-mono text-sm"
-                          :placeholder='`{
-  &quot;logic&quot;: &quot;and&quot;,
-  &quot;conditions&quot;: [
-    { &quot;field&quot;: &quot;data.status&quot;, &quot;op&quot;: &quot;equals&quot;, &quot;value&quot;: &quot;approved&quot; }
-  ]
-}`'></textarea>
-            </Field>
+            <CommandPaletteItem
+                v-if="!isNew && canDelete && deleteUrl"
+                category="Actions"
+                :text="__('Delete rule')"
+                icon="trash"
+                :action="() => (showDelete = true)"
+            />
+        </Header>
+
+        <Tabs v-model="activeTab" class="mt-4">
+            <TabList>
+                <TabTrigger value="general">
+                    {{ __('General') }}
+                    <Badge v-if="tabsWithErrors.has('general')" color="red" class="ms-1.5" :text="__('!')" />
+                </TabTrigger>
+                <TabTrigger value="trigger">
+                    {{ __('Trigger') }}
+                    <Badge v-if="tabsWithErrors.has('trigger')" color="red" class="ms-1.5" :text="__('!')" />
+                </TabTrigger>
+                <TabTrigger value="conditions">
+                    {{ __('Conditions') }}
+                    <Badge v-if="tabsWithErrors.has('conditions')" color="red" class="ms-1.5" :text="__('!')" />
+                </TabTrigger>
+                <TabTrigger value="actions">
+                    {{ __('Actions') }}
+                    <Badge v-if="tabsWithErrors.has('actions')" color="red" class="ms-1.5" :text="__('!')" />
+                </TabTrigger>
+                <TabTrigger value="settings">
+                    {{ __('Settings') }}
+                    <Badge v-if="tabsWithErrors.has('settings')" color="red" class="ms-1.5" :text="__('!')" />
+                </TabTrigger>
+                <TabTrigger v-if="!isNew && testUrl" value="test">
+                    {{ __('Test') }}
+                </TabTrigger>
+            </TabList>
+
+            <!-- ───────── General ───────── -->
+            <TabContent value="general">
+                <Panel class="mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                        <Field
+                            :label="__('Name')"
+                            id="name"
+                            :required="true"
+                            :error="form.errors.name"
+                            :instructions="__('Human-readable name shown across the CP.')"
+                        >
+                            <Input id="name" v-model="form.name" autofocus />
+                        </Field>
+
+                        <Field
+                            :label="__('Handle')"
+                            id="handle"
+                            :required="true"
+                            :error="form.errors.handle"
+                            :instructions="__('Internal identifier. Lowercase, hyphens or underscores only.')"
+                        >
+                            <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
+                        </Field>
+
+                        <Field
+                            :label="__('Description')"
+                            id="description"
+                            class="md:col-span-2"
+                            :error="form.errors.description"
+                        >
+                            <Textarea id="description" v-model="form.description" :rows="2" />
+                        </Field>
+
+                        <Field
+                            :label="__('Order')"
+                            id="order_index"
+                            :error="form.errors.order_index"
+                            :instructions="__('Lower numbers run first. Rules with equal order are sorted by name.')"
+                        >
+                            <Input id="order_index" v-model.number="form.order_index" type="number" min="0" />
+                        </Field>
+
+                        <Field
+                            :label="__('Status')"
+                            id="enabled"
+                            :error="form.errors.enabled"
+                        >
+                            <Switch
+                                id="enabled"
+                                v-model="form.enabled"
+                                :text="form.enabled ? __('Enabled') : __('Disabled')"
+                            />
+                        </Field>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ───────── Trigger ───────── -->
+            <TabContent value="trigger">
+                <Panel class="mt-4">
+                    <div class="grid grid-cols-1 gap-6 p-6">
+                        <Field
+                            :label="__('Trigger type')"
+                            id="trigger_type"
+                            :required="true"
+                            :error="form.errors.trigger_type"
+                            :instructions="__('The internal event that fires this rule.')"
+                        >
+                            <Select id="trigger_type" v-model="form.trigger_type">
+                                <option v-for="(label, value) in triggerOptions" :key="value" :value="value">
+                                    {{ label }}
+                                </option>
+                            </Select>
+                        </Field>
+
+                        <Field
+                            :label="__('Trigger config (JSON)')"
+                            id="trigger_config"
+                            :error="form.errors.trigger_config"
+                            :instructions="__('Optional. Trigger-specific filter parameters — see the trigger\'s documentation for available keys.')"
+                        >
+                            <CodeEditor
+                                id="trigger_config"
+                                v-model="form.trigger_config"
+                                mode="json"
+                                :rows="6"
+                                :placeholder="'{\n  \"collection\": \"articles\"\n}'"
+                            />
+                        </Field>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ───────── Conditions ───────── -->
+            <TabContent value="conditions">
+                <Panel class="mt-4">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
+                            </p>
+                            <Field :label="__('Show JSON')" inline class="shrink-0 ms-4">
+                                <Switch v-model="showConditionJson" />
+                            </Field>
+                        </div>
+
+                        <Alert
+                            v-if="conditionsError"
+                            variant="error"
+                            :text="conditionsError"
+                            class="mb-2"
+                        />
+
+                        <!-- Visual builder (ConditionGroup) — default mode -->
+                        <ConditionGroup
+                            v-if="!showConditionJson"
+                            v-model="conditionTree"
+                        />
+
+                        <!-- JSON editor — debug/power-user mode (read/write) -->
+                        <div v-else>
+                            <CodeEditor
+                                v-model="conditionsJson"
+                                mode="json"
+                                :rows="16"
+                                :placeholder="'{\n  \"logic\": \"and\",\n  \"conditions\": []\n}'"
+                            />
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
+                            </p>
+                        </div>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ───────── Actions ───────── -->
+            <TabContent value="actions">
+                <Panel class="mt-4">
+                    <div class="p-6 space-y-4">
+                        <Alert
+                            variant="info"
+                            :heading="__('JSON format')"
+                            :text="__('Actions are an ordered array. Each object requires at minimum a handle key. Available handles are listed below.')"
+                        />
+
+                        <Alert
+                            v-if="actionsError"
+                            variant="error"
+                            :text="actionsError"
+                        />
+
+                        <Field
+                            :label="__('Actions (JSON array)')"
+                            id="actions"
+                            :error="form.errors.actions"
+                            :instructions="__('Each action runs in order. Stop on failure can be configured in the Settings tab.')"
+                        >
+                            <CodeEditor
+                                id="actions"
+                                v-model="actionsJson"
+                                mode="json"
+                                :rows="14"
+                                :placeholder="'[\n  {\n    \"handle\": \"send_outbound\",\n    \"webhook\": \"my-webhook\"\n  }\n]'"
+                            />
+                        </Field>
+
+                        <div v-if="Object.keys(actionOptions).length" class="mt-2">
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {{ __('Available action handles:') }}
+                            </p>
+                            <ul class="space-y-0.5">
+                                <li
+                                    v-for="(label, handle) in actionOptions"
+                                    :key="handle"
+                                    class="text-xs font-mono text-gray-600 dark:text-gray-400"
+                                >
+                                    {{ handle }} <span class="font-sans text-gray-500">— {{ label }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ───────── Settings ───────── -->
+            <TabContent value="settings">
+                <Panel class="mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                        <Field
+                            :label="__('Stop on first failure')"
+                            id="stop_on_failure"
+                            class="md:col-span-2"
+                            :error="form.errors.stop_on_failure"
+                            :instructions="__('When enabled, if any action returns an error the remaining actions in this rule are skipped.')"
+                        >
+                            <Switch
+                                id="stop_on_failure"
+                                v-model="form.stop_on_failure"
+                                :text="__('Stop on first action failure')"
+                            />
+                        </Field>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ───────── Test ───────── -->
+            <TabContent v-if="!isNew && testUrl" value="test">
+                <Panel class="mt-4">
+                    <div class="p-6 space-y-6">
+                        <Field
+                            :label="__('Sample payload (JSON)')"
+                            id="sample_payload"
+                            :instructions="__('This payload is passed to the rule engine as if it were a real trigger event.')"
+                        >
+                            <CodeEditor
+                                id="sample_payload"
+                                v-model="samplePayload"
+                                mode="json"
+                                :rows="10"
+                            />
+                        </Field>
+
+                        <div class="flex justify-end">
+                            <Button
+                                variant="primary"
+                                :loading="testing"
+                                :text="__('Run test')"
+                                icon="paper-airplane"
+                                @click="runTest"
+                            />
+                        </div>
+
+                        <div v-if="testResult" class="space-y-3">
+                            <Alert
+                                :variant="testResult.ok ? 'success' : 'error'"
+                                :heading="testResult.ok ? __('Rule matched — actions executed') : __('Rule did not match or an error occurred')"
+                                :text="testResult.message ?? ''"
+                            />
+
+                            <Field v-if="testResult.data && Object.keys(testResult.data).length" :label="__('Result detail')">
+                                <CodeEditor
+                                    :model-value="JSON.stringify(testResult.data, null, 2)"
+                                    mode="json"
+                                    :read-only="true"
+                                    :rows="10"
+                                />
+                            </Field>
+                        </div>
+                    </div>
+                </Panel>
+            </TabContent>
+        </Tabs>
+
+        <div v-if="!isNew && canDelete" class="mt-8 flex justify-between items-center">
+            <Button variant="danger" :text="__('Delete rule')" @click="showDelete = true" />
+            <Button
+                variant="primary"
+                :loading="form.processing"
+                :text="saveLabel"
+                @click="save"
+            />
         </div>
-    </Panel>
 
-    <Panel :heading="__('Actions')" class="mb-4">
-        <Field :label="__('Action list (JSON array)')" id="actions_json" class="p-4"
-               :error="actionsError"
-               :instructions="__('Ordered list of actions to run when the conditions match.')">
-            <textarea id="actions_json" v-model="actionsJson" rows="10"
-                      class="input-text w-full font-mono text-sm"
-                      :placeholder='`[
-  { &quot;handle&quot;: &quot;send_outbound_webhook&quot;, &quot;config&quot;: { &quot;webhook_handle&quot;: &quot;notify-crm&quot; } },
-  { &quot;handle&quot;: &quot;write_log_note&quot;, &quot;config&quot;: { &quot;message&quot;: &quot;CRM notified.&quot; } }
-]`'></textarea>
-        </Field>
-        <div class="px-4 pb-4 text-xs text-gray-600">
-            <strong>{{ __('Available action handles:') }}</strong>
-            <ul class="mt-1 list-disc list-inside">
-                <li v-for="(label, handle) in actionOptions" :key="handle">
-                    <code>{{ handle }}</code> &mdash; {{ label }}
-                </li>
-            </ul>
-        </div>
-        <div class="px-4 pb-4">
-            <label class="flex items-center gap-2">
-                <input type="checkbox" v-model="form.stop_on_failure" />
-                <span class="text-sm">{{ __('Stop on first action failure') }}</span>
-            </label>
-        </div>
-    </Panel>
-
-    <Panel v-if="!isNew && testUrl" :heading="__('Test')" class="mb-4">
-        <div class="p-4">
-            <Field :label="__('Sample payload (JSON)')" id="sample_payload"
-                   :instructions="__('Payload that simulates the trigger event. Actions execute for real.')">
-                <textarea id="sample_payload" v-model="samplePayload" rows="6"
-                          class="input-text w-full font-mono text-sm"></textarea>
-            </Field>
-            <div class="mt-3">
-                <Button variant="default" :loading="testing" @click="runTest">
-                    {{ __('Run test') }}
-                </Button>
-            </div>
-
-            <Alert v-if="testResult" :variant="testResult.ok ? 'success' : 'error'" class="mt-4"
-                   :heading="testResult.ok ? __('Test succeeded') : __('Test failed')"
-                   :text="testResult.message" />
-
-            <div v-if="testResult && testResult.data" class="mt-3">
-                <h4 class="text-xs uppercase font-semibold text-gray-600 mb-1">{{ __('Result detail') }}</h4>
-                <pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">{{ JSON.stringify(testResult.data, null, 2) }}</pre>
-            </div>
-        </div>
-    </Panel>
-
-    <div v-if="!isNew" class="mt-8 flex justify-between">
-        <Button variant="danger" @click="showDelete = true">{{ __('Delete') }}</Button>
-        <Button variant="primary" :loading="form.processing" @click="save">{{ __('Save') }}</Button>
+        <ConfirmationModal
+            v-if="!isNew && deleteUrl"
+            :open="showDelete"
+            :title="__('Delete rule')"
+            :body-text="__('This permanently removes the rule configuration.')"
+            :button-text="__('Delete')"
+            :danger="true"
+            @confirm="destroy"
+            @update:open="showDelete = $event"
+        />
     </div>
-
-    <ConfirmationModal
-        v-if="!isNew"
-        :open="showDelete"
-        :title="__('Delete rule')"
-        :body-text="__('This permanently removes the rule. Past executions stay in the logs.')"
-        :button-text="__('Delete')"
-        :danger="true"
-        @confirm="destroy"
-        @update:open="showDelete = $event"
-    />
 </template>

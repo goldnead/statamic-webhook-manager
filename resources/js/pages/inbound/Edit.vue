@@ -1,14 +1,48 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
-import { Header, Button, Panel, Field, Input, Badge, Alert, ConfirmationModal } from '@statamic/cms/ui';
+import {
+    Header,
+    Button,
+    Badge,
+    Alert,
+    Field,
+    Input,
+    Textarea,
+    Select,
+    Switch,
+    CheckboxGroup,
+    CodeEditor,
+    Tabs,
+    TabList,
+    TabTrigger,
+    TabContent,
+    Panel,
+    ConfirmationModal,
+    StatusIndicator,
+    CommandPaletteItem,
+} from '@statamic/cms/ui';
 
+/**
+ * Inbound endpoint edit/create page.
+ *
+ * Layout follows Statamic's PublishForm/Tabs convention: configuration
+ * is split into 7 tabs so users navigate rather than scroll a long page.
+ *
+ * Auth config is write-only on the wire: PHP exposes only an
+ * `auth_configured` flag. Submitting an empty `auth_config_json` keeps
+ * the stored secret untouched (see InboundController::normalizeAuthConfig).
+ *
+ * tabsWithErrors auto-switches to the first tab that has a validation
+ * error so users don't miss failures on inactive tabs.
+ */
 const props = defineProps({
     endpoint: { type: Object, required: true },
     authOptions: { type: Object, required: true },
     actionOptions: { type: Object, required: true },
     isNew: { type: Boolean, default: false },
+    canDelete: { type: Boolean, default: false },
     saveUrl: { type: String, required: true },
     deleteUrl: { type: String, default: null },
     toggleUrl: { type: String, default: null },
@@ -36,21 +70,73 @@ const form = useForm({
     response_config_json: jsonOrEmpty(props.endpoint.response_config),
 });
 
+const activeTab = ref('general');
 const showDelete = ref(false);
 const testing = ref(false);
 const testResult = ref(null);
 const samplePayload = ref('{\n  "id": 1,\n  "name": "Test"\n}');
 
-const pageTitle = computed(() => props.isNew
-    ? __('Create inbound endpoint')
-    : props.endpoint.name);
+const pageTitle = computed(() =>
+    props.isNew ? __('Create inbound endpoint') : (props.endpoint.name || __('Inbound endpoint'))
+);
+const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
 
 const fullUrl = computed(() => {
     const base = props.routePrefix ? `/${props.routePrefix}` : '';
-    return `${base}/${form.handle || ':handle'}`;
+    return `${base}/${form.path || form.handle || ':handle'}`;
+});
+
+// Surface server-side validation errors on the right tab.
+// Without this, a user on the General tab misses an error on Auth.
+const tabsWithErrors = computed(() => {
+    const map = {
+        general:  ['name', 'handle', 'description', 'enabled', 'path'],
+        auth:     ['auth_type', 'auth_config_json', 'auth_config'],
+        methods:  ['allowed_methods', 'allowed_methods.*'],
+        mapping:  ['mapping_config', 'mapping_config_json'],
+        action:   ['action_type', 'action_config', 'action_config_json'],
+        response: ['response_config', 'response_config_json'],
+        test:     [],
+    };
+    const tabs = new Set();
+    for (const [tab, keys] of Object.entries(map)) {
+        if (keys.some(k => form.errors[k])) tabs.add(tab);
+    }
+    return tabs;
+});
+
+watch(() => form.hasErrors, hasErrors => {
+    if (!hasErrors) return;
+    const order = ['general', 'auth', 'methods', 'mapping', 'action', 'response'];
+    const first = order.find(t => tabsWithErrors.value.has(t));
+    if (first) activeTab.value = first;
+});
+
+// Dynamic placeholder for the auth_config JSON editor
+const authPlaceholder = computed(() => {
+    switch (form.auth_type) {
+        case 'static_header': return '{ "header": "X-Webhook-Secret", "value": "your-secret" }';
+        case 'bearer':        return '{ "token": "your-bearer-token" }';
+        case 'basic':         return '{ "username": "user", "password": "pass" }';
+        case 'hmac':          return '{ "secret": "your-shared-secret", "algorithm": "sha256" }';
+        case 'ip_allowlist':  return '{ "ips": ["1.2.3.4", "5.6.7.8"] }';
+        default:              return '{}';
+    }
+});
+
+const authInstructions = computed(() => {
+    if (form.auth_type === 'none') {
+        return __('No authentication. Anyone can post to this endpoint.');
+    }
+    if (props.endpoint.auth_configured) {
+        return __('A secret is already configured. Leave blank to keep it. Paste new JSON to replace — the value is encrypted at rest.');
+    }
+    return __('Stored encrypted. Format depends on the auth type — see the placeholder for an example.');
 });
 
 const allMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+const allowedMethodOptions = allMethods.map(m => ({ value: m, label: m }));
 
 function jsonOrEmpty(value) {
     if (!value) return '';
@@ -58,15 +144,16 @@ function jsonOrEmpty(value) {
     catch (e) { return ''; }
 }
 
-function toggleMethod(method) {
-    const idx = form.allowed_methods.indexOf(method);
-    if (idx === -1) form.allowed_methods.push(method);
-    else form.allowed_methods.splice(idx, 1);
-}
-
 function save() {
     const verb = props.isNew ? 'post' : 'patch';
     form[verb](props.saveUrl, { preserveScroll: true });
+}
+
+function destroy() {
+    router.delete(props.deleteUrl, {
+        preserveScroll: true,
+        onSuccess: () => { showDelete.value = false; },
+    });
 }
 
 async function runTest() {
@@ -90,202 +177,281 @@ async function runTest() {
         testing.value = false;
     }
 }
-
-function destroy() {
-    router.delete(props.deleteUrl, {
-        preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
-    });
-}
 </script>
 
 <template>
-    <Head :title="pageTitle" />
+    <Head :title="[pageTitle, __('Inbound'), __('Webhook Manager')]" />
 
-    <Header :title="pageTitle" icon="incoming">
-        <Badge v-if="!isNew" :color="endpoint.enabled ? 'green' : 'gray'">
-            {{ endpoint.enabled ? __('Enabled') : __('Disabled') }}
-        </Badge>
-        <div class="flex gap-2">
-            <Button variant="primary" :loading="form.processing" @click="save">
-                {{ __('Save') }}
-            </Button>
-        </div>
-    </Header>
+    <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
-    <Alert v-if="form.hasErrors" variant="error" :heading="__('Validation failed')" class="mb-4">
-        <ul class="list-disc list-inside text-sm">
-            <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
-        </ul>
-    </Alert>
+        <Header :title="pageTitle" icon="download">
+            <template #actions>
+                <StatusIndicator
+                    v-if="!isNew"
+                    :active="endpoint.enabled"
+                    :active-label="__('Active')"
+                    :inactive-label="__('Disabled')"
+                    class="mr-2"
+                />
+                <Button
+                    v-if="!isNew && deleteUrl"
+                    variant="danger"
+                    :text="__('Delete')"
+                    @click="showDelete = true"
+                />
+                <Button
+                    variant="primary"
+                    :text="saveLabel"
+                    :loading="form.processing"
+                    @click="save"
+                />
+                <CommandPaletteItem category="Actions" :text="saveLabel" @click="save" />
+            </template>
+        </Header>
 
-    <Panel :heading="__('Identity')" class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <Field :label="__('Name')" id="name" :required="true" :error="form.errors.name">
-                <Input id="name" v-model="form.name" />
-            </Field>
-            <Field :label="__('Handle')" id="handle" :required="true" :error="form.errors.handle"
-                   :instructions="__('Lowercase, used in the inbound URL.')">
-                <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
-            </Field>
-            <Field :label="__('Description')" id="description" class="md:col-span-2">
-                <textarea id="description" v-model="form.description" rows="2" class="input-text w-full"></textarea>
-            </Field>
-            <Field :label="__('Status')" id="enabled">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" v-model="form.enabled" />
-                    <span>{{ __('Enabled') }}</span>
-                </label>
-            </Field>
-        </div>
-    </Panel>
+        <!-- Global validation error banner -->
+        <Alert v-if="form.hasErrors" variant="danger" class="mb-4">
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
-    <Panel :heading="__('Endpoint')" class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <Field :label="__('Public URL')" id="path" class="md:col-span-2"
-                   :instructions="__('Senders POST to this URL. The path mirrors the handle by default.')">
-                <code class="block text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">{{ fullUrl }}</code>
-            </Field>
-            <Field :label="__('Allowed methods')" id="allowed_methods" class="md:col-span-2"
-                   :error="form.errors.allowed_methods">
-                <div class="flex gap-3 flex-wrap">
-                    <label v-for="m in allMethods" :key="m" class="flex items-center gap-2">
-                        <input type="checkbox"
-                               :checked="form.allowed_methods.includes(m)"
-                               @change="toggleMethod(m)" />
-                        <span class="text-sm">{{ m }}</span>
-                    </label>
-                </div>
-            </Field>
-            <Field :label="__('Expected content type')" id="expected_content_type"
-                   :error="form.errors.expected_content_type">
-                <select id="expected_content_type" v-model="form.expected_content_type" class="input-text">
-                    <option value="application/json">application/json</option>
-                    <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
-                </select>
-            </Field>
-            <Field :label="__('Max payload (KB)')" id="max_payload_kb" :error="form.errors.max_payload_kb">
-                <Input id="max_payload_kb" v-model.number="form.max_payload_kb" type="number" min="1" max="65536" />
-            </Field>
-            <Field :label="__('Replay protection')" id="replay_protection_enabled" class="md:col-span-2"
-                   :instructions="__('Reject duplicate requests detected via Idempotency-Key, signature header, or body hash.')">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" v-model="form.replay_protection_enabled" />
-                    <span>{{ __('Enabled') }}</span>
-                </label>
-            </Field>
-            <Field :label="__('Logging mode')" id="logging_mode">
-                <select id="logging_mode" v-model="form.logging_mode" class="input-text">
-                    <option value="full">{{ __('Full') }}</option>
-                    <option value="partial">{{ __('Partial') }}</option>
-                    <option value="none">{{ __('None') }}</option>
-                </select>
-            </Field>
-        </div>
-    </Panel>
+        <Tabs v-model="activeTab">
+            <TabList>
+                <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
+                    {{ __('General') }}
+                </TabTrigger>
+                <TabTrigger value="auth" :class="{ 'text-red-500': tabsWithErrors.has('auth') }">
+                    {{ __('Authentication') }}
+                </TabTrigger>
+                <TabTrigger value="methods" :class="{ 'text-red-500': tabsWithErrors.has('methods') }">
+                    {{ __('Allowed Methods') }}
+                </TabTrigger>
+                <TabTrigger value="mapping" :class="{ 'text-red-500': tabsWithErrors.has('mapping') }">
+                    {{ __('Mapping') }}
+                </TabTrigger>
+                <TabTrigger value="action" :class="{ 'text-red-500': tabsWithErrors.has('action') }">
+                    {{ __('Action') }}
+                </TabTrigger>
+                <TabTrigger value="response" :class="{ 'text-red-500': tabsWithErrors.has('response') }">
+                    {{ __('Response') }}
+                </TabTrigger>
+                <TabTrigger value="test">
+                    {{ __('Test') }}
+                </TabTrigger>
+            </TabList>
 
-    <Panel :heading="__('Authentication')" class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <Field :label="__('Type')" id="auth_type" :error="form.errors.auth_type">
-                <select id="auth_type" v-model="form.auth_type" class="input-text">
-                    <option v-for="(label, value) in authOptions" :key="value" :value="value">{{ label }}</option>
-                </select>
-            </Field>
-            <Field :label="__('Auth config (JSON)')" id="auth_config_json" class="md:col-span-2"
-                   :instructions="endpoint.auth_configured
-                       ? __('A secret is already configured. Leave blank to keep it. To replace, paste new JSON below — it will be encrypted at rest.')
-                       : __('Paste JSON like { \&quot;header\&quot;: \&quot;X-API-Key\&quot;, \&quot;value\&quot;: \&quot;your-secret\&quot; } or { \&quot;secret\&quot;: \&quot;...\&quot; }. Stored encrypted.')">
-                <textarea id="auth_config_json" v-model="form.auth_config_json" rows="3"
-                          class="input-text w-full font-mono text-sm"
-                          placeholder='{ "header": "X-API-Key", "value": "your-secret" }'></textarea>
-            </Field>
-        </div>
-    </Panel>
+            <!-- ── GENERAL ── -->
+            <TabContent value="general">
+                <Panel>
+                    <Field :label="__('Name')" :error="form.errors.name" required>
+                        <Input v-model="form.name" :placeholder="__('My Inbound Endpoint')" />
+                    </Field>
 
-    <Panel :heading="__('Mapping')" class="mb-4">
-        <Field :label="__('Mapping config (JSON)')" id="mapping_config_json" class="p-4"
-               :error="form.errors.mapping_config_json"
-               :instructions="__('Map inbound payload paths to internal keys. Each value is { path, default?, transform?, type?, required? }. Leave empty to pass the payload through unchanged.')">
-            <textarea id="mapping_config_json" v-model="form.mapping_config_json" rows="8"
-                      class="input-text w-full font-mono text-sm"
-                      placeholder='{ "email": { "path": "contact.email", "required": true }, "title": { "path": "contact.name" } }'></textarea>
-        </Field>
-    </Panel>
+                    <Field :label="__('Handle')" :error="form.errors.handle" required>
+                        <Input v-model="form.handle" :placeholder="__('my-inbound-endpoint')" class="font-mono" />
+                    </Field>
 
-    <Panel :heading="__('Action')" class="mb-4">
-        <div class="grid grid-cols-1 gap-4 p-4">
-            <Field :label="__('Type')" id="action_type" :error="form.errors.action_type">
-                <select id="action_type" v-model="form.action_type" class="input-text">
-                    <option v-for="(label, value) in actionOptions" :key="value" :value="value">{{ label }}</option>
-                </select>
-            </Field>
-            <Field :label="__('Action config (JSON)')" id="action_config_json"
-                   :instructions="__('Configuration for the selected handler. For example, { collection: posts, slug_field: slug } for create_entry.')">
-                <textarea id="action_config_json" v-model="form.action_config_json" rows="6"
-                          class="input-text w-full font-mono text-sm"
-                          placeholder='{ "collection": "posts" }'></textarea>
-            </Field>
-        </div>
-    </Panel>
+                    <Field :label="__('Path')" :error="form.errors.path" :instructions="__('The URL path segment for this endpoint.')">
+                        <Input v-model="form.path" :placeholder="__('my-endpoint')" class="font-mono" />
+                        <div class="mt-1 text-xs text-gray-500 font-mono">
+                            {{ __('Full URL:') }} <span class="text-blue-600 dark:text-blue-400">{{ fullUrl }}</span>
+                        </div>
+                    </Field>
 
-    <Panel :heading="__('Response')" class="mb-4">
-        <Field :label="__('Response config (JSON)')" id="response_config_json" class="p-4"
-               :instructions="__('Override response status codes. Defaults to 200 / 422 if empty.')">
-            <textarea id="response_config_json" v-model="form.response_config_json" rows="3"
-                      class="input-text w-full font-mono text-sm"
-                      placeholder='{ "success_status": 200, "failure_status": 422 }'></textarea>
-        </Field>
-    </Panel>
+                    <Field :label="__('Enabled')" :error="form.errors.enabled">
+                        <Switch v-model="form.enabled">{{ __('Enabled') }}</Switch>
+                    </Field>
 
-    <Panel v-if="!isNew && testUrl" :heading="__('Test')" class="mb-4">
-        <div class="p-4">
-            <Field :label="__('Sample payload (JSON)')" id="sample_payload"
-                   :instructions="__('Run mapping and action against this payload. Auth is bypassed — you are already authorised in the CP.')">
-                <textarea id="sample_payload" v-model="samplePayload" rows="6"
-                          class="input-text w-full font-mono text-sm"></textarea>
-            </Field>
-            <div class="mt-3">
-                <Button variant="default" :loading="testing" @click="runTest">
-                    {{ __('Run test') }}
-                </Button>
-            </div>
+                    <Field :label="__('Description')" :error="form.errors.description">
+                        <Textarea v-model="form.description" :rows="3" />
+                    </Field>
+                </Panel>
+            </TabContent>
 
-            <Alert v-if="testResult" :variant="testResult.ok ? 'success' : 'error'" class="mt-4"
-                   :heading="testResult.ok ? __('Test succeeded') : __('Test failed')"
-                   :text="testResult.message" />
+            <!-- ── AUTHENTICATION ── -->
+            <TabContent value="auth">
+                <Panel>
+                    <Field :label="__('Auth Type')" :error="form.errors.auth_type" required>
+                        <Select v-model="form.auth_type" :options="authOptions" />
+                    </Field>
 
-            <div v-if="testResult && (testResult.mapped || testResult.data)" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <h4 class="text-xs uppercase font-semibold text-gray-600 mb-1">{{ __('Mapped payload') }}</h4>
-                    <pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">{{ JSON.stringify(testResult.mapped, null, 2) }}</pre>
-                </div>
-                <div>
-                    <h4 class="text-xs uppercase font-semibold text-gray-600 mb-1">{{ __('Action result') }}</h4>
-                    <pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">{{ JSON.stringify(testResult.data, null, 2) }}</pre>
-                </div>
-            </div>
-            <div v-if="testResult && testResult.errors && testResult.errors.length" class="mt-3">
-                <h4 class="text-xs uppercase font-semibold text-red-600 mb-1">{{ __('Errors') }}</h4>
-                <ul class="list-disc list-inside text-sm text-red-600">
-                    <li v-for="(err, idx) in testResult.errors" :key="idx">{{ err }}</li>
-                </ul>
-            </div>
-        </div>
-    </Panel>
+                    <Field
+                        v-if="form.auth_type !== 'none'"
+                        :label="__('Auth Config (JSON)')"
+                        :error="form.errors.auth_config_json || form.errors.auth_config"
+                        :instructions="authInstructions"
+                    >
+                        <CodeEditor
+                            v-model="form.auth_config_json"
+                            mode="json"
+                            :placeholder="authPlaceholder"
+                            :min-lines="4"
+                        />
+                    </Field>
+                </Panel>
+            </TabContent>
 
-    <div v-if="!isNew" class="mt-8 flex justify-between">
-        <Button variant="danger" @click="showDelete = true">{{ __('Delete') }}</Button>
-        <Button variant="primary" :loading="form.processing" @click="save">{{ __('Save') }}</Button>
+            <!-- ── ALLOWED METHODS ── -->
+            <TabContent value="methods">
+                <Panel>
+                    <Field
+                        :label="__('Allowed HTTP Methods')"
+                        :error="form.errors.allowed_methods"
+                        :instructions="__('Select which HTTP methods this endpoint will accept.')"
+                    >
+                        <CheckboxGroup
+                            v-model="form.allowed_methods"
+                            :options="allowedMethodOptions"
+                        />
+                    </Field>
+                </Panel>
+            </TabContent>
+
+            <!-- ── MAPPING ── -->
+            <TabContent value="mapping">
+                <Panel>
+                    <Alert variant="info" class="mb-4">
+                        {{ __('Define a JSON mapping to transform the incoming payload before it is passed to the action.') }}
+                        <a
+                            href="https://github.com/goldnead/statamic-webhook-manager"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="underline ml-1"
+                        >{{ __('View mapping documentation') }}</a>
+                    </Alert>
+
+                    <Field
+                        :label="__('Mapping Config (JSON)')"
+                        :error="form.errors.mapping_config_json || form.errors.mapping_config"
+                        :instructions="__('Map incoming fields to output fields. Leave empty to pass the payload through unchanged.')"
+                    >
+                        <CodeEditor
+                            v-model="form.mapping_config_json"
+                            mode="json"
+                            :placeholder="'{\n  \"output_field\": \"$.input_field\"\n}'"
+                            :min-lines="8"
+                        />
+                    </Field>
+                </Panel>
+            </TabContent>
+
+            <!-- ── ACTION ── -->
+            <TabContent value="action">
+                <Panel>
+                    <Field :label="__('Action Type')" :error="form.errors.action_type" required>
+                        <Select v-model="form.action_type" :options="actionOptions" />
+                    </Field>
+
+                    <Field
+                        v-if="form.action_type && form.action_type !== 'noop'"
+                        :label="__('Action Config (JSON)')"
+                        :error="form.errors.action_config_json || form.errors.action_config"
+                        :instructions="__('Configuration for the selected action. Format depends on the action type.')"
+                    >
+                        <CodeEditor
+                            v-model="form.action_config_json"
+                            mode="json"
+                            :placeholder="'{\n  \"key\": \"value\"\n}'"
+                            :min-lines="6"
+                        />
+                    </Field>
+                </Panel>
+            </TabContent>
+
+            <!-- ── RESPONSE ── -->
+            <TabContent value="response">
+                <Panel>
+                    <Field
+                        :label="__('Response Config (JSON)')"
+                        :error="form.errors.response_config_json || form.errors.response_config"
+                        :instructions="__('Customise the HTTP response returned to the caller. Leave empty for the default 200 OK.')"
+                    >
+                        <CodeEditor
+                            v-model="form.response_config_json"
+                            mode="json"
+                            :placeholder="'{\n  \"status\": 200,\n  \"body\": { \"ok\": true }\n}'"
+                            :min-lines="6"
+                        />
+                    </Field>
+                </Panel>
+            </TabContent>
+
+            <!-- ── TEST ── -->
+            <TabContent value="test">
+                <Panel :heading="__('Send a test payload')">
+                    <Field
+                        :label="__('Sample Payload (JSON)')"
+                        :instructions="__('This payload will be processed through the mapping and action pipeline.')"
+                    >
+                        <CodeEditor
+                            v-model="samplePayload"
+                            mode="json"
+                            :min-lines="6"
+                        />
+                    </Field>
+
+                    <div class="mt-4">
+                        <Button
+                            variant="default"
+                            :text="__('Run test')"
+                            :loading="testing"
+                            :disabled="!testUrl || testing"
+                            @click="runTest"
+                        />
+                        <span v-if="!testUrl" class="ml-3 text-sm text-gray-400">
+                            {{ __('Save the endpoint first to enable testing.') }}
+                        </span>
+                    </div>
+
+                    <!-- Test result panels -->
+                    <template v-if="testResult">
+                        <Alert
+                            :variant="testResult.ok ? 'success' : 'danger'"
+                            class="mt-4"
+                        >
+                            {{ testResult.message || (testResult.ok ? __('Test successful.') : __('Test failed.')) }}
+                        </Alert>
+
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Panel :heading="__('Mapped Payload')">
+                                <CodeEditor
+                                    :model-value="JSON.stringify(testResult.mapped ?? {}, null, 2)"
+                                    mode="json"
+                                    read-only
+                                    :min-lines="6"
+                                />
+                            </Panel>
+
+                            <Panel :heading="__('Action Result')">
+                                <CodeEditor
+                                    :model-value="JSON.stringify(testResult.data ?? {}, null, 2)"
+                                    mode="json"
+                                    read-only
+                                    :min-lines="6"
+                                />
+                            </Panel>
+                        </div>
+
+                        <Panel v-if="testResult.errors?.length" :heading="__('Errors')" class="mt-4">
+                            <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
+                                <li v-for="(err, i) in testResult.errors" :key="i">{{ err }}</li>
+                            </ul>
+                        </Panel>
+                    </template>
+                </Panel>
+            </TabContent>
+        </Tabs>
+
+        <!-- Delete confirmation -->
+        <ConfirmationModal
+            v-if="showDelete"
+            :title="__('Delete endpoint?')"
+            :body-text="__('This action cannot be undone.')"
+            :confirm-text="__('Delete')"
+            confirm-variant="danger"
+            @confirm="destroy"
+            @cancel="showDelete = false"
+        />
     </div>
-
-    <ConfirmationModal
-        v-if="!isNew"
-        :open="showDelete"
-        :title="__('Delete endpoint')"
-        :body-text="__('This permanently removes the endpoint configuration. Past inbound logs are kept.')"
-        :button-text="__('Delete')"
-        :danger="true"
-        @confirm="destroy"
-        @update:open="showDelete = $event"
-    />
 </template>

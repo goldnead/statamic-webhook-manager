@@ -1,92 +1,202 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link } from '@statamic/cms/inertia';
+import { computed } from 'vue';
+import { Head } from '@statamic/cms/inertia';
 import { router } from '@inertiajs/vue3';
-import { Header, Panel, Field, Input, Button, Badge, Table, TableRows, TableRow, TableCell, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui';
+import {
+    Header,
+    Badge,
+    DropdownItem,
+    EmptyStateMenu,
+    EmptyStateItem,
+    DocsCallout,
+    Listing,
+    MiddleEllipsis,
+} from '@statamic/cms/ui';
 
+/**
+ * Delivery listing.
+ *
+ * Server-driven <Listing> pattern (same as Logs/Index). No create
+ * action — deliveries are written by the system. Filters are resolved
+ * server-side so the controller stays the single source of truth.
+ *
+ * error_type vocabulary is identical to LogController so colours/labels
+ * are kept in sync below.
+ */
 const props = defineProps({
-    deliveries: { type: Object, required: true },
-    filters: { type: Object, default: () => ({}) },
+    deliveries:     { type: Object, required: true },
+    initialColumns: { type: Array,  required: true },
+    listingUrl:     { type: String, required: true },
+    actionUrl:      { type: String, required: true },
 });
 
-const status = ref(props.filters.status ?? '');
-const trigger = ref(props.filters.trigger ?? '');
-const errorType = ref(props.filters.error_type ?? '');
+const isEmpty = computed(
+    () => !props.deliveries?.data?.length && !props.deliveries?.meta?.total,
+);
 
-function applyFilters() {
-    router.get(window.location.pathname, {
-        status: status.value || undefined,
-        trigger: trigger.value || undefined,
-        error_type: errorType.value || undefined,
-    }, { preserveState: true, preserveScroll: true });
-}
+const reloadPage = () => router.reload({ only: ['deliveries'] });
 
-function statusColor(badge) {
-    return {
-        success: 'green',
-        failed: 'red',
-        processing: 'amber',
-        pending: 'blue',
-        cancelled: 'gray',
-    }[badge] ?? 'gray';
-}
+// ── Colour helpers ──────────────────────────────────────────────────────────
+
+/** Delivery status → Statamic Badge colour token. */
+const statusColor = (status) => ({
+    success: 'green',
+    failed:  'red',
+    pending: 'amber',
+    retry:   'amber',
+}[status] ?? 'gray');
+
+/** HTTP method → Statamic Badge colour token (mirrors Outbound/Index). */
+const methodColor = (method) => ({
+    GET:    'blue',
+    POST:   'green',
+    PUT:    'amber',
+    PATCH:  'amber',
+    DELETE: 'red',
+}[(method || '').toUpperCase()] ?? 'gray');
+
+/**
+ * error_type colour mapping — identical to Logs/Index so the two pages
+ * remain visually consistent for operators debugging across both views.
+ */
+const errorTypeColor = (type) => ({
+    network:       'orange',
+    timeout:       'amber',
+    auth:          'red',
+    client:        'yellow',
+    server:        'red',
+    payload:       'purple',
+    configuration: 'blue',
+    internal:      'gray',
+}[type] ?? 'gray');
+
+const errorTypeLabel = (type) => ({
+    network:       'Network',
+    timeout:       'Timeout',
+    auth:          'Auth',
+    client:        'Client',
+    server:        'Server',
+    payload:       'Payload',
+    configuration: 'Config',
+    internal:      'Internal',
+}[type] ?? type);
 </script>
 
 <template>
-    <Head :title="__('Deliveries')" />
+    <div>
+        <Head :title="[__('Deliveries'), __('Webhook Manager')]" />
 
-    <Header :title="__('Deliveries')" icon="audit-checked" />
+        <!-- ── Empty state ─────────────────────────────────────────────── -->
+        <div v-if="isEmpty" class="max-w-page mx-auto">
+            <Header :title="__('Deliveries')" icon="paper-airplane" />
 
-    <Panel class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 items-end">
-            <Field :label="__('Status')" id="status">
-                <select id="status" v-model="status" class="input-text">
-                    <option value="">{{ __('All statuses') }}</option>
-                    <option value="pending">pending</option>
-                    <option value="processing">processing</option>
-                    <option value="success">success</option>
-                    <option value="failed">failed</option>
-                    <option value="cancelled">cancelled</option>
-                </select>
-            </Field>
-            <Field :label="__('Trigger')" id="trigger">
-                <Input id="trigger" v-model="trigger" />
-            </Field>
-            <Field :label="__('Error type')" id="error_type">
-                <Input id="error_type" v-model="errorType" />
-            </Field>
-            <Button variant="default" @click="applyFilters">{{ __('Filter') }}</Button>
+            <EmptyStateMenu :heading="__('No deliveries yet')">
+                <EmptyStateItem
+                    :heading="__('Nothing dispatched so far')"
+                    :description="__('Deliveries are recorded automatically when outbound webhooks are fired. Check back once some activity has occurred.')"
+                    icon="paper-airplane"
+                />
+            </EmptyStateMenu>
+
+            <DocsCallout
+                :topic="__('Deliveries')"
+                url="https://statamic.com/addons/goldnead/webhook-manager/docs/deliveries"
+            />
         </div>
-    </Panel>
 
-    <EmptyStateMenu v-if="!deliveries.data.length">
-        <EmptyStateItem :label="__('No deliveries match these filters.')" />
-    </EmptyStateMenu>
+        <!-- ── Populated state ─────────────────────────────────────────── -->
+        <div v-else class="max-w-page mx-auto">
+            <Header :title="__('Deliveries')" icon="paper-airplane" />
 
-    <Table v-else>
-        <TableRows>
-            <TableRow header>
-                <TableCell>{{ __('Status') }}</TableCell>
-                <TableCell>{{ __('Trigger') }}</TableCell>
-                <TableCell>{{ __('URL') }}</TableCell>
-                <TableCell>{{ __('HTTP') }}</TableCell>
-                <TableCell>{{ __('Attempts') }}</TableCell>
-                <TableCell>{{ __('When') }}</TableCell>
-                <TableCell></TableCell>
-            </TableRow>
-            <TableRow v-for="delivery in deliveries.data" :key="delivery.id">
-                <TableCell>
-                    <Badge :color="statusColor(delivery.status_badge)" size="sm">{{ delivery.status }}</Badge>
-                </TableCell>
-                <TableCell><code>{{ delivery.trigger_type }}</code></TableCell>
-                <TableCell class="max-w-md truncate">{{ delivery.request_url }}</TableCell>
-                <TableCell>{{ delivery.response_status ?? '—' }}</TableCell>
-                <TableCell>{{ delivery.attempts }}</TableCell>
-                <TableCell>{{ delivery.created_at_human }}</TableCell>
-                <TableCell>
-                    <Link :href="delivery.show_url" class="text-blue">{{ __('View') }}</Link>
-                </TableCell>
-            </TableRow>
-        </TableRows>
-    </Table>
+            <Listing
+                :url="listingUrl"
+                :columns="initialColumns"
+                :action-url="actionUrl"
+                :data="deliveries"
+                preferences-prefix="webhook-manager.deliveries"
+                push-query
+                @updated="reloadPage"
+            >
+                <!-- status column -->
+                <template #cell-status="{ row }">
+                    <Badge :color="statusColor(row.status)" :text="row.status" />
+                </template>
+
+                <!-- outbound / trigger name column — links to detail page -->
+                <template #cell-outbound_name="{ row }">
+                    <a
+                        v-if="row.show_url"
+                        :href="row.show_url"
+                        class="font-semibold hover:text-blue-600"
+                    >{{ row.outbound_name || row.trigger_type || '—' }}</a>
+                    <span v-else>{{ row.outbound_name || row.trigger_type || '—' }}</span>
+                    <span
+                        v-if="row.trigger_type"
+                        class="block text-2xs text-gray-500 dark:text-gray-400"
+                    >{{ row.trigger_type }}</span>
+                </template>
+
+                <!-- url column — mono + middle ellipsis -->
+                <template #cell-url="{ row }">
+                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                        <MiddleEllipsis :text="row.url || ''" />
+                    </span>
+                </template>
+
+                <!-- method column -->
+                <template #cell-method="{ row }">
+                    <Badge :color="methodColor(row.method)" :text="row.method" />
+                </template>
+
+                <!-- response_code column -->
+                <template #cell-response_code="{ row }">
+                    <span class="text-gray-600 dark:text-gray-400 tabular-nums">
+                        {{ row.response_code || '—' }}
+                    </span>
+                </template>
+
+                <!-- attempts column -->
+                <template #cell-attempts="{ row }">
+                    <span class="text-gray-600 dark:text-gray-400 tabular-nums">
+                        {{ row.attempts ?? '—' }}
+                    </span>
+                </template>
+
+                <!-- error_type column (optional — only shown when column visible) -->
+                <template #cell-error_type="{ row }">
+                    <Badge
+                        v-if="row.error_type"
+                        :color="errorTypeColor(row.error_type)"
+                        :text="errorTypeLabel(row.error_type)"
+                    />
+                    <span v-else class="text-gray-400">—</span>
+                </template>
+
+                <!-- when column -->
+                <template #cell-when="{ row }">
+                    <date-time :of="row.created_at" />
+                </template>
+
+                <!-- row actions -->
+                <template #prepended-row-actions="{ row }">
+                    <DropdownItem
+                        icon="eye"
+                        :text="__('View')"
+                        :href="row.show_url"
+                    />
+                    <DropdownItem
+                        v-if="row.can_replay"
+                        icon="refresh"
+                        :text="__('Replay')"
+                        @click="row.replay_url && router.post(row.replay_url, {}, { preserveScroll: true })"
+                    />
+                </template>
+            </Listing>
+
+            <DocsCallout
+                :topic="__('Deliveries')"
+                url="https://statamic.com/addons/goldnead/webhook-manager/docs/deliveries"
+            />
+        </div>
+    </div>
 </template>
