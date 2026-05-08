@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Tests\Feature;
 
+use Goldnead\WebhookManager\Domain\Log\Models\LogEntry;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Services\Http\HttpRequestFactory;
@@ -105,6 +106,31 @@ class OutboundUsesLibraryTemplateTest extends TestCase
         $request = $factory->build($hook, $this->context(['id' => 42]));
 
         $this->assertStringContainsString('INLINE-42', $request['body']);
+    }
+
+    public function test_dangling_template_handle_writes_configuration_error_log(): void
+    {
+        $hook = OutboundWebhook::create([
+            'name' => 'Dangling',
+            'handle' => 'dangling',
+            'enabled' => true,
+            'trigger_type' => 'entry.published',
+            'url' => 'https://example.com/x',
+            'method' => 'POST',
+            'auth_type' => 'none',
+            'payload_type' => 'raw_json',
+            'payload_template_handle' => 'does-not-exist',
+        ]);
+
+        $factory = $this->app->make(HttpRequestFactory::class);
+        $factory->build($hook, $this->context(['id' => 42]));
+
+        $entry = LogEntry::where('type', 'configuration_error_dangling_template')->first();
+        $this->assertNotNull($entry, 'Dangling template should produce a log entry.');
+        $this->assertSame('warning', $entry->level);
+        $this->assertSame($hook->id, $entry->context['webhook_id']);
+        $this->assertSame('does-not-exist', $entry->context['template_handle']);
+        $this->assertSame('configuration', $entry->context['error_type']);
     }
 
     public function test_default_json_event_when_neither_template_set(): void

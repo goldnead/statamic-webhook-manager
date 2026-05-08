@@ -49,4 +49,40 @@ class FailureClassifierTest extends TestCase
     {
         $this->assertSame(FailureClassifier::SERVER, $this->classifier->classify(['ok' => true, 'status' => 503]));
     }
+
+    public function test_classify_exception_invalid_argument_is_payload(): void
+    {
+        $type = $this->classifier->classifyException(new \InvalidArgumentException('bad input'));
+        $this->assertSame(FailureClassifier::PAYLOAD, $type);
+    }
+
+    public function test_classify_exception_type_error_is_payload(): void
+    {
+        $type = $this->classifier->classifyException(new \TypeError('expected string, got int'));
+        $this->assertSame(FailureClassifier::PAYLOAD, $type);
+    }
+
+    public function test_classify_exception_value_error_is_payload(): void
+    {
+        $type = $this->classifier->classifyException(new \ValueError('value out of range'));
+        $this->assertSame(FailureClassifier::PAYLOAD, $type);
+    }
+
+    public function test_classify_exception_json_exception_is_payload(): void
+    {
+        $type = $this->classifier->classifyException(new \JsonException('Syntax error'));
+        $this->assertSame(FailureClassifier::PAYLOAD, $type);
+    }
+
+    public function test_classify_exception_default_runtime_is_internal(): void
+    {
+        $type = $this->classifier->classifyException(new \RuntimeException('boom'));
+        $this->assertSame(FailureClassifier::INTERNAL, $type);
+    }
+
+    public function test_classify_exception_logic_exception_is_internal(): void
+    {
+        $type = $this->classifier->classifyException(new \LogicException('we should not be here'));
+        $this->assertSame(FailureClassifier::INTERNAL, $type);
+    }
 }
