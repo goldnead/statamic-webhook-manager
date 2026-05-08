@@ -1,115 +1,330 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link } from '@statamic/cms/inertia';
-import { Header, Button, Panel, Badge, Alert } from '@statamic/cms/ui';
+import { ref, computed } from 'vue';
+import { Head } from '@statamic/cms/inertia';
+import { router } from '@inertiajs/vue3';
+import {
+    Header,
+    Button,
+    Badge,
+    Panel,
+    Alert,
+    CodeEditor,
+} from '@statamic/cms/ui';
 
+/**
+ * Delivery detail / debug view.
+ *
+ * Uses a custom two-column layout (Request | Response side-by-side on lg+)
+ * rather than PublishForm because the goal is debugging, not data-entry.
+ * No tabs — all context is visible at once and the user can scroll.
+ *
+ * Controller pre-computes `status_color`, `method_color`, `response_code_color`
+ * so colour logic stays server-side and consistent with the Index view.
+ */
 const props = defineProps({
-    delivery: { type: Object, required: true },
-    canReplay: { type: Boolean, default: false },
-    canViewSensitive: { type: Boolean, default: false },
-    replayUrl: { type: String, required: true },
-    indexUrl: { type: String, required: true },
+    delivery:   { type: Object, required: true },
+    replayUrl:  { type: String, default: null },
+    indexUrl:   { type: String, required: true },
 });
 
-const replaying = ref(false);
-const replayResult = ref(null);
+// ── Replay ──────────────────────────────────────────────────────────────────
 
-function statusColor(badge) {
-    return {
-        success: 'green',
-        failed: 'red',
-        processing: 'amber',
-        pending: 'blue',
-        cancelled: 'gray',
-    }[badge] ?? 'gray';
+const replaying = ref(false);
+const lastReplayResult = ref(null);
+
+const canReplay = computed(() => !!props.replayUrl && !!props.delivery.can_replay);
+
+function replay() {
+    if (!canReplay.value || replaying.value) return;
+    replaying.value = true;
+    lastReplayResult.value = null;
+
+    router.post(props.replayUrl, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            lastReplayResult.value = { success: true };
+        },
+        onError: (errors) => {
+            lastReplayResult.value = { success: false, message: Object.values(errors)[0] ?? 'Replay failed.' };
+        },
+        onFinish: () => {
+            replaying.value = false;
+        },
+    });
 }
 
-async function replay() {
-    if (!props.canReplay) return;
-    replaying.value = true;
-    replayResult.value = null;
+// ── Colour helpers ──────────────────────────────────────────────────────────
+
+/** Delivery status → Statamic Badge colour token. */
+const statusColor = computed(() => props.delivery.status_color ?? ({
+    success: 'green',
+    failed:  'red',
+    pending: 'amber',
+    retry:   'amber',
+}[props.delivery.status] ?? 'gray'));
+
+/** HTTP method → Statamic Badge colour token. */
+const methodColor = computed(() => props.delivery.method_color ?? ({
+    GET:    'blue',
+    POST:   'green',
+    PUT:    'amber',
+    PATCH:  'amber',
+    DELETE: 'red',
+}[(props.delivery.method || '').toUpperCase()] ?? 'gray'));
+
+/** HTTP response code → semantic colour for the Badge. */
+const responseCodeColor = computed(() => {
+    if (props.delivery.response_code_color) return props.delivery.response_code_color;
+    const code = parseInt(props.delivery.response_code, 10);
+    if (code >= 500) return 'red';
+    if (code >= 400) return 'amber';
+    if (code >= 300) return 'blue';
+    if (code >= 200) return 'green';
+    return 'gray';
+});
+
+// ── CodeEditor mode detection ───────────────────────────────────────────────
+
+/**
+ * Pick a CodeEditor mode from raw body text.
+ *
+ * Tries to JSON-parse the value; falls back to 'text'. The editor is
+ * always read-only here so an incorrect mode just affects highlighting.
+ */
+function bodyMode(body) {
+    if (!body) return 'text';
     try {
-        const res = await window.axios.post(props.replayUrl, {});
-        replayResult.value = res.data;
-    } catch (e) {
-        replayResult.value = { ok: false, message: e?.response?.data?.message ?? e.message };
-    } finally {
-        replaying.value = false;
+        JSON.parse(body);
+        return 'json';
+    } catch {
+        return 'text';
     }
 }
 
-function copyCurl() {
-    navigator.clipboard.writeText(props.delivery.curl);
+/**
+ * Derive CodeEditor mode from a Content-Type header value.
+ * Used for the response body which may be HTML, XML, JSON, etc.
+ */
+function contentTypeMode(headers) {
+    const ct = (headers?.['content-type'] ?? headers?.['Content-Type'] ?? '').toLowerCase();
+    if (ct.includes('json'))  return 'json';
+    if (ct.includes('xml'))   return 'xml';
+    if (ct.includes('html'))  return 'html';
+    return 'text';
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Format an object of headers as pretty JSON for the CodeEditor.
+ * Handles both plain objects and null/undefined gracefully.
+ */
+function headersJson(headers) {
+    if (!headers || !Object.keys(headers).length) return '{}';
+    try {
+        return JSON.stringify(headers, null, 2);
+    } catch {
+        return '{}';
+    }
 }
 </script>
 
 <template>
-    <Head :title="__('Delivery') + ` #${delivery.id}`" />
+    <Head :title="[__('Delivery'), `#${delivery.id}`, __('Webhook Manager')]" />
 
-    <Header :title="__('Delivery') + ` #${delivery.id}`" icon="audit-checked">
-        <Badge :color="statusColor(delivery.status_badge)">{{ delivery.status }}</Badge>
-        <div class="flex gap-2">
-            <Link :href="indexUrl" class="text-blue self-center">{{ __('Back to deliveries') }}</Link>
-            <Button v-if="canReplay" variant="primary" :loading="replaying" @click="replay">
-                {{ __('Replay') }}
-            </Button>
-        </div>
-    </Header>
+    <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
-    <Alert v-if="replayResult" :variant="replayResult.ok ? 'success' : 'error'" class="mb-4"
-           :text="replayResult.message ?? (__('Replay queued.'))" />
+        <!-- ── Page header ───────────────────────────────────────────── -->
+        <Header :title="`${__('Delivery')} #${delivery.id}`" icon="paper-airplane">
+            <template #subtitle>
+                <Badge :color="statusColor" :text="delivery.status" />
+            </template>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <Panel :heading="__('Metadata')">
-            <dl class="text-sm space-y-2 p-4">
-                <div><dt class="inline text-gray-600">{{ __('Trigger') }}:</dt> <dd class="inline"><code>{{ delivery.trigger_type }}</code></dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Reference') }}:</dt> <dd class="inline">{{ delivery.trigger_reference ?? '—' }}</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Correlation ID') }}:</dt> <dd class="inline font-mono text-xs">{{ delivery.correlation_id ?? '—' }}</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Attempts') }}:</dt> <dd class="inline">{{ delivery.attempts }}</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Duration') }}:</dt> <dd class="inline">{{ delivery.duration_ms ?? '—' }} ms</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('First attempt') }}:</dt> <dd class="inline">{{ delivery.first_attempted_human ?? '—' }}</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Last attempt') }}:</dt> <dd class="inline">{{ delivery.last_attempted_human ?? '—' }}</dd></div>
-                <div><dt class="inline text-gray-600">{{ __('Next retry') }}:</dt> <dd class="inline">{{ delivery.next_retry_human ?? '—' }}</dd></div>
-                <div v-if="delivery.error_type">
-                    <dt class="inline text-gray-600">{{ __('Error') }}:</dt>
-                    <dd class="inline">
-                        <Badge color="red" size="sm">{{ delivery.error_type }}</Badge>
-                        <span v-if="delivery.error_message" class="ml-2">{{ delivery.error_message }}</span>
-                    </dd>
+            <Button
+                v-if="canReplay"
+                :loading="replaying"
+                :text="__('Replay')"
+                @click="replay"
+            />
+        </Header>
+
+        <!-- ── Replay result feedback ────────────────────────────────── -->
+        <Alert
+            v-if="lastReplayResult"
+            :variant="lastReplayResult.success ? 'success' : 'danger'"
+            :heading="lastReplayResult.success ? __('Replayed successfully') : __('Replay failed')"
+            :text="lastReplayResult.message ?? ''"
+            class="mt-4"
+        />
+
+        <!-- ── Side-by-side Request / Response ──────────────────────── -->
+        <!--
+            lg+ → 2-column grid (request | response)
+            < lg → single column (stacked)
+        -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+
+            <!-- Request panel -->
+            <Panel :heading="__('Request')">
+                <div class="space-y-4 p-4">
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Method') }}
+                        </p>
+                        <Badge :color="methodColor" :text="delivery.method" />
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('URL') }}
+                        </p>
+                        <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">
+                            {{ delivery.url }}
+                        </code>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Headers') }}
+                        </p>
+                        <CodeEditor
+                            mode="json"
+                            :model-value="headersJson(delivery.request?.headers)"
+                            read-only
+                            :rows="6"
+                        />
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Body') }}
+                        </p>
+                        <CodeEditor
+                            :mode="bodyMode(delivery.request?.body)"
+                            :model-value="delivery.request?.body ?? ''"
+                            read-only
+                            :rows="14"
+                        />
+                    </div>
                 </div>
-            </dl>
-        </Panel>
+            </Panel>
 
-        <Panel :heading="__('Request')">
-            <dl class="text-sm space-y-1 p-4 mb-2">
-                <div><dt class="inline text-gray-600">{{ __('Method') }}:</dt> <dd class="inline"><code>{{ delivery.request_method }}</code></dd></div>
-                <div><dt class="inline text-gray-600">{{ __('URL') }}:</dt> <dd class="inline break-all">{{ delivery.request_url }}</dd></div>
-            </dl>
-            <div class="px-4 pb-4">
-                <h4 class="font-semibold text-sm mb-1">{{ __('Headers') }}</h4>
-                <pre class="webhook-manager-snapshot-pre">{{ JSON.stringify(delivery.request_headers, null, 2) }}</pre>
-                <h4 class="font-semibold text-sm mt-3 mb-1">{{ __('Body') }}</h4>
-                <pre class="webhook-manager-snapshot-pre">{{ delivery.request_body }}</pre>
+            <!-- Response panel -->
+            <Panel :heading="__('Response')">
+                <div class="space-y-4 p-4">
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Status Code') }}
+                        </p>
+                        <Badge
+                            :color="responseCodeColor"
+                            :text="String(delivery.response_code ?? '—')"
+                        />
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Duration') }}
+                        </p>
+                        <span class="text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                            {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Headers') }}
+                        </p>
+                        <CodeEditor
+                            mode="json"
+                            :model-value="headersJson(delivery.response?.headers)"
+                            read-only
+                            :rows="6"
+                        />
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                            {{ __('Body') }}
+                        </p>
+                        <CodeEditor
+                            :mode="contentTypeMode(delivery.response?.headers)"
+                            :model-value="delivery.response?.body ?? ''"
+                            read-only
+                            :rows="14"
+                        />
+                    </div>
+                </div>
+            </Panel>
+        </div>
+
+        <!-- ── Timing & Errors (only when error data present) ───────── -->
+        <Panel
+            v-if="delivery.error || delivery.error_type"
+            :heading="__('Timing & Errors')"
+            class="mt-4"
+        >
+            <div class="space-y-3 p-4">
+
+                <div v-if="delivery.error_type" class="flex items-center gap-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0">
+                        {{ __('Error Type') }}
+                    </p>
+                    <Badge
+                        :color="delivery.error_type_color ?? 'gray'"
+                        :text="delivery.error_type_label ?? delivery.error_type"
+                    />
+                </div>
+
+                <div v-if="delivery.error" class="flex items-start gap-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0 pt-0.5">
+                        {{ __('Message') }}
+                    </p>
+                    <span class="text-sm text-red-700 dark:text-red-400 break-words">
+                        {{ delivery.error }}
+                    </span>
+                </div>
+
+                <div v-if="delivery.attempts != null" class="flex items-center gap-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0">
+                        {{ __('Attempts') }}
+                    </p>
+                    <span class="text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                        {{ delivery.attempts }}
+                    </span>
+                </div>
+
+                <div v-if="delivery.next_retry_at" class="flex items-center gap-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0">
+                        {{ __('Next Retry') }}
+                    </p>
+                    <date-time :of="delivery.next_retry_at" class="text-sm" />
+                </div>
             </div>
         </Panel>
+
+        <!-- ── Payload Snapshot (when stored) ───────────────────────── -->
+        <Panel
+            v-if="delivery.snapshot"
+            :heading="__('Payload Snapshot')"
+            class="mt-4"
+        >
+            <div class="p-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    {{ __('The original event payload that triggered this delivery, stored at dispatch time.') }}
+                </p>
+                <CodeEditor
+                    mode="json"
+                    :model-value="typeof delivery.snapshot === 'string'
+                        ? delivery.snapshot
+                        : JSON.stringify(delivery.snapshot, null, 2)"
+                    read-only
+                    :rows="12"
+                />
+            </div>
+        </Panel>
+
     </div>
-
-    <Panel :heading="`${__('Response')} — HTTP ${delivery.response_status ?? '—'}`" class="mb-4">
-        <div class="p-4">
-            <h4 class="font-semibold text-sm mb-1">{{ __('Headers') }}</h4>
-            <pre class="webhook-manager-snapshot-pre">{{ JSON.stringify(delivery.response_headers, null, 2) }}</pre>
-            <h4 class="font-semibold text-sm mt-3 mb-1">{{ __('Body') }}</h4>
-            <pre class="webhook-manager-snapshot-pre">{{ delivery.response_body }}</pre>
-        </div>
-    </Panel>
-
-    <Panel :heading="__('Copy as cURL')">
-        <div class="p-4">
-            <Alert v-if="!canViewSensitive" variant="warning"
-                   :text="__('Sensitive headers and payload keys are masked. Ask an administrator for the “view sensitive payloads” permission to see the original snapshot.')"
-                   class="mb-3" />
-            <pre class="webhook-manager-snapshot-pre">{{ delivery.curl }}</pre>
-            <Button variant="default" size="sm" @click="copyCurl" class="mt-2">{{ __('Copy') }}</Button>
-        </div>
-    </Panel>
 </template>

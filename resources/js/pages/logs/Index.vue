@@ -1,82 +1,150 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { router } from '@inertiajs/vue3';
-import { Header, Panel, Field, Input, Button, Badge, Table, TableRows, TableRow, TableCell, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui';
+import {
+    Header,
+    Badge,
+    Icon,
+    DropdownItem,
+    EmptyStateMenu,
+    EmptyStateItem,
+    DocsCallout,
+    Listing,
+    MiddleEllipsis,
+} from '@statamic/cms/ui';
 
+/**
+ * Log listing.
+ *
+ * Models the Statamic core "Forms Index" pattern (server-driven Listing)
+ * but without a create action — logs are written by the system only.
+ *
+ * The <Listing> component issues AJAX GETs against listingUrl whenever
+ * the user changes search / sort / page / filters, so we don't manage
+ * pagination state here ourselves.
+ */
 const props = defineProps({
-    logs: { type: Object, required: true },
-    filters: { type: Object, default: () => ({}) },
+    logs:           { type: Object, required: true },
+    initialColumns: { type: Array,  required: true },
+    listingUrl:     { type: String, required: true },
+    actionUrl:      { type: String, required: true },
 });
 
-const level = ref(props.filters.level ?? '');
-const type = ref(props.filters.type ?? '');
-const correlationId = ref(props.filters.correlation_id ?? '');
+const isEmpty = computed(
+    () => !props.logs?.data?.length && !props.logs?.meta?.total,
+);
 
-function applyFilters() {
-    router.get(window.location.pathname, {
-        level: level.value || undefined,
-        type: type.value || undefined,
-        correlation_id: correlationId.value || undefined,
-    }, { preserveState: true, preserveScroll: true });
-}
+const reloadPage = () => router.reload({ only: ['logs'] });
 
-function levelColor(lvl) {
-    return {
-        debug: 'gray',
-        info: 'blue',
-        warning: 'amber',
-        error: 'red',
-    }[lvl] ?? 'gray';
-}
+// ── Colour helpers ────────────────────────────────────────────────────────
+// Centralised here (not in PHP) so colours stay in sync with Statamic's
+// dark-mode-aware Badge component.
+
+const levelColor = (level) => ({
+    error:   'red',
+    warning: 'amber',
+    info:    'blue',
+    debug:   'gray',
+}[level] ?? 'gray');
+
+const errorTypeColor = (type) => ({
+    network:       'orange',
+    timeout:       'amber',
+    auth:          'red',
+    client:        'yellow',
+    server:        'red',
+    payload:       'purple',
+    configuration: 'blue',
+    internal:      'gray',
+}[type] ?? 'gray');
+
+// Human-readable labels for error_type badges.
+const errorTypeLabel = (type) => ({
+    network:       'Network',
+    timeout:       'Timeout',
+    auth:          'Auth',
+    client:        'Client',
+    server:        'Server',
+    payload:       'Payload',
+    configuration: 'Config',
+    internal:      'Internal',
+}[type] ?? type);
 </script>
 
 <template>
-    <Head :title="__('Webhook Logs')" />
+    <div>
+        <Head :title="__('Logs')" />
 
-    <Header :title="__('Logs')" icon="text-document" />
+        <!-- ── Empty state ──────────────────────────────────────────── -->
+        <div v-if="isEmpty">
+            <Header :title="__('Logs')" icon="notepad" />
 
-    <Panel class="mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 items-end">
-            <Field :label="__('Level')" id="level">
-                <select id="level" v-model="level" class="input-text">
-                    <option value="">{{ __('All levels') }}</option>
-                    <option value="debug">debug</option>
-                    <option value="info">info</option>
-                    <option value="warning">warning</option>
-                    <option value="error">error</option>
-                </select>
-            </Field>
-            <Field :label="__('Type')" id="type">
-                <Input id="type" v-model="type" />
-            </Field>
-            <Field :label="__('Correlation ID')" id="correlation">
-                <Input id="correlation" v-model="correlationId" />
-            </Field>
-            <Button variant="default" @click="applyFilters">{{ __('Filter') }}</Button>
+            <EmptyStateMenu :heading="__('No logs yet')">
+                <EmptyStateItem
+                    :heading="__('Nothing logged so far')"
+                    :description="__('Logs are written automatically when webhooks are dispatched or received. Check back once some activity has occurred.')"
+                    icon="notepad"
+                >
+                    <DocsCallout
+                        :heading="__('Learn about logs')"
+                        url="https://statamic.com/addons/goldnead/webhook-manager/docs/logs"
+                    />
+                </EmptyStateItem>
+            </EmptyStateMenu>
         </div>
-    </Panel>
 
-    <EmptyStateMenu v-if="!logs.data.length">
-        <EmptyStateItem :label="__('No log entries match these filters.')" />
-    </EmptyStateMenu>
+        <!-- ── Populated state ─────────────────────────────────────── -->
+        <div v-else>
+            <Header :title="__('Logs')" icon="notepad" />
 
-    <Table v-else>
-        <TableRows>
-            <TableRow header>
-                <TableCell>{{ __('Level') }}</TableCell>
-                <TableCell>{{ __('Type') }}</TableCell>
-                <TableCell>{{ __('Message') }}</TableCell>
-                <TableCell>{{ __('When') }}</TableCell>
-            </TableRow>
-            <TableRow v-for="log in logs.data" :key="log.id">
-                <TableCell>
-                    <Badge :color="levelColor(log.level)" size="sm">{{ log.level }}</Badge>
-                </TableCell>
-                <TableCell><code>{{ log.type }}</code></TableCell>
-                <TableCell class="max-w-xl truncate">{{ log.message }}</TableCell>
-                <TableCell>{{ log.created_at_human }}</TableCell>
-            </TableRow>
-        </TableRows>
-    </Table>
+            <Listing
+                :url="listingUrl"
+                :columns="initialColumns"
+                :action-url="actionUrl"
+                :data="logs"
+                @updated="reloadPage"
+            >
+                <!-- level column -->
+                <template #cell-level="{ row }">
+                    <Badge :color="levelColor(row.level)">
+                        {{ row.level }}
+                    </Badge>
+                </template>
+
+                <!-- message column — single line, truncated -->
+                <template #cell-message="{ row }">
+                    <span class="truncate max-w-sm block" :title="row.message">
+                        {{ row.message }}
+                    </span>
+                </template>
+
+                <!-- correlation_id column — mono + middle ellipsis -->
+                <template #cell-correlation_id="{ row }">
+                    <MiddleEllipsis
+                        v-if="row.correlation_id"
+                        :text="row.correlation_id"
+                        class="font-mono text-sm"
+                    />
+                    <span v-else class="text-gray-400">—</span>
+                </template>
+
+                <!-- error_type column -->
+                <template #cell-error_type="{ row }">
+                    <Badge
+                        v-if="row.error_type"
+                        :color="errorTypeColor(row.error_type)"
+                    >
+                        {{ errorTypeLabel(row.error_type) }}
+                    </Badge>
+                    <span v-else class="text-gray-400">—</span>
+                </template>
+
+                <!-- created_at column -->
+                <template #cell-created_at="{ row }">
+                    <date-time :of="row.created_at" />
+                </template>
+            </Listing>
+        </div>
+    </div>
 </template>

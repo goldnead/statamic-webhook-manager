@@ -20,12 +20,28 @@ class DeliveryRepository
         return Delivery::where('uuid', $uuid)->first();
     }
 
-    public function paginate(int $perPage = 25, array $filters = []): LengthAwarePaginator
+    /**
+     * Paginated delivery listing with optional full-text search and filters.
+     *
+     * The search/filters split mirrors LogRepository so both listings have
+     * the same shape from the controller's perspective.
+     *
+     * @param  array{status?:string, webhook_id?:int, trigger?:string, error_type?:string, from?:string, to?:string}  $filters
+     */
+    public function paginate(int $perPage = 25, ?string $search = null, array $filters = []): LengthAwarePaginator
     {
-        return $this->buildQuery($filters)
-            ->orderByDesc('created_at')
-            ->paginate($perPage)
-            ->withQueryString();
+        $q = $this->buildQuery($filters)->orderByDesc('created_at');
+
+        if ($search !== null && trim($search) !== '') {
+            $needle = '%'.trim($search).'%';
+            $q->where(function ($where) use ($needle) {
+                $where->where('request_url', 'like', $needle)
+                    ->orWhere('correlation_id', 'like', $needle)
+                    ->orWhere('trigger_reference', 'like', $needle);
+            });
+        }
+
+        return $q->paginate($perPage)->withQueryString();
     }
 
     /** @return Collection<int, Delivery> */

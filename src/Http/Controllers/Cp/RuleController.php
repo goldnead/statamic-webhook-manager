@@ -8,7 +8,6 @@ use Goldnead\WebhookManager\Domain\Rule\Actions\ToggleRuleAction;
 use Goldnead\WebhookManager\Domain\Rule\Actions\UpdateRuleAction;
 use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Http\Requests\SaveRuleRequest;
-use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\RuleRepository;
 use Illuminate\Http\Request;
@@ -21,64 +20,73 @@ class RuleController extends CpController
         Request $request,
         RuleRepository $repository,
         TriggerRegistry $triggers,
-        ActionRegistry $actions,
     ) {
         $this->authorizeAny($request, 'manage webhook rules', 'view webhooks');
 
-        $rules = $repository->paginate(25, $request->get('q'));
-        $rows = $rules->getCollection()->map(fn (Rule $r) => $this->row($r));
+        // <Listing> sends `search`, `sort`, `order`, `page`, `perPage`.
+        // We also accept the legacy `q` param to keep older bookmarks working.
+        $perPage = (int) $request->get('perPage', 25) ?: 25;
+        $search  = $request->get('search', $request->get('q', ''));
 
+        $rules = $repository->paginate($perPage, $search);
+        $triggerLabels = $triggers->options();
+
+        $rows = $rules->getCollection()
+            ->map(fn (Rule $r) => $this->row($r, $request, $triggerLabels))
+            ->values();
+
+        $listingPayload = [
+            'data' => $rows,
+            'meta' => [
+                'current_page' => $rules->currentPage(),
+                'last_page'    => $rules->lastPage(),
+                'per_page'     => $rules->perPage(),
+                'total'        => $rules->total(),
+                'from'         => $rules->firstItem(),
+                'to'           => $rules->lastItem(),
+            ],
+        ];
+
+        // <Listing> issues an AJAX GET on search/sort/page changes; JSON
+        // response avoids a full Inertia round-trip.
         if ($request->wantsJson()) {
-            return response()->json([
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $rules->currentPage(),
-                    'last_page' => $rules->lastPage(),
-                    'per_page' => $rules->perPage(),
-                    'total' => $rules->total(),
-                ],
-            ]);
+            return response()->json($listingPayload);
         }
 
         return Inertia::render('webhook-manager::Rules/Index', [
-            'rules' => [
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $rules->currentPage(),
-                    'last_page' => $rules->lastPage(),
-                    'per_page' => $rules->perPage(),
-                    'total' => $rules->total(),
-                ],
-            ],
-            'createUrl' => cp_route('webhook-manager.rules.create'),
-            'canCreate' => (bool) $request->user()?->can('manage webhook rules'),
-            'searchTerm' => $request->get('q', ''),
-            'triggerOptions' => $triggers->options(),
-            'actionOptions' => $actions->options(),
+            'rules'          => $listingPayload,
+            'initialColumns' => $this->indexColumns(),
+            'listingUrl'     => cp_route('webhook-manager.rules.index'),
+            'actionUrl'      => cp_route('webhook-manager.rules.index'),
+            'createUrl'      => cp_route('webhook-manager.rules.create'),
+            'canCreate'      => (bool) $request->user()?->can('manage webhook rules'),
+            'searchTerm'     => $search,
+            'triggerOptions' => $triggerLabels,
         ]);
     }
 
     public function create(
         Request $request,
         TriggerRegistry $triggers,
-        ActionRegistry $actions,
     ) {
         $this->authorizeOr403($request, 'manage webhook rules');
 
         $rule = new Rule([
-            'enabled' => true,
+            'enabled'         => true,
             'stop_on_failure' => false,
-            'order_index' => 0,
-            'actions' => [],
+            'order_index'     => 0,
+            'actions'         => [],
         ]);
 
         return Inertia::render('webhook-manager::Rules/Edit', [
-            'rule' => $this->editPayload($rule),
+            'rule'           => $this->editPayload($rule),
             'triggerOptions' => $triggers->options(),
-            'actionOptions' => $actions->options(),
-            'isNew' => true,
-            'saveUrl' => cp_route('webhook-manager.rules.store'),
-            'indexUrl' => cp_route('webhook-manager.rules.index'),
+            'actionOptions'  => [],
+            'isNew'          => true,
+            'canDelete'      => false,
+            'canTest'        => false,
+            'saveUrl'        => cp_route('webhook-manager.rules.store'),
+            'indexUrl'       => cp_route('webhook-manager.rules.index'),
         ]);
     }
 
@@ -96,20 +104,23 @@ class RuleController extends CpController
         Request $request,
         Rule $rule,
         TriggerRegistry $triggers,
-        ActionRegistry $actions,
     ) {
         $this->authorizeOr403($request, 'manage webhook rules');
 
+        $user = $request->user();
+
         return Inertia::render('webhook-manager::Rules/Edit', [
-            'rule' => $this->editPayload($rule),
+            'rule'           => $this->editPayload($rule),
             'triggerOptions' => $triggers->options(),
-            'actionOptions' => $actions->options(),
-            'isNew' => false,
-            'saveUrl' => cp_route('webhook-manager.rules.update', $rule),
-            'deleteUrl' => cp_route('webhook-manager.rules.destroy', $rule),
-            'toggleUrl' => cp_route('webhook-manager.rules.toggle', $rule),
-            'testUrl' => cp_route('webhook-manager.actions.test-rule', $rule),
-            'indexUrl' => cp_route('webhook-manager.rules.index'),
+            'actionOptions'  => [],
+            'isNew'          => false,
+            'canDelete'      => (bool) $user?->can('manage webhook rules'),
+            'canTest'        => (bool) $user?->can('manage webhook rules'),
+            'saveUrl'        => cp_route('webhook-manager.rules.update', $rule),
+            'deleteUrl'      => cp_route('webhook-manager.rules.destroy', $rule),
+            'toggleUrl'      => cp_route('webhook-manager.rules.toggle', $rule),
+            'testUrl'        => cp_route('webhook-manager.actions.test-rule', $rule),
+            'indexUrl'       => cp_route('webhook-manager.rules.index'),
         ]);
     }
 
@@ -143,39 +154,76 @@ class RuleController extends CpController
             : __('webhook-manager::messages.rule_disabled'));
     }
 
-    /** @return array<string,mixed> */
-    protected function row(Rule $rule): array
+    /**
+     * Column definitions for the <Listing> component on the index page.
+     *
+     * @return array<int,array{field:string,label:string,sortable?:bool,visible?:bool}>
+     */
+    protected function indexColumns(): array
     {
         return [
-            'id' => $rule->id,
-            'uuid' => $rule->uuid,
-            'name' => $rule->name,
-            'handle' => $rule->handle,
-            'trigger_type' => $rule->trigger_type,
-            'enabled' => (bool) $rule->enabled,
-            'action_count' => is_array($rule->actions) ? count($rule->actions) : 0,
-            'order_index' => (int) $rule->order_index,
-            'edit_url' => cp_route('webhook-manager.rules.edit', $rule),
-            'toggle_url' => cp_route('webhook-manager.rules.toggle', $rule),
-            'delete_url' => cp_route('webhook-manager.rules.destroy', $rule),
+            ['field' => 'name',         'label' => __('Name'),         'sortable' => true,  'visible' => true],
+            ['field' => 'trigger_type', 'label' => __('Trigger'),      'sortable' => true,  'visible' => true],
+            ['field' => 'action_count', 'label' => __('Actions'),      'sortable' => false, 'visible' => true],
+            ['field' => 'order_index',  'label' => __('Order'),        'sortable' => true,  'visible' => true],
+            ['field' => 'enabled',      'label' => __('Status'),       'sortable' => true,  'visible' => true],
         ];
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * Single-row payload for the listing. Includes pre-computed
+     * permission flags and helper URLs so the Vue page never has to
+     * check abilities or build routes itself.
+     *
+     * @param  array<string,string>  $triggerLabels
+     * @return array<string,mixed>
+     */
+    protected function row(Rule $rule, Request $request, array $triggerLabels): array
+    {
+        $canManage = (bool) $request->user()?->can('manage webhook rules');
+
+        return [
+            'id'            => $rule->id,
+            'uuid'          => $rule->uuid,
+            'name'          => $rule->name,
+            'handle'        => $rule->handle,
+            'trigger_type'  => $rule->trigger_type,
+            'trigger_label' => $triggerLabels[$rule->trigger_type] ?? $rule->trigger_type,
+            'enabled'       => (bool) $rule->enabled,
+            'action_count'  => is_array($rule->actions) ? count($rule->actions) : 0,
+            'order_index'   => (int) $rule->order_index,
+
+            // Permissions surfaced to the UI so v-if stays declarative.
+            'can_edit'      => $canManage,
+            'can_toggle'    => $canManage,
+            'can_delete'    => $canManage,
+
+            'edit_url'      => cp_route('webhook-manager.rules.edit', $rule),
+            'toggle_url'    => cp_route('webhook-manager.rules.toggle', $rule),
+            'delete_url'    => cp_route('webhook-manager.rules.destroy', $rule),
+        ];
+    }
+
+    /**
+     * Full rule payload for the edit/create form.
+     *
+     * @return array<string,mixed>
+     */
     protected function editPayload(Rule $rule): array
     {
         return [
-            'id' => $rule->id,
-            'uuid' => $rule->uuid,
-            'name' => $rule->name,
-            'handle' => $rule->handle,
-            'enabled' => (bool) ($rule->enabled ?? true),
-            'trigger_type' => $rule->trigger_type,
-            'trigger_config' => $rule->trigger_config ?? null,
-            'conditions' => $rule->conditions ?? null,
-            'actions' => $rule->actions ?? [],
+            'id'              => $rule->id,
+            'uuid'            => $rule->uuid,
+            'name'            => $rule->name,
+            'handle'          => $rule->handle,
+            'description'     => $rule->description ?? null,
+            'enabled'         => (bool) ($rule->enabled ?? true),
+            'trigger_type'    => $rule->trigger_type,
+            'trigger_config'  => $rule->trigger_config ?? null,
+            'conditions'      => $rule->conditions ?? null,
+            'actions'         => $rule->actions ?? [],
             'stop_on_failure' => (bool) ($rule->stop_on_failure ?? false),
-            'order_index' => (int) ($rule->order_index ?? 0),
+            'order_index'     => (int) ($rule->order_index ?? 0),
         ];
     }
 

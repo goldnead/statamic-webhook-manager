@@ -1,91 +1,157 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { Head, Link } from '@statamic/cms/inertia';
 import { router } from '@inertiajs/vue3';
-import { Header, Button, Field, Input, Panel, Badge, Table, TableRows, TableRow, TableCell, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui';
+import {
+    Header,
+    Button,
+    Badge,
+    DropdownItem,
+    EmptyStateMenu,
+    EmptyStateItem,
+    DocsCallout,
+    Listing,
+    CommandPaletteItem,
+} from '@statamic/cms/ui';
 
+/**
+ * Rules listing.
+ *
+ * Models the Statamic core "Forms Index" pattern: bifurcate between
+ * an EmptyStateMenu and a Listing/Header pair so first-time users see
+ * a clear call-to-action while experienced users get the full table
+ * with search, sort, and bulk actions out of the box.
+ */
 const props = defineProps({
     rules: { type: Object, required: true },
+    initialColumns: { type: Array, required: true },
+    actionUrl: { type: String, required: true },
+    listingUrl: { type: String, required: true },
     createUrl: { type: String, required: true },
     canCreate: { type: Boolean, default: false },
-    searchTerm: { type: String, default: '' },
     triggerOptions: { type: Object, default: () => ({}) },
-    actionOptions: { type: Object, default: () => ({}) },
 });
 
-const search = ref(props.searchTerm);
+const isEmpty = computed(
+    () => !props.rules?.data?.length && !props.rules?.meta?.total,
+);
 
-function applySearch() {
-    router.get(window.location.pathname, {
-        q: search.value || undefined,
-    }, { preserveState: true, preserveScroll: true });
-}
+const reloadPage = () => router.reload({ only: ['rules'] });
+
+// Centralised trigger-type colour mapping — consistent with other listing
+// pages and dark-mode-safe (Statamic Badge uses semantic colour tokens).
+const triggerColor = (triggerType) => {
+    switch ((triggerType || '').toLowerCase()) {
+        case 'entry.saved':
+        case 'entry.created':  return 'green';
+        case 'entry.deleted':  return 'red';
+        case 'form.submitted': return 'blue';
+        case 'user.saved':
+        case 'user.created':   return 'purple';
+        case 'user.deleted':   return 'red';
+        default:               return 'gray';
+    }
+};
 
 function toggle(rule) {
+    if (!rule.toggle_url) return;
     router.patch(rule.toggle_url, {}, { preserveScroll: true });
 }
 </script>
 
 <template>
-    <Head :title="__('Webhook Rules')" />
+    <Head :title="[__('Rules'), __('Webhook Manager')]" />
 
-    <Header :title="__('Rules')" icon="instructions">
-        <Button v-if="canCreate" variant="primary" :href="createUrl">
-            {{ __('Create rule') }}
-        </Button>
-    </Header>
+    <div v-if="isEmpty" class="max-w-page mx-auto">
+        <header class="py-8 pt-16 text-center">
+            <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
+                {{ __('Rules') }}
+            </h1>
+        </header>
 
-    <Panel class="mb-4">
-        <div class="flex gap-3 items-end p-4">
-            <Field :label="__('Search')" id="search" class="flex-1">
-                <Input id="search" v-model="search" :placeholder="__('Name, handle or trigger')" @keydown.enter="applySearch" />
-            </Field>
-            <Button variant="default" @click="applySearch">{{ __('Search') }}</Button>
-        </div>
-    </Panel>
+        <EmptyStateMenu :heading="__('webhook-manager::messages.rules_empty_intro')">
+            <EmptyStateItem
+                v-if="canCreate"
+                :href="createUrl"
+                icon="filter"
+                :heading="__('Create Rule')"
+                :description="__('webhook-manager::messages.rules_create_description')"
+            />
+        </EmptyStateMenu>
 
-    <EmptyStateMenu v-if="!rules.data.length">
-        <EmptyStateItem
-            :label="__('Create your first rule')"
-            icon="instructions"
-            :url="createUrl"
-        />
-    </EmptyStateMenu>
+        <DocsCallout :topic="__('Rules')" url="https://statamic.dev/" />
+    </div>
 
-    <Table v-else>
-        <TableRows>
-            <TableRow header>
-                <TableCell>{{ __('Name') }}</TableCell>
-                <TableCell>{{ __('Trigger') }}</TableCell>
-                <TableCell>{{ __('Actions') }}</TableCell>
-                <TableCell>{{ __('Order') }}</TableCell>
-                <TableCell>{{ __('Status') }}</TableCell>
-                <TableCell></TableCell>
-            </TableRow>
-            <TableRow v-for="rule in rules.data" :key="rule.id">
-                <TableCell>
-                    <Link :href="rule.edit_url" class="font-semibold">{{ rule.name }}</Link>
-                    <div class="text-xs text-gray-600">{{ rule.handle }}</div>
-                </TableCell>
-                <TableCell>
-                    <code class="text-xs">{{ rule.trigger_type }}</code>
-                    <div v-if="triggerOptions[rule.trigger_type]" class="text-xs text-gray-600">
-                        {{ triggerOptions[rule.trigger_type] }}
-                    </div>
-                </TableCell>
-                <TableCell>{{ rule.action_count }}</TableCell>
-                <TableCell>{{ rule.order_index }}</TableCell>
-                <TableCell>
-                    <Badge :color="rule.enabled ? 'green' : 'gray'">
-                        {{ rule.enabled ? __('Enabled') : __('Disabled') }}
-                    </Badge>
-                </TableCell>
-                <TableCell class="text-right">
-                    <Button variant="default" size="sm" @click="toggle(rule)">
-                        {{ rule.enabled ? __('Disable') : __('Enable') }}
-                    </Button>
-                </TableCell>
-            </TableRow>
-        </TableRows>
-    </Table>
+    <div v-else class="max-w-page mx-auto">
+        <Header :title="__('Rules')" icon="filter">
+            <CommandPaletteItem
+                v-if="canCreate"
+                category="Actions"
+                :text="__('Create Rule')"
+                icon="filter"
+                :url="createUrl"
+                v-slot="{ text, url }"
+            >
+                <Button :href="url" :text="text" variant="primary" />
+            </CommandPaletteItem>
+        </Header>
+
+        <Listing
+            :url="listingUrl"
+            :columns="initialColumns"
+            :action-url="actionUrl"
+            preferences-prefix="webhook-manager.rules"
+            push-query
+            @refreshing="reloadPage"
+        >
+            <template #cell-name="{ row: rule }">
+                <Link :href="rule.edit_url" class="font-semibold">{{ rule.name }}</Link>
+                <span class="block text-2xs text-gray-600 dark:text-gray-400">{{ rule.handle }}</span>
+            </template>
+
+            <template #cell-trigger_type="{ row: rule }">
+                <Badge
+                    :color="triggerColor(rule.trigger_type)"
+                    :text="rule.trigger_label || rule.trigger_type"
+                />
+            </template>
+
+            <template #cell-action_count="{ row: rule }">
+                <Badge
+                    :color="rule.action_count === 0 ? 'red' : 'gray'"
+                    :text="String(rule.action_count)"
+                />
+            </template>
+
+            <template #cell-order_index="{ row: rule }">
+                <span class="text-sm tabular-nums text-gray-600 dark:text-gray-400">
+                    {{ rule.order_index }}
+                </span>
+            </template>
+
+            <template #cell-enabled="{ row: rule }">
+                <Badge
+                    :color="rule.enabled ? 'green' : 'gray'"
+                    :text="rule.enabled ? __('Active') : __('Disabled')"
+                />
+            </template>
+
+            <template #prepended-row-actions="{ row: rule }">
+                <DropdownItem
+                    v-if="rule.can_edit"
+                    icon="cog"
+                    :text="__('Edit')"
+                    :href="rule.edit_url"
+                />
+                <DropdownItem
+                    v-if="rule.can_toggle"
+                    icon="toggle"
+                    :text="rule.enabled ? __('Disable') : __('Enable')"
+                    @click="toggle(rule)"
+                />
+            </template>
+        </Listing>
+
+        <DocsCallout :topic="__('Rules')" url="https://statamic.dev/" />
+    </div>
 </template>

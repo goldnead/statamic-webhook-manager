@@ -1,80 +1,135 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { Head, Link } from '@statamic/cms/inertia';
 import { router } from '@inertiajs/vue3';
-import { Header, Button, Field, Input, Panel, Badge, Table, TableRows, TableRow, TableCell, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui';
+import {
+    Header,
+    Button,
+    Badge,
+    DropdownItem,
+    EmptyStateMenu,
+    EmptyStateItem,
+    DocsCallout,
+    Listing,
+    CommandPaletteItem,
+} from '@statamic/cms/ui';
 
+/**
+ * Templates listing.
+ *
+ * Models the Statamic core "Forms Index" pattern: bifurcate between
+ * an EmptyStateMenu and a Listing/Header pair so first-time users see
+ * a clear call-to-action while experienced users get the full table
+ * with search, sort, filters and bulk actions out of the box.
+ */
 const props = defineProps({
     templates: { type: Object, required: true },
+    initialColumns: { type: Array, required: true },
+    actionUrl: { type: String, required: true },
+    listingUrl: { type: String, required: true },
     createUrl: { type: String, required: true },
     canCreate: { type: Boolean, default: false },
-    searchTerm: { type: String, default: '' },
-    typeFilter: { type: String, default: '' },
     typeOptions: { type: Object, default: () => ({}) },
 });
 
-const search = ref(props.searchTerm);
-const type = ref(props.typeFilter);
+const isEmpty = computed(
+    () => !props.templates?.data?.length && !props.templates?.meta?.total,
+);
 
-function applyFilters() {
-    router.get(window.location.pathname, {
-        q: search.value || undefined,
-        type: type.value || undefined,
-    }, { preserveState: true, preserveScroll: true });
-}
+const reloadPage = () => router.reload({ only: ['templates'] });
+
+// Badge colour per template type — centralised here so PHP doesn't need
+// to know about Statamic's semantic colour tokens.
+const typeColor = (type) => {
+    switch (type) {
+        case 'outbound_body':   return 'blue';
+        case 'notification':    return 'amber';
+        default:                return 'gray';
+    }
+};
 </script>
 
 <template>
-    <Head :title="__('Webhook Templates')" />
+    <Head :title="[__('Templates'), __('Webhook Manager')]" />
 
-    <Header :title="__('Templates')" icon="content-writing">
-        <Button v-if="canCreate" variant="primary" :href="createUrl">
-            {{ __('Create template') }}
-        </Button>
-    </Header>
+    <!-- ── Empty state ─────────────────────────────────────────────── -->
+    <div v-if="isEmpty" class="max-w-page mx-auto">
+        <header class="py-8 pt-16 text-center">
+            <h1 class="mb-3 font-bold text-3xl">{{ __('Templates') }}</h1>
+        </header>
 
-    <Panel class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end p-4">
-            <Field :label="__('Search')" id="search" class="md:col-span-2">
-                <Input id="search" v-model="search" :placeholder="__('Name or handle')" @keydown.enter="applyFilters" />
-            </Field>
-            <Field :label="__('Type')" id="type">
-                <select id="type" v-model="type" class="input-text" @change="applyFilters">
-                    <option value="">{{ __('All types') }}</option>
-                    <option v-for="(label, value) in typeOptions" :key="value" :value="value">{{ label }}</option>
-                </select>
-            </Field>
-        </div>
-    </Panel>
+        <EmptyStateMenu :heading="__('webhook-manager::messages.templates_empty_intro')">
+            <EmptyStateItem
+                v-if="canCreate"
+                :href="createUrl"
+                icon="layouts"
+                :heading="__('Create Template')"
+                :description="__('webhook-manager::messages.templates_create_description')"
+            />
+        </EmptyStateMenu>
 
-    <EmptyStateMenu v-if="!templates.data.length">
-        <EmptyStateItem
-            :label="__('Create your first template')"
-            icon="content-writing"
-            :url="createUrl"
-        />
-    </EmptyStateMenu>
+        <DocsCallout topic="Templates" url="https://statamic.com/addons/goldnead/webhook-manager/docs/templates" />
+    </div>
 
-    <Table v-else>
-        <TableRows>
-            <TableRow header>
-                <TableCell>{{ __('Name') }}</TableCell>
-                <TableCell>{{ __('Handle') }}</TableCell>
-                <TableCell>{{ __('Type') }}</TableCell>
-                <TableCell></TableCell>
-            </TableRow>
-            <TableRow v-for="tpl in templates.data" :key="tpl.id">
-                <TableCell>
-                    <Link :href="tpl.edit_url" class="font-semibold">{{ tpl.name }}</Link>
-                </TableCell>
-                <TableCell><code class="text-xs">{{ tpl.handle }}</code></TableCell>
-                <TableCell>
-                    <Badge color="gray">{{ typeOptions[tpl.type] || tpl.type }}</Badge>
-                </TableCell>
-                <TableCell class="text-right">
-                    <Link :href="tpl.edit_url" class="text-sm">{{ __('Edit') }}</Link>
-                </TableCell>
-            </TableRow>
-        </TableRows>
-    </Table>
+    <!-- ── Listing ─────────────────────────────────────────────────── -->
+    <div v-else class="max-w-page mx-auto">
+        <Header :title="__('Templates')" icon="layouts">
+            <Button
+                v-if="canCreate"
+                :href="createUrl"
+                :text="__('Create Template')"
+                variant="primary"
+            />
+            <CommandPaletteItem
+                category="Actions"
+                :text="__('Create Template')"
+                :url="createUrl"
+            />
+        </Header>
+
+        <Listing
+            :items="templates"
+            :columns="initialColumns"
+            :url="listingUrl"
+            :action-url="actionUrl"
+            preferences-prefix="webhook-manager.templates"
+            @refreshing="reloadPage"
+        >
+            <!-- name cell — links to edit page -->
+            <template #cell-name="{ row }">
+                <Link :href="row.edit_url">{{ row.name }}</Link>
+            </template>
+
+            <!-- type cell — colour-coded badge -->
+            <template #cell-type="{ row }">
+                <Badge
+                    :color="typeColor(row.type)"
+                    :text="row.type_label ?? row.type"
+                />
+            </template>
+
+            <!-- row actions -->
+            <template #prepended-row-actions="{ row }">
+                <DropdownItem
+                    v-if="row.can_edit"
+                    :text="__('Edit')"
+                    :href="row.edit_url"
+                    icon="cog"
+                />
+                <DropdownItem
+                    v-if="row.duplicate_url"
+                    :text="__('Duplicate')"
+                    :href="row.duplicate_url"
+                    icon="copy"
+                />
+                <DropdownItem
+                    v-if="row.can_delete"
+                    :text="__('Delete')"
+                    icon="trash"
+                    danger
+                    @click="router.delete(row.delete_url, { preserveScroll: true, onSuccess: reloadPage })"
+                />
+            </template>
+        </Listing>
+    </div>
 </template>

@@ -26,36 +26,47 @@ class OutboundController extends CpController
     ) {
         $this->authorizeAny($request, 'manage outbound webhooks', 'view webhooks');
 
-        $hooks = $repository->paginate(25, $request->get('q'));
-        $rows = $hooks->getCollection()->map(fn (OutboundWebhook $hook) => $this->row($hook));
+        // Statamic's <Listing> sends `search`, `sort`, `order`, `page`,
+        // `perPage`. We accept the legacy `q` param too to keep older
+        // bookmarked links working.
+        $perPage = (int) $request->get('perPage', 25) ?: 25;
+        $search = $request->get('search', $request->get('q', ''));
 
-        // AJAX re-fetches from <Listing> use the same endpoint
+        $hooks = $repository->paginate($perPage, $search);
+        $triggerLabels = $triggers->options();
+
+        $rows = $hooks->getCollection()
+            ->map(fn (OutboundWebhook $hook) => $this->row($hook, $request, $triggerLabels))
+            ->values();
+
+        $listingPayload = [
+            'data' => $rows,
+            'meta' => [
+                'current_page' => $hooks->currentPage(),
+                'last_page' => $hooks->lastPage(),
+                'per_page' => $hooks->perPage(),
+                'total' => $hooks->total(),
+                'from' => $hooks->firstItem(),
+                'to' => $hooks->lastItem(),
+            ],
+        ];
+
+        // <Listing> issues an AJAX GET against the page URL whenever
+        // search/sort/page changes. Returning JSON here lets it refresh
+        // without a full Inertia round-trip.
         if ($request->wantsJson()) {
-            return response()->json([
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $hooks->currentPage(),
-                    'last_page' => $hooks->lastPage(),
-                    'per_page' => $hooks->perPage(),
-                    'total' => $hooks->total(),
-                ],
-            ]);
+            return response()->json($listingPayload);
         }
 
         return Inertia::render('webhook-manager::Outbound/Index', [
-            'webhooks' => [
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $hooks->currentPage(),
-                    'last_page' => $hooks->lastPage(),
-                    'per_page' => $hooks->perPage(),
-                    'total' => $hooks->total(),
-                ],
-            ],
+            'webhooks' => $listingPayload,
+            'initialColumns' => $this->indexColumns(),
+            'listingUrl' => cp_route('webhook-manager.outbound.index'),
+            'actionUrl' => cp_route('webhook-manager.outbound.actions') ?? cp_route('webhook-manager.outbound.index'),
             'createUrl' => cp_route('webhook-manager.outbound.create'),
             'canCreate' => (bool) $request->user()?->can('manage outbound webhooks'),
-            'searchTerm' => $request->get('q', ''),
-            'triggerOptions' => $triggers->options(),
+            'searchTerm' => $search,
+            'triggerOptions' => $triggerLabels,
         ]);
     }
 
@@ -82,8 +93,13 @@ class OutboundController extends CpController
             'webhook' => $this->editPayload($hook),
             'triggerOptions' => $triggers->options(),
             'authOptions' => $auth->options(),
+            'methodOptions' => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
+            'payloadTypeOptions' => $this->payloadTypeOptions(),
+            'logBodyModeOptions' => $this->logBodyModeOptions(),
             'availableTemplates' => $this->availableTemplates($templates),
             'isNew' => true,
+            'canDelete' => false,
+            'canTest' => false,
             'saveUrl' => cp_route('webhook-manager.outbound.store'),
             'indexUrl' => cp_route('webhook-manager.outbound.index'),
         ]);
@@ -109,12 +125,19 @@ class OutboundController extends CpController
     ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
+        $user = $request->user();
+
         return Inertia::render('webhook-manager::Outbound/Edit', [
             'webhook' => $this->editPayload($webhook),
             'triggerOptions' => $triggers->options(),
             'authOptions' => $auth->options(),
+            'methodOptions' => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
+            'payloadTypeOptions' => $this->payloadTypeOptions(),
+            'logBodyModeOptions' => $this->logBodyModeOptions(),
             'availableTemplates' => $this->availableTemplates($templates),
             'isNew' => false,
+            'canDelete' => (bool) $user?->can('manage outbound webhooks'),
+            'canTest' => (bool) ($user?->can('test outbound webhooks') ?? $user?->can('manage outbound webhooks')),
             'saveUrl' => cp_route('webhook-manager.outbound.update', $webhook),
             'deleteUrl' => cp_route('webhook-manager.outbound.destroy', $webhook),
             'toggleUrl' => cp_route('webhook-manager.outbound.toggle', $webhook),
@@ -157,21 +180,59 @@ class OutboundController extends CpController
             : __('webhook-manager::messages.disabled'));
     }
 
-    /** @return array<string,mixed> */
-    protected function row(OutboundWebhook $hook): array
+    /**
+     * Column definitions for the <Listing> component on the index page.
+     *
+     * Each entry maps to a slot name (`cell-{field}`) the Vue page binds.
+     *
+     * @return array<int,array{field:string,label:string,sortable?:bool,visible?:bool}>
+     */
+    protected function indexColumns(): array
     {
+        return [
+            ['field' => 'name',         'label' => __('Name'),     'sortable' => true,  'visible' => true],
+            ['field' => 'trigger_type', 'label' => __('Trigger'),  'sortable' => true,  'visible' => true],
+            ['field' => 'method',       'label' => __('Method'),   'sortable' => false, 'visible' => true],
+            ['field' => 'url',          'label' => __('URL'),      'sortable' => false, 'visible' => true],
+            ['field' => 'enabled',      'label' => __('Status'),   'sortable' => true,  'visible' => true],
+        ];
+    }
+
+    /**
+     * Single-row payload for the listing. Includes pre-computed
+     * permission flags + helper URLs so the Vue page never has to
+     * check abilities or build routes itself.
+     *
+     * @param  array<string,string>  $triggerLabels
+     * @return array<string,mixed>
+     */
+    protected function row(OutboundWebhook $hook, Request $request, array $triggerLabels): array
+    {
+        $user = $request->user();
+        $canManage = (bool) $user?->can('manage outbound webhooks');
+
         return [
             'id' => $hook->id,
             'uuid' => $hook->uuid,
             'name' => $hook->name,
             'handle' => $hook->handle,
             'trigger_type' => $hook->trigger_type,
+            'trigger_label' => $triggerLabels[$hook->trigger_type] ?? $hook->trigger_type,
             'url' => $hook->url,
             'method' => $hook->method,
             'enabled' => (bool) $hook->enabled,
+
+            // Permissions surfaced to the UI (so v-if conditions stay
+            // declarative and don't leak ability strings into Vue).
+            'can_edit' => $canManage,
+            'can_toggle' => $canManage,
+            'can_test' => $canManage,
+            'can_delete' => $canManage,
+
             'edit_url' => cp_route('webhook-manager.outbound.edit', $hook),
             'toggle_url' => cp_route('webhook-manager.outbound.toggle', $hook),
             'delete_url' => cp_route('webhook-manager.outbound.destroy', $hook),
+            'test_url' => cp_route('webhook-manager.actions.test-outbound', $hook),
         ];
     }
 
@@ -204,6 +265,26 @@ class OutboundController extends CpController
             'queue_enabled' => (bool) ($hook->queue_enabled ?? true),
             'log_body_mode' => $hook->log_body_mode ?? 'partial',
             'retry_strategy' => $hook->retry_strategy ?? null,
+        ];
+    }
+
+    /** @return array<string,string> */
+    protected function payloadTypeOptions(): array
+    {
+        return [
+            'raw_json' => __('Raw JSON template'),
+            'mapped' => __('Mapped object'),
+            'form' => __('Form encoded'),
+        ];
+    }
+
+    /** @return array<string,string> */
+    protected function logBodyModeOptions(): array
+    {
+        return [
+            'full' => __('Full'),
+            'partial' => __('Partial'),
+            'none' => __('None'),
         ];
     }
 
