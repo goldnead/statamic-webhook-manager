@@ -121,6 +121,35 @@ class RuleEngineTest extends TestCase
         $this->assertCount(1, $result->data['actions']);
         $this->assertFalse($result->data['actions'][0]['ok']);
         $this->assertStringContainsString('Unknown action', $result->data['actions'][0]['message']);
+
+        // The unknown-handle path is classified as a configuration error
+        // and the resolved handle is echoed back so the CP can render it.
+        $this->assertSame('configuration', $result->data['actions'][0]['error_type']);
+        $this->assertSame('this_handle_does_not_exist', $result->data['actions'][0]['handle']);
+    }
+
+    public function test_handler_returning_clean_fail_is_classified_as_payload(): void
+    {
+        // create_entry returns a clean ExecutionResult::fail when its
+        // required `collection` config is missing — that's the
+        // canonical "missing config field" path the executor should
+        // classify as PAYLOAD.
+        $rule = new Rule([
+            'name' => 'Bad config',
+            'handle' => 'bad-config',
+            'enabled' => true,
+            'trigger_type' => 'entry.published',
+            'actions' => [
+                ['handle' => 'create_entry', 'config' => []],
+            ],
+        ]);
+
+        $engine = $this->app->make(RuleEngine::class);
+        $result = $engine->evaluateOne($rule, $this->context('entry.published', []));
+
+        $this->assertFalse($result->ok);
+        $this->assertSame('payload', $result->data['actions'][0]['error_type']);
+        $this->assertSame('create_entry', $result->data['actions'][0]['handle']);
     }
 
     public function test_stop_on_failure_short_circuits(): void
