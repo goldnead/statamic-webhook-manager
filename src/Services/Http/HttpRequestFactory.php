@@ -7,6 +7,8 @@ use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Repositories\TemplateRepository;
+use Goldnead\WebhookManager\Services\FailureClassifier;
+use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Goldnead\WebhookManager\Templates\TemplateRenderer;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Illuminate\Support\Str;
@@ -22,6 +24,7 @@ class HttpRequestFactory
         protected TemplateRenderer $renderer,
         protected AuthSchemeRegistry $authSchemes,
         protected TemplateRepository $templates,
+        protected SystemLogger $logger,
     ) {
     }
 
@@ -83,11 +86,23 @@ class HttpRequestFactory
             if ($template && (string) $template->body !== '') {
                 return $this->renderer->render((string) $template->body, $context);
             }
-            // TODO: REVIEW — silently falling back to the inline body when
-            // a referenced library template is missing keeps deliveries
-            // alive but hides the misconfiguration. Consider classifying
-            // this as a configuration failure once a centralised observer
-            // exists.
+
+            // Dangling library reference — classify as a configuration
+            // failure so an operator looking at the CP logs sees what's
+            // wrong instead of getting a silently-different body.
+            // Delivery itself still proceeds against the inline fallback
+            // so we don't drop traffic on a misconfiguration.
+            $this->logger->warning(
+                'configuration_error_dangling_template',
+                "Outbound hook '{$hook->handle}' references missing or empty template '{$libraryHandle}'; falling back to inline body.",
+                [
+                    'webhook_id' => $hook->id,
+                    'webhook_handle' => $hook->handle,
+                    'template_handle' => $libraryHandle,
+                    'error_type' => FailureClassifier::CONFIGURATION,
+                    'correlation_id' => $context->event->correlationId,
+                ],
+            );
         }
 
         $inline = (string) ($hook->payload_template ?? '');
