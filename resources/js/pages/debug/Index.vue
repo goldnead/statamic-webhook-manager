@@ -130,6 +130,17 @@ const simulateResponseJson = computed(() =>
 const resolverColumns = [
     { handle: 'namespace', label: __('Namespace'), sortable: false },
 ];
+
+/**
+ * Render a resolver namespace as the literal token a user would type
+ * in a template, e.g. `{{ entry:key }}`.
+ *
+ * Computed as a JS string so the Vue template parser doesn't treat the
+ * inner `{{` as a mustache delimiter.
+ */
+function namespaceExample(value) {
+    return '{{ ' + value + ':key }}';
+}
 </script>
 
 <template>
@@ -172,7 +183,7 @@ const resolverColumns = [
                 :allow-search="false"
             >
                 <template #cell-namespace="{ value }">
-                    <code class="font-mono text-sm">{{ '{{ ' + value + ':key }}' }}</code>
+                    <code class="font-mono text-sm" v-text="namespaceExample(value)" />
                 </template>
             </Listing>
         </Panel>

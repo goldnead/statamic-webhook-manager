@@ -138,6 +138,27 @@ const allMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 const allowedMethodOptions = allMethods.map(m => ({ value: m, label: m }));
 
+/**
+ * JSON placeholders for the advanced config CodeEditors.
+ *
+ * Defined as JS template literals (not inline in the template) because
+ * a v-bind expression wrapped in double-quoted attribute can't include
+ * escaped double quotes — the SFC parser bails out with "Unterminated
+ * string constant".
+ */
+const mappingPlaceholder = `{
+  "output_field": "$.input_field"
+}`;
+
+const actionPlaceholder = `{
+  "collection": "blog",
+  "title": "$.title"
+}`;
+
+const responsePlaceholder = `{
+  "ok": true
+}`;
+
 function jsonOrEmpty(value) {
     if (!value) return '';
     try { return JSON.stringify(value, null, 2); }
@@ -329,7 +350,7 @@ async function runTest() {
                         <CodeEditor
                             v-model="form.mapping_config_json"
                             mode="json"
-                            :placeholder="'{\n  \"output_field\": \"$.input_field\"\n}'"
+                            :placeholder="mappingPlaceholder"
                             :min-lines="8"
                         />
                     </Field>
@@ -352,7 +373,7 @@ async function runTest() {
                         <CodeEditor
                             v-model="form.action_config_json"
                             mode="json"
-                            :placeholder="'{\n  \"key\": \"value\"\n}'"
+                            :placeholder="actionPlaceholder"
                             :min-lines="6"
                         />
                     </Field>
@@ -370,7 +391,7 @@ async function runTest() {
                         <CodeEditor
                             v-model="form.response_config_json"
                             mode="json"
-                            :placeholder="'{\n  \"status\": 200,\n  \"body\": { \"ok\": true }\n}'"
+                            :placeholder="responsePlaceholder"
                             :min-lines="6"
                         />
                     </Field>

@@ -102,6 +102,28 @@ const form = useForm({
     order_index: props.rule.order_index ?? 0,
 });
 
+// ─── JSON CodeEditor placeholders ────────────────────────────────────────────
+//
+// Defined as JS template literals because escaped double-quotes inside a
+// double-quoted Vue attribute (`:placeholder="'{\"key\": …}'"`) trip the
+// SFC parser ("Unterminated string constant").
+
+const triggerConfigPlaceholder = `{
+  "collection": "articles"
+}`;
+
+const conditionsPlaceholder = `{
+  "logic": "and",
+  "conditions": []
+}`;
+
+const actionsPlaceholder = `[
+  {
+    "handle": "send_outbound",
+    "webhook": "my-webhook"
+  }
+]`;
+
 // ─── conditions editor state ──────────────────────────────────────────────────
 
 // Two editing modes:
@@ -408,7 +430,7 @@ async function runTest() {
                                 v-model="form.trigger_config"
                                 mode="json"
                                 :rows="6"
-                                :placeholder="'{\n  \"collection\": \"articles\"\n}'"
+                                :placeholder="triggerConfigPlaceholder"
                             />
                         </Field>
                     </div>
@@ -447,7 +469,7 @@ async function runTest() {
                                 v-model="conditionsJson"
                                 mode="json"
                                 :rows="16"
-                                :placeholder="'{\n  \"logic\": \"and\",\n  \"conditions\": []\n}'"
+                                :placeholder="conditionsPlaceholder"
                             />
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
@@ -484,7 +506,7 @@ async function runTest() {
                                 v-model="actionsJson"
                                 mode="json"
                                 :rows="14"
-                                :placeholder="'[\n  {\n    \"handle\": \"send_outbound\",\n    \"webhook\": \"my-webhook\"\n  }\n]'"
+                                :placeholder="actionsPlaceholder"
                             />
                         </Field>
 
