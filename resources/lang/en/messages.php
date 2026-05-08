@@ -29,6 +29,20 @@ return [
     'template_deleted' => 'Template deleted.',
     'template_deleted_with_detach' => 'Template deleted. :count outbound webhook(s) were detached and now use their inline payload again.',
 
+    // Empty-state copy used by the index pages of the redesigned CP.
+    // Mirrors the tone of Statamic core messages (form_configure_intro etc.).
+    'outbound_empty_intro' => 'Outbound webhooks send notifications from your Statamic site to external services whenever a trigger event fires.',
+    'outbound_create_description' => 'Configure an outbound webhook with a trigger, destination URL, payload template and authentication.',
+
+    'inbound_empty_intro' => 'Inbound endpoints accept HTTP requests from external services and translate them into Statamic actions.',
+    'inbound_create_description' => 'Define an inbound endpoint with a path, authentication scheme and a mapping to entries, actions or stored payloads.',
+
+    'rules_empty_intro' => 'Rules apply conditional logic to webhook deliveries — match an event with conditions and run one or more actions.',
+    'rules_create_description' => 'Build a rule with a trigger, optional conditions, and the actions to execute when it matches.',
+
+    'templates_empty_intro' => 'Templates are reusable payload bodies and notification messages referenced by outbound webhooks and rules.',
+    'templates_create_description' => 'Create a template with a handle, type and rendered body using token variables like {{ entry:title }}.',
+
     'errors' => [
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',
