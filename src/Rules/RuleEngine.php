@@ -111,6 +111,11 @@ class RuleEngine
             'actions' => array_map(fn (ExecutionResult $r) => [
                 'ok' => $r->ok,
                 'message' => $r->message,
+                // Surface the FailureClassifier error_type at the top of
+                // each per-action entry so the CP can render it as a
+                // distinct badge without inspecting `data`.
+                'error_type' => $r->data['error_type'] ?? null,
+                'handle' => $r->data['handle'] ?? null,
                 'data' => $r->data,
             ], $actionResults),
         ];
