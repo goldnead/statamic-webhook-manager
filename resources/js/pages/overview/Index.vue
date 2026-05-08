@@ -1,31 +1,36 @@
 <script setup>
 import { computed } from 'vue';
-import { Head } from '@statamic/cms/inertia';
+import { Head, Link } from '@statamic/cms/inertia';
 import {
     Header,
     Panel,
-    Button,
     Badge,
     Icon,
     Listing,
     EmptyStateMenu,
     EmptyStateItem,
+    DocsCallout,
     MiddleEllipsis,
-    CommandPaletteItem,
 } from '@statamic/cms/ui';
 
 /**
  * Overview dashboard.
  *
- * Shows either:
- * - An EmptyStateMenu when there are no outbound webhooks, inbound endpoints
- *   and no rules configured yet (first-run experience).
- * - The populated view: 4 stat cards + a "Recent Failures" Listing + a
- *   Quick-Actions panel.
+ * Layout follows Statamic core's pages/Dashboard.vue: a simple flex/wrap
+ * container that uses CONTAINER queries (@container) rather than viewport
+ * breakpoints, so cards reflow correctly when the CP nav is open and the
+ * available width is less than the viewport's `lg` breakpoint.
+ *
+ * Two states:
+ *   - Empty (0 outbound + 0 inbound + 0 rules): centered Statamic-style
+ *     header with icon next to the title, EmptyStateMenu of getting-started
+ *     CTAs.
+ *   - Populated: full Header, stat cards in a container-query grid,
+ *     Recent Failures listing, DocsCallout footer.
  */
 const props = defineProps({
     stats:              { type: Array,   required: true },
-    recentFailures:     { type: Object,  required: true },
+    recentFailures:     { type: Array,   default: () => [] },
     failureColumns:     { type: Array,   required: true },
     isEmpty:            { type: Boolean, default: false },
 
@@ -34,132 +39,142 @@ const props = defineProps({
     createInboundUrl:   { type: String, default: null },
     createRuleUrl:      { type: String, default: null },
 
-    // Nav URLs
-    outboundUrl:        { type: String, default: null },
-    deliveriesUrl:      { type: String, default: null },
-    logsUrl:            { type: String, default: null },
-
     // Permission flags
     canCreateOutbound:  { type: Boolean, default: false },
     canCreateInbound:   { type: Boolean, default: false },
     canCreateRule:      { type: Boolean, default: false },
 });
 
-const hasRecentFailures = computed(
-    () => props.recentFailures?.data?.length || props.recentFailures?.meta?.total,
-);
+const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
+
+/**
+ * Map a stat key to its accent colour token. Mirrors Statamic Badge
+ * colour conventions so the icon chip inherits the page's visual language
+ * (green for healthy / amber for warnings / red for failures).
+ */
+function statAccent(key) {
+    if (key.includes('failures')) return { ring: 'ring-red-200 dark:ring-red-900/40', bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-600 dark:text-red-400' };
+    if (key.includes('success_rate')) return { ring: 'ring-green-200 dark:ring-green-900/40', bg: 'bg-green-50 dark:bg-green-950/40', text: 'text-green-600 dark:text-green-400' };
+    if (key.includes('inbound')) return { ring: 'ring-purple-200 dark:ring-purple-900/40', bg: 'bg-purple-50 dark:bg-purple-950/40', text: 'text-purple-600 dark:text-purple-400' };
+    return { ring: 'ring-blue-200 dark:ring-blue-900/40', bg: 'bg-blue-50 dark:bg-blue-950/40', text: 'text-blue-600 dark:text-blue-400' };
+}
 </script>
 
 <template>
     <Head :title="[__('Overview'), __('Webhook Manager')]" />
 
-    <div class="max-w-page mx-auto">
-        <Header :title="__('Webhook Manager')" icon="link">
-            <CommandPaletteItem
+    <!-- ── Empty state ─────────────────────────────────────────────── -->
+    <template v-if="isEmpty">
+        <header class="py-8 pt-16 text-center">
+            <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
+                <Icon name="link" class="size-5 text-gray-500" />
+                {{ __('Webhook Manager') }}
+            </h1>
+        </header>
+
+        <EmptyStateMenu
+            :heading="__('Get started with the Webhook Manager')"
+            :subheading="__('Send notifications to external services, accept incoming requests, and run automation rules — all from inside Statamic.')"
+        >
+            <EmptyStateItem
                 v-if="canCreateOutbound"
-                category="Actions"
-                :text="__('Create Outbound Webhook')"
                 icon="outgoing"
-                :url="createOutboundUrl"
+                :heading="__('Create Outbound Webhook')"
+                :href="createOutboundUrl"
+                :description="__('webhook-manager::messages.outbound_create_description')"
             />
-            <CommandPaletteItem
+            <EmptyStateItem
                 v-if="canCreateInbound"
-                category="Actions"
-                :text="__('Create Inbound Endpoint')"
                 icon="incoming"
-                :url="createInboundUrl"
+                :heading="__('Create Inbound Endpoint')"
+                :href="createInboundUrl"
+                :description="__('webhook-manager::messages.inbound_create_description')"
             />
-        </Header>
+            <EmptyStateItem
+                v-if="canCreateRule"
+                icon="cog"
+                :heading="__('Add a Rule')"
+                :href="createRuleUrl"
+                :description="__('webhook-manager::messages.rules_create_description')"
+            />
+        </EmptyStateMenu>
 
-        <!-- ── Empty state ──────────────────────────────────────────── -->
-        <div v-if="isEmpty">
-            <EmptyStateMenu :heading="__('Get started with the Webhook Manager')">
-                <EmptyStateItem
-                    v-if="canCreateOutbound"
-                    icon="outgoing"
-                    :heading="__('Create Outbound Webhook')"
-                    :href="createOutboundUrl"
-                    :description="__('webhook-manager::messages.outbound_create_description')"
-                />
-                <EmptyStateItem
-                    v-if="canCreateInbound"
-                    icon="incoming"
-                    :heading="__('Create Inbound Endpoint')"
-                    :href="createInboundUrl"
-                    :description="__('webhook-manager::messages.inbound_create_description')"
-                />
-                <EmptyStateItem
-                    v-if="canCreateRule"
-                    icon="cog"
-                    :heading="__('Add a Rule')"
-                    :href="createRuleUrl"
-                    :description="__('webhook-manager::messages.rule_create_description')"
-                />
-            </EmptyStateMenu>
-        </div>
+        <DocsCallout :topic="__('Webhook Manager')" url="https://statamic.dev/" />
+    </template>
 
-        <!-- ── Populated state ─────────────────────────────────────── -->
-        <div v-else class="space-y-6">
+    <!-- ── Populated state ─────────────────────────────────────────── -->
+    <template v-else>
+        <Header :title="__('Webhook Manager')" icon="link" />
 
-            <!-- Stat cards: 4 columns lg / 2 md / 1 sm -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Panel v-for="stat in stats" :key="stat.key">
-                    <div class="p-4 flex items-start gap-3">
-                        <div class="size-10 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                            <Icon :name="stat.icon" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-2xl font-bold">{{ stat.value }}</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ stat.label }}</div>
-                            <div v-if="stat.trend != null" class="text-xs mt-0.5">
-                                <span :class="stat.trend > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'">
-                                    {{ stat.trend > 0 ? '↑' : '↓' }} {{ Math.abs(stat.trend) }}%
-                                </span>
-                                <span class="text-gray-500 ms-1">{{ __('vs last week') }}</span>
+        <!-- Stat cards: container-query layout — 1col / 2col / 4col based on
+             the container width, NOT the viewport. Matches the Statamic
+             core Dashboard.vue pattern. -->
+        <div class="@container/stats mt-4">
+            <div class="flex flex-wrap gap-4">
+                <div
+                    v-for="stat in stats"
+                    :key="stat.key"
+                    class="w-full @md/stats:w-[calc(50%-0.5rem)] @4xl/stats:w-[calc(25%-0.75rem)]"
+                >
+                    <Panel>
+                        <div class="p-5 flex items-center gap-4">
+                            <div
+                                class="size-11 rounded-lg flex items-center justify-center flex-shrink-0 ring-1"
+                                :class="[statAccent(stat.key).ring, statAccent(stat.key).bg, statAccent(stat.key).text]"
+                            >
+                                <Icon :name="stat.icon" class="size-5" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-2xl font-bold leading-tight tabular-nums">{{ stat.value }}</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ stat.label }}</div>
                             </div>
                         </div>
-                    </div>
-                </Panel>
-            </div>
-
-            <!-- Recent Failures listing -->
-            <Panel
-                v-if="hasRecentFailures"
-                :heading="__('Recent Failures')"
-            >
-                <Listing
-                    :items="recentFailures"
-                    :columns="failureColumns"
-                    :allow-bulk-actions="false"
-                    :allow-customizing-columns="false"
-                >
-                    <template #cell-trigger="{ row }">
-                        <Badge color="blue" :text="row.trigger_label || row.trigger" />
-                    </template>
-
-                    <template #cell-status="{ row }">
-                        <Badge color="red" :text="row.status" />
-                    </template>
-
-                    <template #cell-when="{ value }">
-                        <date-time :of="value" />
-                    </template>
-
-                    <template #cell-url="{ value }">
-                        <MiddleEllipsis :text="value || ''" class="font-mono text-xs" />
-                    </template>
-                </Listing>
-            </Panel>
-
-            <!-- Quick Actions -->
-            <Panel :heading="__('Quick Actions')">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-4">
-                    <Button :href="outboundUrl" :text="__('All Outbound')" />
-                    <Button :href="deliveriesUrl" :text="__('Recent Deliveries')" />
-                    <Button :href="logsUrl" :text="__('System Logs')" />
+                    </Panel>
                 </div>
-            </Panel>
-
+            </div>
         </div>
-    </div>
+
+        <!-- Recent Failures listing -->
+        <Panel
+            v-if="hasRecentFailures"
+            :heading="__('Recent Failures')"
+            :subheading="__('Last 8 failed deliveries — investigate or replay them.')"
+            class="mt-6"
+        >
+            <Listing
+                :items="recentFailures"
+                :columns="failureColumns"
+                :allow-bulk-actions="false"
+                :allow-customizing-columns="false"
+                :allow-search="false"
+                :allow-presets="false"
+                :show-pagination-totals="false"
+                :show-pagination-page-links="false"
+                :show-pagination-per-page-selector="false"
+            >
+                <template #cell-when="{ row }">
+                    <Link v-if="row.show_url" :href="row.show_url">
+                        <date-time :of="row.when" />
+                    </Link>
+                    <date-time v-else :of="row.when" />
+                </template>
+
+                <template #cell-trigger="{ row }">
+                    <Badge color="blue" :text="row.trigger_label || row.trigger" />
+                </template>
+
+                <template #cell-url="{ value }">
+                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                        <MiddleEllipsis :text="value || ''" />
+                    </span>
+                </template>
+
+                <template #cell-status="{ row }">
+                    <Badge color="red" :text="row.status" />
+                </template>
+            </Listing>
+        </Panel>
+
+        <DocsCallout :topic="__('Webhook Manager')" url="https://statamic.dev/" />
+    </template>
 </template>
