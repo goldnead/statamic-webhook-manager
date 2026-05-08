@@ -1,37 +1,114 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
-import { Header, Button, Panel, Field, Input, Alert, ConfirmationModal } from '@statamic/cms/ui';
+import {
+    Header,
+    Button,
+    Badge,
+    Alert,
+    Field,
+    Input,
+    Textarea,
+    Select,
+    CodeEditor,
+    Tabs,
+    TabList,
+    TabTrigger,
+    TabContent,
+    Panel,
+    CardPanel,
+    ConfirmationModal,
+    CommandPaletteItem,
+} from '@statamic/cms/ui';
 
+/**
+ * Template edit/create page.
+ *
+ * Layout follows the Outbound/Edit pilot pattern:
+ *   Header + useForm (no Blueprint yet) + Tabs (General / Body / Preview)
+ *
+ * The Preview tab preserves the full preview workflow from the legacy
+ * Edit.vue (axios POST to previewUrl, renders result + issues) but
+ * migrated into the new layout.
+ */
 const props = defineProps({
-    template: { type: Object, required: true },
+    template:   { type: Object, required: true },
     typeOptions: { type: Object, required: true },
-    namespaces: { type: Array, default: () => [] },
-    isNew: { type: Boolean, default: false },
-    saveUrl: { type: String, required: true },
-    deleteUrl: { type: String, default: null },
-    previewUrl: { type: String, required: true },
-    indexUrl: { type: String, required: true },
+    namespaces:  { type: Array,  default: () => [] },
+    isNew:       { type: Boolean, default: false },
+    canDelete:   { type: Boolean, default: false },
+    saveUrl:     { type: String, required: true },
+    deleteUrl:   { type: String, default: null },
+    previewUrl:  { type: String, required: true },
+    indexUrl:    { type: String, required: true },
 });
 
+// ── Form state ────────────────────────────────────────────────────────
 const form = useForm({
-    name: props.template.name ?? '',
+    name:   props.template.name   ?? '',
     handle: props.template.handle ?? '',
-    type: props.template.type ?? 'outbound_body',
-    body: props.template.body ?? '',
-    meta: props.template.meta ?? null,
+    type:   props.template.type   ?? 'outbound_body',
+    body:   props.template.body   ?? '',
+    meta:   props.template.meta   ?? null,
 });
 
-const showDelete = ref(false);
-const previewing = ref(false);
+// ── UI state ──────────────────────────────────────────────────────────
+const activeTab    = ref('general');
+const showDelete   = ref(false);
+const previewing   = ref(false);
 const previewResult = ref(null);
-const samplePayload = ref('{\n  "id": 1,\n  "title": "Sample entry",\n  "site": "default"\n}');
 
-const pageTitle = computed(() => props.isNew
-    ? __('Create template')
-    : props.template.name);
+const samplePayload = ref('{\n    "id": 1,\n    "title": "Sample entry",\n    "site": "default"\n}');
+const sourceType    = ref('entry');
 
+const sourceTypeOptions = {
+    entry:      'Entry',
+    user:       'User',
+    term:       'Term',
+    asset:      'Asset',
+    collection: 'Collection',
+};
+
+// ── Computed ──────────────────────────────────────────────────────────
+const pageTitle = computed(() =>
+    props.isNew
+        ? __('Create Template')
+        : (props.template.name || __('Template'))
+);
+
+const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+
+// CodeEditor mode: JSON makes sense for outbound_body when the content
+// looks like raw JSON; for notification / inbound_response we use text
+// (Twig/Antlers). Keep it simple — the user can always switch in the editor.
+const editorMode = computed(() =>
+    form.type === 'outbound_body' ? 'json' : 'text'
+);
+
+// Surface server-side validation errors on the correct tab — same
+// pattern as Outbound/Edit so users don't miss errors on hidden tabs.
+const tabsWithErrors = computed(() => {
+    const map = {
+        general: ['name', 'handle', 'type'],
+        body:    ['body', 'meta'],
+        preview: [],
+    };
+    const tabs = new Set();
+    for (const [tab, keys] of Object.entries(map)) {
+        if (keys.some(k => form.errors[k])) tabs.add(tab);
+    }
+    return tabs;
+});
+
+watch(() => form.hasErrors, hasErrors => {
+    if (!hasErrors) return;
+    const first = ['general', 'body', 'preview']
+        .find(t => tabsWithErrors.value.has(t));
+    if (first) activeTab.value = first;
+});
+
+// ── Actions ───────────────────────────────────────────────────────────
 function save() {
     const verb = props.isNew ? 'post' : 'patch';
     form[verb](props.saveUrl, { preserveScroll: true });
@@ -41,17 +118,19 @@ async function runPreview() {
     previewing.value = true;
     previewResult.value = null;
     try {
-        const payload = samplePayload.value.trim() ? JSON.parse(samplePayload.value) : {};
+        const payload = samplePayload.value.trim()
+            ? JSON.parse(samplePayload.value)
+            : {};
         const res = await window.axios.post(props.previewUrl, {
-            template: form.body,
+            template:       form.body,
             sample_payload: payload,
-            source_type: 'entry',
+            source_type:    sourceType.value,
         });
         previewResult.value = res.data;
     } catch (e) {
         previewResult.value = {
             rendered: '',
-            issues: [e?.response?.data?.message ?? e?.message ?? __('Preview failed.')],
+            issues:   [e?.response?.data?.message ?? e?.message ?? __('Preview failed.')],
         };
     } finally {
         previewing.value = false;
@@ -64,95 +143,251 @@ function destroy() {
         onSuccess: () => { showDelete.value = false; },
     });
 }
+
+function copyToClipboard(text) {
+    navigator.clipboard?.writeText(text);
+}
 </script>
 
 <template>
-    <Head :title="pageTitle" />
+    <Head :title="[pageTitle, __('Templates'), __('Webhook Manager')]" />
 
-    <Header :title="pageTitle" icon="content-writing">
-        <Button variant="primary" :loading="form.processing" @click="save">
-            {{ __('Save') }}
-        </Button>
-    </Header>
+    <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
-    <Alert v-if="form.hasErrors" variant="error" :heading="__('Validation failed')" class="mb-4">
-        <ul class="list-disc list-inside text-sm">
-            <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
-        </ul>
-    </Alert>
+        <!-- ── Page header ─────────────────────────────────────────── -->
+        <Header :title="pageTitle" icon="layouts">
+            <Button
+                :text="saveLabel"
+                variant="primary"
+                :loading="form.processing"
+                @click="save"
+            />
+            <CommandPaletteItem
+                v-if="canDelete && deleteUrl"
+                category="Actions"
+                :text="__('Delete Template')"
+                icon="trash"
+                danger
+                @click="showDelete = true"
+            />
+        </Header>
 
-    <Panel :heading="__('Identity')" class="mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <Field :label="__('Name')" id="name" :required="true" :error="form.errors.name">
-                <Input id="name" v-model="form.name" />
-            </Field>
-            <Field :label="__('Handle')" id="handle" :required="true" :error="form.errors.handle"
-                   :instructions="__('Lowercase. Outbound webhooks reference templates by handle.')">
-                <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
-            </Field>
-            <Field :label="__('Type')" id="type" :required="true" :error="form.errors.type" class="md:col-span-2">
-                <select id="type" v-model="form.type" class="input-text">
-                    <option v-for="(label, value) in typeOptions" :key="value" :value="value">{{ label }}</option>
-                </select>
-            </Field>
+        <!-- ── Global error banner ────────────────────────────────── -->
+        <Alert
+            v-if="form.hasErrors && Object.keys(form.errors).length"
+            type="error"
+            class="mb-6"
+        >
+            <ul class="list-disc list-inside">
+                <li v-for="err in Object.values(form.errors)" :key="err">{{ err }}</li>
+            </ul>
+        </Alert>
+
+        <!-- ── Tabs ───────────────────────────────────────────────── -->
+        <Tabs v-model="activeTab">
+            <TabList>
+                <TabTrigger
+                    value="general"
+                    :label="__('General')"
+                    :has-error="tabsWithErrors.has('general')"
+                />
+                <TabTrigger
+                    value="body"
+                    :label="__('Body')"
+                    :has-error="tabsWithErrors.has('body')"
+                />
+                <TabTrigger
+                    value="preview"
+                    :label="__('Preview')"
+                />
+            </TabList>
+
+            <!-- ── General tab ─────────────────────────────────────── -->
+            <TabContent value="general">
+                <Panel>
+                    <div class="grid gap-6 p-6">
+                        <Field
+                            :label="__('Name')"
+                            :error="form.errors.name"
+                            required
+                        >
+                            <Input
+                                v-model="form.name"
+                                type="text"
+                                :placeholder="__('My template')"
+                                :has-error="!!form.errors.name"
+                            />
+                        </Field>
+
+                        <Field
+                            :label="__('Handle')"
+                            :error="form.errors.handle"
+                            :instructions="__('Lowercase letters, numbers, underscores and hyphens only.')"
+                            required
+                        >
+                            <Input
+                                v-model="form.handle"
+                                type="text"
+                                :placeholder="__('my_template')"
+                                :has-error="!!form.errors.handle"
+                            />
+                        </Field>
+
+                        <Field
+                            :label="__('Type')"
+                            :error="form.errors.type"
+                            required
+                        >
+                            <Select v-model="form.type" :has-error="!!form.errors.type">
+                                <option
+                                    v-for="(label, value) in typeOptions"
+                                    :key="value"
+                                    :value="value"
+                                >{{ label }}</option>
+                            </Select>
+                        </Field>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ── Body tab ────────────────────────────────────────── -->
+            <TabContent value="body">
+                <Panel>
+                    <div class="p-6 space-y-4">
+                        <Field
+                            :label="__('Body')"
+                            :error="form.errors.body"
+                            :instructions="__('Template body. Twig / Antlers syntax is supported for non-JSON types.')"
+                            required
+                        >
+                            <CodeEditor
+                                v-model="form.body"
+                                :mode="editorMode"
+                                class="min-h-80"
+                                :has-error="!!form.errors.body"
+                            />
+                        </Field>
+
+                        <!-- Available namespaces as a collapsible hint panel -->
+                        <Panel
+                            v-if="namespaces.length"
+                            :heading="__('Available variables')"
+                            collapsible
+                            :collapsed="true"
+                        >
+                            <ul class="divide-y divide-gray-200 dark:divide-dark-900">
+                                <li
+                                    v-for="ns in namespaces"
+                                    :key="ns"
+                                    class="flex items-center justify-between px-4 py-2 text-sm font-mono"
+                                >
+                                    <span>{{ ns }}</span>
+                                    <Button
+                                        size="xs"
+                                        variant="default"
+                                        :text="__('Copy')"
+                                        icon="copy"
+                                        @click="copyToClipboard('{{ ' + ns + ' }}')"
+                                    />
+                                </li>
+                            </ul>
+                        </Panel>
+                    </div>
+                </Panel>
+            </TabContent>
+
+            <!-- ── Preview tab ─────────────────────────────────────── -->
+            <TabContent value="preview">
+                <Panel>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Field :label="__('Source Type')">
+                                <Select v-model="sourceType">
+                                    <option
+                                        v-for="(label, value) in sourceTypeOptions"
+                                        :key="value"
+                                        :value="value"
+                                    >{{ label }}</option>
+                                </Select>
+                            </Field>
+                        </div>
+
+                        <Field
+                            :label="__('Sample Payload')"
+                            :instructions="__('Provide a JSON object that will be passed as data to the template renderer.')"
+                        >
+                            <CodeEditor
+                                v-model="samplePayload"
+                                mode="json"
+                                class="min-h-48"
+                            />
+                        </Field>
+
+                        <div>
+                            <Button
+                                :text="__('Render preview')"
+                                variant="primary"
+                                :loading="previewing"
+                                icon="play"
+                                @click="runPreview"
+                            />
+                        </div>
+
+                        <!-- Result panel -->
+                        <template v-if="previewResult !== null">
+                            <Panel :heading="__('Rendered output')">
+                                <CodeEditor
+                                    :model-value="previewResult.rendered || ''"
+                                    :mode="editorMode"
+                                    read-only
+                                    class="min-h-32"
+                                />
+                            </Panel>
+
+                            <Panel
+                                v-if="previewResult.issues?.length"
+                                :heading="__('Issues')"
+                            >
+                                <ul class="p-4 space-y-1">
+                                    <li
+                                        v-for="issue in previewResult.issues"
+                                        :key="issue"
+                                        class="text-sm text-red-600 dark:text-red-400"
+                                    >{{ issue }}</li>
+                                </ul>
+                            </Panel>
+                        </template>
+                    </div>
+                </Panel>
+            </TabContent>
+        </Tabs>
+
+        <!-- ── Footer actions ─────────────────────────────────────── -->
+        <div class="mt-6 flex items-center gap-3">
+            <Button
+                v-if="canDelete && deleteUrl"
+                :text="__('Delete')"
+                variant="danger"
+                @click="showDelete = true"
+            />
+            <Button
+                :text="saveLabel"
+                variant="primary"
+                :loading="form.processing"
+                @click="save"
+            />
         </div>
-    </Panel>
 
-    <Panel :heading="__('Body')" class="mb-4">
-        <div class="p-4">
-            <Field :label="__('Template body')" id="body" :required="true" :error="form.errors.body"
-                   :instructions="__('Use tokens like {{ entry:title }} or {{ system:timestamp_iso|default(\'-\') }}.')">
-                <textarea id="body" v-model="form.body" rows="14"
-                          class="input-text w-full font-mono text-sm"
-                          placeholder='{ "id": "{{ entry:id }}", "title": "{{ entry:title }}" }'></textarea>
-            </Field>
-            <div v-if="namespaces.length" class="mt-3 text-xs text-gray-600">
-                <strong>{{ __('Available namespaces:') }}</strong>
-                <code v-for="ns in namespaces" :key="ns" class="ml-2">{{ ns }}</code>
-            </div>
-        </div>
-    </Panel>
-
-    <Panel :heading="__('Preview')" class="mb-4">
-        <div class="p-4">
-            <Field :label="__('Sample payload (JSON)')" id="sample_payload"
-                   :instructions="__('Tokens are resolved against this payload via the registered variable resolvers.')">
-                <textarea id="sample_payload" v-model="samplePayload" rows="6"
-                          class="input-text w-full font-mono text-sm"></textarea>
-            </Field>
-            <div class="mt-3">
-                <Button variant="default" :loading="previewing" @click="runPreview">
-                    {{ __('Render preview') }}
-                </Button>
-            </div>
-            <div v-if="previewResult" class="mt-4 grid grid-cols-1 gap-3">
-                <div>
-                    <h4 class="text-xs uppercase font-semibold text-gray-600 mb-1">{{ __('Rendered output') }}</h4>
-                    <pre class="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto whitespace-pre-wrap">{{ previewResult.rendered || '(empty)' }}</pre>
-                </div>
-                <div v-if="previewResult.issues && previewResult.issues.length">
-                    <h4 class="text-xs uppercase font-semibold text-red-600 mb-1">{{ __('Issues') }}</h4>
-                    <ul class="text-xs text-red-600 list-disc list-inside">
-                        <li v-for="(issue, idx) in previewResult.issues" :key="idx">{{ issue }}</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </Panel>
-
-    <div v-if="!isNew" class="mt-8 flex justify-between">
-        <Button variant="danger" @click="showDelete = true">{{ __('Delete') }}</Button>
-        <Button variant="primary" :loading="form.processing" @click="save">{{ __('Save') }}</Button>
     </div>
 
+    <!-- ── Delete confirmation ────────────────────────────────────── -->
     <ConfirmationModal
-        v-if="!isNew"
-        :open="showDelete"
-        :title="__('Delete template')"
-        :body-text="__('This permanently removes the template. Any outbound webhook that references it by handle will be detached and use its inline payload instead.')"
-        :button-text="__('Delete')"
-        :danger="true"
+        v-if="showDelete"
+        :title="__('Delete Template')"
+        :body-text="__('Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.')"
+        :confirm-text="__('Delete')"
+        danger
         @confirm="destroy"
-        @update:open="showDelete = $event"
+        @cancel="showDelete = false"
     />
 </template>

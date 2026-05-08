@@ -15,47 +15,60 @@ use Statamic\Http\Controllers\CP\CpController;
 
 class TemplateController extends CpController
 {
-    public function index(
-        Request $request,
-        TemplateRepository $repository,
-    ) {
+    // ──────────────────────────────────────────────────────────────────
+    // Listing
+    // ──────────────────────────────────────────────────────────────────
+
+    public function index(Request $request, TemplateRepository $repository)
+    {
         $this->authorizeAny($request, 'manage webhook templates', 'view webhooks');
 
+        // Statamic Listing sends `search` / `perPage`; accept legacy `q` too.
+        $perPage = (int) $request->get('perPage', 25) ?: 25;
+        $search  = $request->get('search', $request->get('q', ''));
+
         $type = $request->get('type');
-        $type = in_array($type, ['outbound_body', 'inbound_response', 'notification'], true) ? $type : null;
+        $type = in_array($type, ['outbound_body', 'inbound_response', 'notification'], true)
+            ? $type
+            : null;
 
-        $templates = $repository->paginate(25, $request->get('q'), $type);
-        $rows = $templates->getCollection()->map(fn (Template $t) => $this->row($t));
+        $templates = $repository->paginate($perPage, $search, $type);
 
+        $rows = $templates->getCollection()
+            ->map(fn (Template $t) => $this->row($t, $request))
+            ->values();
+
+        $listingPayload = [
+            'data' => $rows,
+            'meta' => [
+                'current_page' => $templates->currentPage(),
+                'last_page'    => $templates->lastPage(),
+                'per_page'     => $templates->perPage(),
+                'total'        => $templates->total(),
+                'from'         => $templates->firstItem(),
+                'to'           => $templates->lastItem(),
+            ],
+        ];
+
+        // Statamic's Listing component issues AJAX GETs when search /
+        // sort / page changes — returning JSON avoids a full page reload.
         if ($request->wantsJson()) {
-            return response()->json([
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $templates->currentPage(),
-                    'last_page' => $templates->lastPage(),
-                    'per_page' => $templates->perPage(),
-                    'total' => $templates->total(),
-                ],
-            ]);
+            return response()->json($listingPayload);
         }
 
         return Inertia::render('webhook-manager::Templates/Index', [
-            'templates' => [
-                'data' => $rows,
-                'meta' => [
-                    'current_page' => $templates->currentPage(),
-                    'last_page' => $templates->lastPage(),
-                    'per_page' => $templates->perPage(),
-                    'total' => $templates->total(),
-                ],
-            ],
-            'createUrl' => cp_route('webhook-manager.templates.create'),
-            'canCreate' => (bool) $request->user()?->can('manage webhook templates'),
-            'searchTerm' => $request->get('q', ''),
-            'typeFilter' => $type ?? '',
-            'typeOptions' => $this->typeOptions(),
+            'templates'      => $listingPayload,
+            'initialColumns' => $this->indexColumns(),
+            'listingUrl'     => cp_route('webhook-manager.templates.index'),
+            'actionUrl'      => cp_route('webhook-manager.templates.index'),
+            'createUrl'      => cp_route('webhook-manager.templates.create'),
+            'canCreate'      => (bool) $request->user()?->can('manage webhook templates'),
         ]);
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Create / Store
+    // ──────────────────────────────────────────────────────────────────
 
     public function create(Request $request, VariableResolverRegistry $vars)
     {
@@ -67,13 +80,14 @@ class TemplateController extends CpController
         ]);
 
         return Inertia::render('webhook-manager::Templates/Edit', [
-            'template' => $this->editPayload($template),
+            'template'    => $this->editPayload($template),
             'typeOptions' => $this->typeOptions(),
-            'namespaces' => array_keys($vars->all()),
-            'isNew' => true,
-            'saveUrl' => cp_route('webhook-manager.templates.store'),
-            'previewUrl' => cp_route('webhook-manager.actions.preview-template'),
-            'indexUrl' => cp_route('webhook-manager.templates.index'),
+            'namespaces'  => array_keys($vars->all()),
+            'isNew'       => true,
+            'canDelete'   => false,
+            'saveUrl'     => cp_route('webhook-manager.templates.store'),
+            'previewUrl'  => cp_route('webhook-manager.actions.preview-template'),
+            'indexUrl'    => cp_route('webhook-manager.templates.index'),
         ]);
     }
 
@@ -87,6 +101,10 @@ class TemplateController extends CpController
             ->with('success', __('webhook-manager::messages.template_created'));
     }
 
+    // ──────────────────────────────────────────────────────────────────
+    // Edit / Update
+    // ──────────────────────────────────────────────────────────────────
+
     public function edit(
         Request $request,
         Template $template,
@@ -95,14 +113,15 @@ class TemplateController extends CpController
         $this->authorizeOr403($request, 'manage webhook templates');
 
         return Inertia::render('webhook-manager::Templates/Edit', [
-            'template' => $this->editPayload($template),
+            'template'    => $this->editPayload($template),
             'typeOptions' => $this->typeOptions(),
-            'namespaces' => array_keys($vars->all()),
-            'isNew' => false,
-            'saveUrl' => cp_route('webhook-manager.templates.update', $template),
-            'deleteUrl' => cp_route('webhook-manager.templates.destroy', $template),
-            'previewUrl' => cp_route('webhook-manager.actions.preview-template'),
-            'indexUrl' => cp_route('webhook-manager.templates.index'),
+            'namespaces'  => array_keys($vars->all()),
+            'isNew'       => false,
+            'canDelete'   => (bool) $request->user()?->can('manage webhook templates'),
+            'saveUrl'     => cp_route('webhook-manager.templates.update', $template),
+            'deleteUrl'   => cp_route('webhook-manager.templates.destroy', $template),
+            'previewUrl'  => cp_route('webhook-manager.actions.preview-template'),
+            'indexUrl'    => cp_route('webhook-manager.templates.index'),
         ]);
     }
 
@@ -114,6 +133,10 @@ class TemplateController extends CpController
 
         return back()->with('success', __('webhook-manager::messages.template_updated'));
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Destroy
+    // ──────────────────────────────────────────────────────────────────
 
     public function destroy(Request $request, Template $template, DeleteTemplateAction $delete)
     {
@@ -129,43 +152,107 @@ class TemplateController extends CpController
             ->with('success', $message);
     }
 
-    /** @return array<string,mixed> */
-    protected function row(Template $template): array
+    // ──────────────────────────────────────────────────────────────────
+    // Helpers
+    // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Single row representation for the Listing component.
+     *
+     * All permission and URL fields are pre-computed here so the Vue
+     * template stays logic-free — the same convention as OutboundController.
+     *
+     * @return array
+     */
+    protected function row(Template $template, Request $request): array
     {
+        $canManage = (bool) $request->user()?->can('manage webhook templates');
+
         return [
-            'id' => $template->id,
-            'uuid' => $template->uuid,
-            'name' => $template->name,
-            'handle' => $template->handle,
-            'type' => $template->type,
-            'edit_url' => cp_route('webhook-manager.templates.edit', $template),
+            'id'         => $template->id,
+            'uuid'       => $template->uuid,
+            'name'       => $template->name,
+            'handle'     => $template->handle,
+            'type'       => $template->type,
+            'type_label' => $this->typeOptions()[$template->type] ?? $template->type,
+            'type_color' => $this->typeColor($template->type),
+            'updated_at' => $template->updated_at?->toIso8601String(),
+            'edit_url'   => cp_route('webhook-manager.templates.edit', $template),
             'delete_url' => cp_route('webhook-manager.templates.destroy', $template),
+            'can_edit'   => $canManage,
+            'can_delete' => $canManage,
+            // Templates do not have a duplicate route yet; set to null
+            // and the Vue template will suppress the Dropdown item.
+            'duplicate_url' => null,
         ];
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * Payload passed to the Edit/Create Inertia page.
+     *
+     * @return array
+     */
     protected function editPayload(Template $template): array
     {
         return [
-            'id' => $template->id,
-            'uuid' => $template->uuid,
-            'name' => $template->name,
+            'id'     => $template->id,
+            'uuid'   => $template->uuid,
+            'name'   => $template->name,
             'handle' => $template->handle,
-            'type' => $template->type ?? Template::TYPE_OUTBOUND_BODY,
-            'body' => $template->body ?? '',
-            'meta' => $template->meta ?? null,
+            'type'   => $template->type ?? Template::TYPE_OUTBOUND_BODY,
+            'body'   => $template->body ?? '',
+            'meta'   => $template->meta ?? null,
         ];
     }
 
-    /** @return array<string,string> */
+    /**
+     * Column definitions for the Listing component.
+     * PHP-side definitions keep column labels translatable and let
+     * Statamic's Listing handle sorting / preferences automatically.
+     *
+     * @return array
+     */
+    protected function indexColumns(): array
+    {
+        return [
+            ['handle' => 'name',       'label' => __('Name'),       'visible' => true,  'sortable' => true],
+            ['handle' => 'handle',     'label' => __('Handle'),     'visible' => true,  'sortable' => true],
+            ['handle' => 'type',       'label' => __('Type'),       'visible' => true,  'sortable' => true],
+            ['handle' => 'updated_at', 'label' => __('Updated'),    'visible' => true,  'sortable' => true],
+        ];
+    }
+
+    /**
+     * Human-readable labels for the type Select and Badge.
+     *
+     * @return array
+     */
     protected function typeOptions(): array
     {
         return [
-            Template::TYPE_OUTBOUND_BODY => __('Outbound request body'),
-            Template::TYPE_INBOUND_RESPONSE => __('Inbound response body'),
-            Template::TYPE_NOTIFICATION => __('Notification body'),
+            Template::TYPE_OUTBOUND_BODY      => __('Outbound request body'),
+            Template::TYPE_INBOUND_RESPONSE   => __('Inbound response body'),
+            Template::TYPE_NOTIFICATION       => __('Notification body'),
         ];
     }
+
+    /**
+     * Semantic Badge colours per type.
+     * Kept here (not in Vue) so any server-rendered context (e.g. mail)
+     * can also use the same mapping without duplication.
+     */
+    protected function typeColor(string $type): string
+    {
+        return match ($type) {
+            Template::TYPE_OUTBOUND_BODY    => 'blue',
+            Template::TYPE_NOTIFICATION     => 'amber',
+            default                         => 'gray',
+        };
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Authorization helpers  (same pattern as OutboundController)
+    // ──────────────────────────────────────────────────────────────────
 
     private function authorizeOr403(Request $request, string $ability): void
     {
