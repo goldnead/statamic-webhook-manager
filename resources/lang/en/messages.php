@@ -24,6 +24,11 @@ return [
     'rule_test_succeeded' => 'Rule test succeeded.',
     'rule_test_failed' => 'Rule test failed.',
 
+    'template_created' => 'Template created.',
+    'template_updated' => 'Template updated.',
+    'template_deleted' => 'Template deleted.',
+    'template_deleted_with_detach' => 'Template deleted. :count outbound webhook(s) were detached and now use their inline payload again.',
+
     'errors' => [
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',

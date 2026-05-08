@@ -39,6 +39,12 @@ class SaveOutboundWebhookRequest extends FormRequest
             'auth_config' => ['nullable', 'array'],
             'payload_type' => ['required', Rule::in(['raw_json', 'mapped', 'form'])],
             'payload_template' => ['nullable', 'string'],
+            // Optional reference to a library template; if set, takes precedence
+            // over the inline payload_template (see HttpRequestFactory::buildBody).
+            'payload_template_handle' => [
+                'nullable', 'string', 'max:120',
+                Rule::exists('webhook_templates', 'handle'),
+            ],
             'conditions' => ['nullable', 'array'],
             'retry_strategy' => ['nullable', 'array'],
             'retry_strategy.strategy' => ['nullable', Rule::in(['none', 'linear', 'exponential'])],
@@ -53,6 +59,12 @@ class SaveOutboundWebhookRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($v) {
+            // Skip inline-body validation when the hook delegates to a
+            // library template — that body is validated on the Template
+            // edit screen instead.
+            if ((string) $this->input('payload_template_handle', '') !== '') {
+                return;
+            }
             $template = (string) $this->input('payload_template', '');
             if ($template === '') {
                 return;

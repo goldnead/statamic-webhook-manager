@@ -7,10 +7,12 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DeleteOutboundWebhook
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\ToggleOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\UpdateOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveOutboundWebhookRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
+use Goldnead\WebhookManager\Repositories\TemplateRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -57,8 +59,12 @@ class OutboundController extends CpController
         ]);
     }
 
-    public function create(Request $request, TriggerRegistry $triggers, AuthSchemeRegistry $auth)
-    {
+    public function create(
+        Request $request,
+        TriggerRegistry $triggers,
+        AuthSchemeRegistry $auth,
+        TemplateRepository $templates,
+    ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
         $hook = new OutboundWebhook([
@@ -76,6 +82,7 @@ class OutboundController extends CpController
             'webhook' => $this->editPayload($hook),
             'triggerOptions' => $triggers->options(),
             'authOptions' => $auth->options(),
+            'availableTemplates' => $this->availableTemplates($templates),
             'isNew' => true,
             'saveUrl' => cp_route('webhook-manager.outbound.store'),
             'indexUrl' => cp_route('webhook-manager.outbound.index'),
@@ -98,6 +105,7 @@ class OutboundController extends CpController
         OutboundWebhook $webhook,
         TriggerRegistry $triggers,
         AuthSchemeRegistry $auth,
+        TemplateRepository $templates,
     ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
@@ -105,6 +113,7 @@ class OutboundController extends CpController
             'webhook' => $this->editPayload($webhook),
             'triggerOptions' => $triggers->options(),
             'authOptions' => $auth->options(),
+            'availableTemplates' => $this->availableTemplates($templates),
             'isNew' => false,
             'saveUrl' => cp_route('webhook-manager.outbound.update', $webhook),
             'deleteUrl' => cp_route('webhook-manager.outbound.destroy', $webhook),
@@ -190,11 +199,28 @@ class OutboundController extends CpController
             'auth_configured' => ! empty($hook->auth_config),
             'payload_type' => $hook->payload_type ?? 'raw_json',
             'payload_template' => $hook->payload_template,
+            'payload_template_handle' => $hook->payload_template_handle,
             'conditions' => $hook->conditions ?? null,
             'queue_enabled' => (bool) ($hook->queue_enabled ?? true),
             'log_body_mode' => $hook->log_body_mode ?? 'partial',
             'retry_strategy' => $hook->retry_strategy ?? null,
         ];
+    }
+
+    /**
+     * Map of `handle => "Name (handle)"` for the library template picker
+     * in the Outbound edit screen. Filtered to outbound-body templates so
+     * a notification template can't accidentally be wired to an HTTP body.
+     *
+     * @return array<string,string>
+     */
+    protected function availableTemplates(TemplateRepository $templates): array
+    {
+        $opts = [];
+        foreach ($templates->ofType(Template::TYPE_OUTBOUND_BODY) as $template) {
+            $opts[$template->handle] = $template->name.' ('.$template->handle.')';
+        }
+        return $opts;
     }
 
     /**

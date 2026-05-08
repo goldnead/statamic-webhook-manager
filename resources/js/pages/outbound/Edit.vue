@@ -8,6 +8,7 @@ const props = defineProps({
     webhook: { type: Object, required: true },
     triggerOptions: { type: Object, required: true },
     authOptions: { type: Object, required: true },
+    availableTemplates: { type: Object, default: () => ({}) },
     isNew: { type: Boolean, default: false },
     saveUrl: { type: String, required: true },
     deleteUrl: { type: String, default: null },
@@ -30,9 +31,22 @@ const form = useForm({
     auth_config_json: '',
     payload_type: props.webhook.payload_type ?? 'raw_json',
     payload_template: props.webhook.payload_template ?? '',
+    payload_template_handle: props.webhook.payload_template_handle ?? '',
     queue_enabled: props.webhook.queue_enabled ?? true,
     log_body_mode: props.webhook.log_body_mode ?? 'partial',
 });
+
+// Body source: 'inline' uses the textarea below, 'library' picks an
+// existing webhook_templates entry. Persisting both is allowed; the
+// renderer prefers the library entry (see HttpRequestFactory::buildBody).
+const bodySource = ref(form.payload_template_handle ? 'library' : 'inline');
+
+function onBodySourceChange(value) {
+    bodySource.value = value;
+    if (value === 'inline') {
+        form.payload_template_handle = '';
+    }
+}
 
 const showDelete = ref(false);
 const testing = ref(false);
@@ -185,7 +199,38 @@ function destroy() {
                     <option value="form">{{ __('Form encoded') }}</option>
                 </select>
             </Field>
-            <Field :label="__('Template')" id="payload_template" :error="form.errors.payload_template"
+
+            <Field :label="__('Body source')" id="body_source"
+                   :instructions="__('Use an inline template, or pick a reusable template from the library. Library templates win when both are set.')">
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="body_source" value="inline"
+                               :checked="bodySource === 'inline'"
+                               @change="onBodySourceChange('inline')" />
+                        <span>{{ __('Inline template') }}</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="body_source" value="library"
+                               :checked="bodySource === 'library'"
+                               :disabled="!Object.keys(availableTemplates).length"
+                               @change="onBodySourceChange('library')" />
+                        <span>{{ __('Library template') }}</span>
+                    </label>
+                </div>
+            </Field>
+
+            <Field v-if="bodySource === 'library'" :label="__('Library template')" id="payload_template_handle"
+                   :error="form.errors.payload_template_handle"
+                   :instructions="!Object.keys(availableTemplates).length
+                       ? __('No outbound-body templates yet. Create one under Webhooks → Templates first.')
+                       : __('Pick a reusable outbound-body template. The renderer will load and render it on each delivery.')">
+                <select id="payload_template_handle" v-model="form.payload_template_handle" class="input-text">
+                    <option value="">{{ __('— Pick a template —') }}</option>
+                    <option v-for="(label, handle) in availableTemplates" :key="handle" :value="handle">{{ label }}</option>
+                </select>
+            </Field>
+
+            <Field v-else :label="__('Template')" id="payload_template" :error="form.errors.payload_template"
                    :instructions="__('Use tokens like {{ entry:title }}, {{ system:timestamp_iso }}.')">
                 <textarea id="payload_template" v-model="form.payload_template" rows="10"
                           class="input-text w-full font-mono text-sm"></textarea>
