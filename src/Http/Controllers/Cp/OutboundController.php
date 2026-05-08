@@ -62,7 +62,13 @@ class OutboundController extends CpController
             'webhooks' => $listingPayload,
             'initialColumns' => $this->indexColumns(),
             'listingUrl' => cp_route('webhook-manager.outbound.index'),
-            'actionUrl' => cp_route('webhook-manager.outbound.actions') ?? cp_route('webhook-manager.outbound.index'),
+            // No dedicated bulk-actions endpoint yet — point at the index
+            // route so <Listing> can issue its AJAX refresh against it,
+            // and the bulk-actions dropdown stays empty until we add a
+            // real `actions.run` controller (v2). cp_route() THROWS for
+            // unknown route names, so we cannot use it inside a `??`
+            // chain — keep it pointing at a real route.
+            'actionUrl' => cp_route('webhook-manager.outbound.index'),
             'createUrl' => cp_route('webhook-manager.outbound.create'),
             'canCreate' => (bool) $request->user()?->can('manage outbound webhooks'),
             'searchTerm' => $search,
