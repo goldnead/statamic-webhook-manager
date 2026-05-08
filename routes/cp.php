@@ -36,6 +36,12 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::prefix('rules')->name('rules.')->group(function () {
         Route::get('/', [RuleController::class, 'index'])->name('index');
+        Route::get('/create', [RuleController::class, 'create'])->name('create');
+        Route::post('/', [RuleController::class, 'store'])->name('store');
+        Route::get('/{rule}', [RuleController::class, 'edit'])->name('edit');
+        Route::patch('/{rule}', [RuleController::class, 'update'])->name('update');
+        Route::delete('/{rule}', [RuleController::class, 'destroy'])->name('destroy');
+        Route::patch('/{rule}/toggle', [RuleController::class, 'toggle'])->name('toggle');
     });
 
     Route::prefix('deliveries')->name('deliveries.')->group(function () {

@@ -211,6 +211,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         /** @var InboundActionHandlerRegistry $inboundActions */
         $inboundActions = $this->app->make(InboundActionHandlerRegistry::class);
         $inboundActions->registerDefaults();
+
+        /** @var ActionRegistry $actions */
+        $actions = $this->app->make(ActionRegistry::class);
+        $actions->registerDefaults();
     }
 
     protected function bootWebhookPublishables(): void

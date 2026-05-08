@@ -5,6 +5,99 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — Rule engine
+
+The rule engine moves from no-op stub to fully functional. Rules can
+now compose triggers with `When → If → Then` semantics: a trigger
+fires, the condition tree is evaluated, and a configurable list of
+actions executes (with optional stop-on-failure).
+
+### Added
+
+- **Nine built-in rule actions** under `src/Actions/`, all implementing
+  `ActionInterface`:
+  - `send_outbound_webhook` — fire an existing outbound webhook by handle
+  - `create_entry` / `update_entry` — Statamic entries via `Statamic\Facades\Entry`
+  - `create_form_submission` — `Statamic\Facades\Form` submission
+  - `dispatch_event` — generic Laravel event dispatch (FQCN or string)
+  - `send_email` — `Mail::raw` notification
+  - `send_slack_webhook` — `Http::post` to Slack/Discord-compatible webhook URLs
+  - `set_field_value` — single-field entry update with literal or path-sourced value
+  - `write_log_note` — structured `SystemLogger` entry
+- **`RuleEngine`** is no longer a stub. Loads `RuleRepository::activeForTrigger`,
+  evaluates each rule's condition tree via `ConditionEvaluator`, runs
+  the action chain via `ActionExecutor` and aggregates per-rule results
+  into `ExecutionResult`s with structured action breakdowns. The engine
+  also exposes `evaluateOne()` so the CP "Test rule" path can run a
+  single rule against a synthetic context.
+- **`Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction`** — extracted
+  the snapshot+queue/sync logic that was private to `TriggerDispatcher`
+  so the new `SendOutboundWebhookAction` re-uses the same code path.
+- **Five domain actions** for rule CRUD: `Create`, `Update`, `Delete`,
+  `Toggle`, `Test`.
+- **Repository.** `RuleRepository::paginate(int, ?string)`, `find()`,
+  `findByUuid()` to mirror `OutboundWebhookRepository` / `InboundEndpointRepository`.
+- **CP CRUD.** `Cp\RuleController` grows from listing-only to full
+  CRUD (`index/create/store/edit/update/destroy/toggle`).
+  `Cp\Actions\TestRuleController` powers the in-page Test panel.
+- **Routes.** `routes/cp.php` adds the rules CRUD routes;
+  `routes/actions.php` adds `actions.test-rule`.
+- **i18n.** `rule_*` notices for CRUD success messages and
+  `errors.rule_*` for execution failures.
+- **Vue pages.** `pages/rules/Index.vue` is a real list view (search,
+  status badges, action count, order index).
+  `Edit.vue` ships as a sectioned form (Identity / Trigger /
+  Conditions / Actions / Test) with a JSON editor for the condition
+  tree and the action list, plus a Test panel that runs a single
+  rule against a sample payload and shows the per-action outcome.
+- **`ActionRegistry::registerDefaults()`** — built-in actions are
+  resolved through the container so dependencies (repositories,
+  `DispatchOutboundWebhookAction`, `SystemLogger`) are wired
+  automatically.
+- **Tests.**
+  - `tests/Unit/Rules/ConditionEvaluatorTest.php` — leaf operators,
+    AND/OR groups, nested groups, in/not_in, contains/exists/empty,
+    numeric comparisons, regex, the `site/locale/trigger/replay`
+    field shortcuts.
+  - `tests/Unit/Rules/RuleEngineTest.php` — disabled rules, failing
+    conditions, ordered action execution, unknown-handle failure,
+    stop-on-failure short-circuit.
+  - `tests/Feature/RuleExecutesMultipleActionsTest.php` — full
+    `TriggerDispatcher → RuleEngine` path with the `write_log_note`
+    handler. Asserts ordering, trigger filtering, stop-on-failure,
+    and `order_index` ordering.
+
+### Changed
+
+- `Services\TriggerDispatcher` no longer holds the snapshot+dispatch
+  logic itself — it delegates to `DispatchOutboundWebhookAction`.
+  Rules now evaluate **before** direct outbound resolution, so
+  rules can dispatch additional outbound webhooks via
+  `send_outbound_webhook` if needed. Direct-attached hooks are
+  unaffected (PRD §39 REVIEW: hooks remain a separate dispatch path
+  rather than a special-case rule).
+- `WebhookManagerServiceProvider::bootRegistries()` now calls
+  `ActionRegistry::registerDefaults()`.
+
+### Removed
+
+- `messages.errors.rule_engine_not_implemented` translation key — the
+  engine is implemented; specific error keys
+  (`rule_unknown_action`, `rule_invalid_conditions`) replace it.
+
+### TODO: REVIEW
+
+- The condition / action editors are JSON-first (PRD §29 explicitly
+  allows this). A visual condition builder and a per-action form
+  generator remain v2 candidates.
+- Rule actions that touch Statamic facades (`create_entry`,
+  `update_entry`, `set_field_value`, `create_form_submission`)
+  catch and surface throws but do not classify them. v2: feed into
+  the same `FailureClassifier` the delivery engine uses.
+- `SendEmailAction` ships text-only. Once the template module has a
+  rendering API on the public surface, accept a template handle
+  instead of pre-rendered body.
+
 ## [0.3.0] — Inbound endpoints
 
 The inbound module is now fully wired through. The public-facing

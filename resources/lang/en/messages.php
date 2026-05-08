@@ -16,8 +16,15 @@ return [
     'endpoint_enabled' => 'Endpoint enabled.',
     'endpoint_disabled' => 'Endpoint disabled.',
 
+    'rule_created' => 'Rule created.',
+    'rule_updated' => 'Rule updated.',
+    'rule_deleted' => 'Rule deleted.',
+    'rule_enabled' => 'Rule enabled.',
+    'rule_disabled' => 'Rule disabled.',
+    'rule_test_succeeded' => 'Rule test succeeded.',
+    'rule_test_failed' => 'Rule test failed.',
+
     'errors' => [
-        'rule_engine_not_implemented' => 'Rule engine is not yet implemented in this build.',
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',
         'unsupported_method' => 'HTTP method :method is not supported.',
@@ -28,6 +35,8 @@ return [
         'inbound_bad_request' => 'Bad request.',
         'inbound_replay_blocked' => 'Duplicate request blocked by replay protection.',
         'inbound_mapping_failed' => 'Mapping failed.',
+        'rule_unknown_action' => 'Unknown action handler: :handle',
+        'rule_invalid_conditions' => 'Invalid condition tree.',
     ],
 
     'failure_types' => [
