@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
 import { Header, Button, Panel, Field, Input, Badge, Alert, ConfirmationModal } from '@statamic/cms/ui';
+import ConditionGroup from '../../components/rules/ConditionGroup.vue';
 
 const props = defineProps({
     rule: { type: Object, required: true },
@@ -40,11 +41,57 @@ const form = useForm({
     order_index: props.rule.order_index ?? 0,
 });
 
-// Editor state for the JSON textareas
+// Editor state. Conditions have two editor modes:
+//   - 'builder' (default): the ConditionGroup component drives a tree.
+//   - 'json':    raw JSON textarea for power users who want to paste a
+//                tree from another rule or hand-edit beyond what the
+//                builder offers.
+// Actions stay JSON-only — a per-action form generator is a v2 candidate.
+const conditionMode = ref('builder');
+const conditionTree = ref(normaliseTree(form.conditions));
 const conditionsJson = ref(jsonOrEmpty(form.conditions));
-const actionsJson = ref(jsonOrEmpty(form.actions));
 const conditionsError = ref('');
+
+const actionsJson = ref(jsonOrEmpty(form.actions));
 const actionsError = ref('');
+
+function normaliseTree(value) {
+    // The builder always works on a root group node. If an existing
+    // rule has a single leaf at the top, wrap it; if it's missing,
+    // start with an empty AND group.
+    if (!value) {
+        return { logic: 'and', conditions: [] };
+    }
+    if (Array.isArray(value.conditions)) {
+        return { logic: value.logic ?? 'and', conditions: value.conditions };
+    }
+    // Top-level leaf — wrap it
+    return { logic: 'and', conditions: [value] };
+}
+
+function treeOrNull(tree) {
+    // Empty root group means "no conditions" — stored as null so the
+    // PHP-side ConditionEvaluator returns true for every trigger.
+    if (!tree || !Array.isArray(tree.conditions) || tree.conditions.length === 0) {
+        return null;
+    }
+    return tree;
+}
+
+function toggleMode(next) {
+    conditionsError.value = '';
+    if (next === 'json' && conditionMode.value === 'builder') {
+        conditionsJson.value = jsonOrEmpty(treeOrNull(conditionTree.value));
+    } else if (next === 'builder' && conditionMode.value === 'json') {
+        const parsed = jsonOrNull(conditionsJson.value);
+        if (parsed === undefined) {
+            conditionsError.value = __('Invalid JSON — fix it before switching back to the builder.');
+            return;
+        }
+        conditionTree.value = normaliseTree(parsed);
+    }
+    conditionMode.value = next;
+}
 
 const showDelete = ref(false);
 const testing = ref(false);
@@ -59,11 +106,20 @@ function syncJsonInputs() {
     conditionsError.value = '';
     actionsError.value = '';
 
-    if (conditionsJson.value.trim() === '') {
-        form.conditions = null;
+    // Conditions: pull from whichever editor is active.
+    if (conditionMode.value === 'builder') {
+        form.conditions = treeOrNull(conditionTree.value);
     } else {
-        try { form.conditions = JSON.parse(conditionsJson.value); }
-        catch (e) { conditionsError.value = __('Invalid JSON in conditions.'); return false; }
+        if (conditionsJson.value.trim() === '') {
+            form.conditions = null;
+        } else {
+            const parsed = jsonOrNull(conditionsJson.value);
+            if (parsed === undefined) {
+                conditionsError.value = __('Invalid JSON in conditions.');
+                return false;
+            }
+            form.conditions = parsed;
+        }
     }
 
     if (actionsJson.value.trim() === '') {
@@ -170,19 +226,53 @@ function destroy() {
     </Panel>
 
     <Panel :heading="__('Conditions')" class="mb-4">
-        <Field :label="__('Condition tree (JSON)')" id="conditions_json" class="p-4"
-               :error="conditionsError"
-               :instructions="__('Optional. AND/OR groups of leaf conditions. Leave empty to always match.')">
-            <textarea id="conditions_json" v-model="conditionsJson" rows="8"
-                      class="input-text w-full font-mono text-sm"
-                      :placeholder='`{
+        <div class="p-4 space-y-3">
+            <!-- Mode toggle -->
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-600">
+                    {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
+                </p>
+                <div class="inline-flex rounded border border-gray-300 overflow-hidden text-xs">
+                    <button type="button"
+                            class="px-3 py-1"
+                            :class="conditionMode === 'builder'
+                                ? 'bg-gray-900 text-white'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                            @click="toggleMode('builder')">
+                        {{ __('Builder') }}
+                    </button>
+                    <button type="button"
+                            class="px-3 py-1 border-l border-gray-300"
+                            :class="conditionMode === 'json'
+                                ? 'bg-gray-900 text-white'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                            @click="toggleMode('json')">
+                        {{ __('JSON') }}
+                    </button>
+                </div>
+            </div>
+
+            <Alert v-if="conditionsError" variant="error" :text="conditionsError" />
+
+            <!-- Visual builder -->
+            <ConditionGroup
+                v-if="conditionMode === 'builder'"
+                v-model="conditionTree"
+                :is-root="true"
+            />
+
+            <!-- Raw JSON for power users -->
+            <Field v-else :label="__('Condition tree (JSON)')" id="conditions_json">
+                <textarea id="conditions_json" v-model="conditionsJson" rows="10"
+                          class="input-text w-full font-mono text-sm"
+                          :placeholder='`{
   &quot;logic&quot;: &quot;and&quot;,
   &quot;conditions&quot;: [
-    { &quot;field&quot;: &quot;data.status&quot;, &quot;op&quot;: &quot;equals&quot;, &quot;value&quot;: &quot;approved&quot; },
-    { &quot;field&quot;: &quot;site&quot;, &quot;op&quot;: &quot;equals&quot;, &quot;value&quot;: &quot;default&quot; }
+    { &quot;field&quot;: &quot;data.status&quot;, &quot;op&quot;: &quot;equals&quot;, &quot;value&quot;: &quot;approved&quot; }
   ]
 }`'></textarea>
-        </Field>
+            </Field>
+        </div>
     </Panel>
 
     <Panel :heading="__('Actions')" class="mb-4">
