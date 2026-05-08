@@ -5,6 +5,87 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — Polish: visual condition builder + failure classification
+
+Two PRD §29 / §54 polish items that were left as TODO REVIEW during
+the v0.3 → v0.5 functional rollout:
+
+### Added
+
+- **Visual condition builder for rules.** Two new Vue components,
+  `components/rules/ConditionRow.vue` (single field/op/value leaf) and
+  `components/rules/ConditionGroup.vue` (recursive AND/OR group with
+  arbitrary nesting). The Rules edit screen now defaults to the
+  builder; a Builder/JSON toggle keeps the raw textarea around for
+  power users who want to paste a tree from another rule. Switching
+  modes round-trips through the same JSON shape the
+  `ConditionEvaluator` accepts, so no transform layer was added
+  between the UI and the engine.
+- **Failure classification for rule actions.** New
+  `FailureClassifier::classifyException(Throwable): string` maps caught
+  throws to the eight PRD §12.5 categories (network / timeout / auth /
+  client / server / payload / configuration / internal). Recognised:
+  `InvalidArgumentException`, `TypeError`, `ValueError`,
+  `JsonException`, `Illuminate\Validation\ValidationException` →
+  `payload`; `QueryException`, `ModelNotFoundException`,
+  `BindingResolutionException` → `configuration`;
+  Auth/Authorisation exceptions → `auth`; HTTP client connection /
+  request exceptions → `network`. Everything else falls back to
+  `internal`.
+- **`error_type` surfaced in rule execution metadata.**
+  `ActionExecutor` now classifies caught exceptions via the new
+  classifier method and tags failed `ExecutionResult.data` with
+  `{ handle, error_type, exception }`. Clean `ExecutionResult::fail()`
+  returns from a handler that didn't tag `error_type` itself default
+  to `payload` (the canonical "missing required config field" path).
+  `RuleEngine::evaluateOne` lifts `error_type` and `handle` to the top
+  of each per-action entry in `ExecutionResult.data['actions']` so the
+  CP test panel can render them as distinct badges.
+- **Dangling library template handles are no longer silent.**
+  `HttpRequestFactory::buildBody` now writes a structured
+  `SystemLogger::warning('configuration_error_dangling_template', …)`
+  entry whenever an outbound hook's `payload_template_handle`
+  references a non-existent or empty template. Delivery still
+  proceeds against the inline-or-default fallback so a misconfigured
+  hook doesn't drop traffic, but operators reviewing the CP logs see
+  exactly which hook references which missing template.
+
+### Changed
+
+- `Rules\ActionExecutor` constructor takes the `FailureClassifier` as
+  a second dependency. The container injects automatically; this is a
+  backwards-compatible change for external callers (no public surface
+  changes).
+- `Services\Http\HttpRequestFactory` constructor takes the
+  `Services\Logging\SystemLogger` as a fourth dependency for the
+  configuration-error log emission. Same: container-injected, no
+  public surface changes.
+
+### Tests
+
+- `tests/Unit/Services/FailureClassifierTest.php` extended with six
+  new cases for `classifyException`: `InvalidArgumentException`,
+  `TypeError`, `ValueError`, `JsonException`, default `RuntimeException`
+  / `LogicException` → `internal`.
+- `tests/Unit/Rules/RuleEngineTest.php` extended: unknown-handle path
+  asserts `error_type = configuration` and the resolved handle echoes
+  back; clean-fail handler path (`create_entry` with no `collection`)
+  asserts `error_type = payload` and `handle = create_entry`.
+- `tests/Feature/OutboundUsesLibraryTemplateTest.php` extended with
+  a dangling-template assertion that checks the new
+  `configuration_error_dangling_template` log row is written with the
+  right level/context/error_type.
+
+### TODO: REVIEW (still)
+
+- Per-handler form generators in the Rules action list (it's still a
+  JSON array — the visual builder is conditions-only). Reasonable v2
+  candidate once handler-config schemas are formalised.
+- The `error_type` is shown in the rule test panel but is not yet
+  surfaced as a filter on the Logs / Deliveries listings. Filter UI is
+  cheap to add once we know which categories operators actually
+  filter by.
+
 ## [0.5.0] — Templates CRUD + outbound library reuse
 
 Templates move from "renderer is usable but UI is a placeholder" to a
