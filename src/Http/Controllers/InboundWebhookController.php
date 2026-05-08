@@ -10,13 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
- * Inbound endpoint controller.
+ * Public-facing inbound webhook controller.
  *
- * TODO: REVIEW — endpoint resolution, auth verification, parsing, mapping
- * and action dispatch are wired through but currently return
- * 501 Not Implemented. The full pipeline is on the iterative roadmap and
- * the surrounding services (InboundRequestProcessor, mapping engine,
- * auth verifiers) are already implemented.
+ * Thin: resolves the endpoint, then delegates the entire pipeline
+ * (auth → parse → replay → map → action → response) to the
+ * `InboundRequestProcessor`. Errors are produced uniformly by the
+ * processor — this controller never builds bespoke responses except
+ * for the lookup-failure case (404).
  */
 class InboundWebhookController extends Controller
 {
@@ -32,6 +32,12 @@ class InboundWebhookController extends Controller
         $endpoint = $this->endpoints->findByHandle($handle);
 
         if (! $endpoint || ! $endpoint->enabled) {
+            $this->logger->warning('inbound_endpoint_not_found',
+                "Inbound request for unknown or disabled endpoint '{$handle}'.", [
+                    'handle' => $handle,
+                    'method' => $request->method(),
+                ]);
+
             return response()->json([
                 'ok' => false,
                 'error' => 'Endpoint not found or disabled.',
@@ -41,12 +47,9 @@ class InboundWebhookController extends Controller
         $this->logger->info('inbound_received', "Inbound request for {$handle}", [
             'endpoint_id' => $endpoint->id,
             'method' => $request->method(),
+            'content_length' => strlen((string) $request->getContent()),
         ]);
 
-        // TODO: REVIEW — flip on once the inbound flow ships.
-        return response()->json([
-            'ok' => false,
-            'error' => __('webhook-manager::messages.errors.inbound_not_implemented'),
-        ], 501);
+        return $this->processor->process($request, $endpoint);
     }
 }

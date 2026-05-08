@@ -15,6 +15,7 @@ import LogsIndex from './pages/logs/Index.vue';
 import SettingsIndex from './pages/settings/Index.vue';
 import DebugIndex from './pages/debug/Index.vue';
 import InboundIndex from './pages/inbound/Index.vue';
+import InboundEdit from './pages/inbound/Edit.vue';
 import RulesIndex from './pages/rules/Index.vue';
 import TemplatesIndex from './pages/templates/Index.vue';
 
@@ -28,6 +29,7 @@ Statamic.booting(() => {
     Statamic.$inertia.register('webhook-manager::Settings/Index', SettingsIndex);
     Statamic.$inertia.register('webhook-manager::Debug/Index', DebugIndex);
     Statamic.$inertia.register('webhook-manager::Inbound/Index', InboundIndex);
+    Statamic.$inertia.register('webhook-manager::Inbound/Edit', InboundEdit);
     Statamic.$inertia.register('webhook-manager::Rules/Index', RulesIndex);
     Statamic.$inertia.register('webhook-manager::Templates/Index', TemplatesIndex);
 });

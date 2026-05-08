@@ -5,12 +5,14 @@ namespace Goldnead\WebhookManager;
 use Goldnead\WebhookManager\Contracts\ActionInterface;
 use Goldnead\WebhookManager\Contracts\AuthVerifierInterface;
 use Goldnead\WebhookManager\Contracts\ConditionInterface;
+use Goldnead\WebhookManager\Contracts\InboundActionHandlerInterface;
 use Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface;
 use Goldnead\WebhookManager\Contracts\TemplateVariableResolverInterface;
 use Goldnead\WebhookManager\Contracts\TriggerInterface;
 use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\ConditionRegistry;
+use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
@@ -32,6 +34,7 @@ class WebhookManager
         protected AuthSchemeRegistry $authSchemes,
         protected VariableResolverRegistry $variableResolvers,
         protected SuccessEvaluatorRegistry $successEvaluators,
+        protected InboundActionHandlerRegistry $inboundActionHandlers,
     ) {
     }
 
@@ -71,6 +74,12 @@ class WebhookManager
         return $this;
     }
 
+    public function registerInboundActionHandler(InboundActionHandlerInterface $handler): self
+    {
+        $this->inboundActionHandlers->register($handler);
+        return $this;
+    }
+
     public function triggers(): TriggerRegistry
     {
         return $this->triggers;
@@ -99,5 +108,10 @@ class WebhookManager
     public function successEvaluators(): SuccessEvaluatorRegistry
     {
         return $this->successEvaluators;
+    }
+
+    public function inboundActionHandlers(): InboundActionHandlerRegistry
+    {
+        return $this->inboundActionHandlers;
     }
 }

@@ -5,6 +5,86 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — Inbound endpoints
+
+The inbound module is now fully wired through. The public-facing
+`InboundWebhookController` no longer returns 501 — incoming requests
+flow through `auth → parse → replay → map → action → response` and
+the action layer ships with seven built-in handlers covering the
+common Statamic content sinks plus a generic event/audit-log path.
+
+### Added
+
+- **Inbound action layer.** New `InboundActionHandlerInterface` registry
+  and seven built-in handlers under `Domain\InboundEndpoint\Handlers\`:
+  `noop`, `create_entry`, `update_entry`, `upsert_entry`,
+  `create_form_submission`, `dispatch_event`, `audit_log`.
+- **Inbound request processor.** `Services\Inbound\InboundRequestProcessor`
+  orchestrates the full pipeline (method allowlist → payload size →
+  auth → content-type parse → replay protection → mapping →
+  action dispatch → response builder) with structured `SystemLogger`
+  entries on every failure.
+- **Inbound action dispatcher.** `Services\Inbound\InboundActionDispatcher`
+  resolves the configured `action_type` against the handler registry,
+  catches handler exceptions, and returns a uniform
+  `{ok, message, data}` shape.
+- **Inbound domain actions:** `Create`, `Update`, `Delete`, `Toggle`,
+  `Test` for endpoint CRUD; `Test` runs the mapping + action layer
+  against a sample payload, bypassing HTTP auth and replay protection.
+- **CP CRUD for inbound endpoints.** `Cp\InboundController` now
+  exposes `index/create/store/edit/update/destroy/toggle`.
+  `Cp\Actions\TestInboundController` powers the in-page test panel.
+- **Vue pages.** `resources/js/pages/inbound/Index.vue` is now a real
+  list view with search, status badges and a create button.
+  `Edit.vue` ships as a sectioned form (Identity / Endpoint / Auth /
+  Mapping / Action / Response) plus a Test panel that previews the
+  mapped payload and the action result inline.
+- **Public extension API.** `WebhookManager::registerInboundActionHandler()`
+  for third parties to ship custom handlers.
+- **Routes.** `routes/cp.php` extended with the inbound CRUD routes;
+  `routes/actions.php` adds `actions.test-inbound`.
+- **Repository.** `InboundEndpointRepository::paginate(int, ?string)`,
+  `find()`, `findByUuid()` for the CP listing and lookups.
+- **i18n.** `endpoint_*` messages for CRUD success notices and
+  `inbound_*` error messages for pipeline failures.
+- **Tests.**
+  - `tests/Unit/Mappers/MappingEngineTest.php` — dot notation, array
+    indices, defaults, required errors, transforms, type coercion.
+  - `tests/Feature/InboundEndpointDispatchesActionTest.php` — full
+    pipeline with `audit_log` action, plus 404/405/422 paths.
+  - `tests/Feature/InboundEndpointRejectsInvalidSignatureTest.php` —
+    HMAC valid/invalid/missing, plus static-header rejection.
+
+### Changed
+
+- `InboundWebhookController` is now thin — endpoint resolution stays in
+  the controller, the rest delegates to `InboundRequestProcessor`.
+- `InboundActionDispatcher` is no longer a stub; it dispatches via the
+  new handler registry and uniformly logs failures.
+- `WebhookManagerServiceProvider` binds the
+  `InboundActionHandlerRegistry` singleton, registers built-in handlers
+  on boot, and registers the `ReplayProtectionService` with the cache
+  store + configurable TTL.
+
+### Removed
+
+- `messages.errors.inbound_not_implemented` translation key — the
+  pipeline is implemented; specific error keys
+  (`inbound_unauthorized`, `inbound_method_not_allowed`,
+  `inbound_payload_too_large`, …) replace it.
+
+### TODO: REVIEW
+
+- `create_entry` / `update_entry` / `upsert_entry` handlers leave slug
+  collision handling to Statamic (PRD §23). A v2 candidate is to
+  classify the failure and surface a richer response.
+- The mapping editor in the CP is JSON-first (PRD §43 explicitly
+  allows this for v1). A visual mapping builder remains a v2
+  candidate.
+- Per-endpoint rate limiting is configurable in the schema
+  (`rate_limit_config`) but not yet enforced — pending the rules
+  iteration which shares the limiter.
+
 ## [0.2.0] — Statamic 6 / Inertia + Vue migration
 
 ### Changed (breaking)
