@@ -171,6 +171,15 @@ const samplePayload = ref('{\n  "id": 1,\n  "title": "Sample"\n}');
 const activeTab = ref('general');
 const showDelete = ref(false);
 
+// Statamic's <Select> wraps <Combobox>, which expects `:options` as an
+// Array of { value, label } objects — not nested HTML <option> tags.
+function objectToOptions(obj) {
+    if (!obj || typeof obj !== 'object') return [];
+    return Object.entries(obj).map(([value, label]) => ({ value, label }));
+}
+
+const triggerOptionsArray = computed(() => objectToOptions(props.triggerOptions));
+
 const pageTitle = computed(() =>
     props.isNew ? __('Create rule') : (props.rule.name || __('Rule'))
 );
@@ -412,11 +421,7 @@ async function runTest() {
                             :error="form.errors.trigger_type"
                             :instructions="__('The internal event that fires this rule.')"
                         >
-                            <Select id="trigger_type" v-model="form.trigger_type">
-                                <option v-for="(label, value) in triggerOptions" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
-                            </Select>
+                            <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
 
                         <Field

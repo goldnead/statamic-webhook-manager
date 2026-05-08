@@ -62,13 +62,22 @@ const previewResult = ref(null);
 const samplePayload = ref('{\n    "id": 1,\n    "title": "Sample entry",\n    "site": "default"\n}');
 const sourceType    = ref('entry');
 
-const sourceTypeOptions = {
-    entry:      'Entry',
-    user:       'User',
-    term:       'Term',
-    asset:      'Asset',
-    collection: 'Collection',
-};
+// Statamic's <Select> wraps <Combobox>, which expects `:options` as an
+// Array of { value, label } objects — not nested HTML <option> tags.
+const sourceTypeOptions = [
+    { value: 'entry',      label: __('Entry') },
+    { value: 'user',       label: __('User') },
+    { value: 'term',       label: __('Term') },
+    { value: 'asset',      label: __('Asset') },
+    { value: 'collection', label: __('Collection') },
+];
+
+function objectToOptions(obj) {
+    if (!obj || typeof obj !== 'object') return [];
+    return Object.entries(obj).map(([value, label]) => ({ value, label }));
+}
+
+const typeOptionsArray = computed(() => objectToOptions(props.typeOptions));
 
 // ── Computed ──────────────────────────────────────────────────────────
 const pageTitle = computed(() =>
@@ -238,13 +247,7 @@ function copyToClipboard(text) {
                             :error="form.errors.type"
                             required
                         >
-                            <Select v-model="form.type" :has-error="!!form.errors.type">
-                                <option
-                                    v-for="(label, value) in typeOptions"
-                                    :key="value"
-                                    :value="value"
-                                >{{ label }}</option>
-                            </Select>
+                            <Select v-model="form.type" :options="typeOptionsArray" />
                         </Field>
                     </div>
                 </Panel>
@@ -302,13 +305,7 @@ function copyToClipboard(text) {
                     <div class="p-6 space-y-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Field :label="__('Source Type')">
-                                <Select v-model="sourceType">
-                                    <option
-                                        v-for="(label, value) in sourceTypeOptions"
-                                        :key="value"
-                                        :value="value"
-                                    >{{ label }}</option>
-                                </Select>
+                                <Select v-model="sourceType" :options="sourceTypeOptions" />
                             </Field>
                         </div>
 

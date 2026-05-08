@@ -93,6 +93,41 @@ const pageTitle = computed(() =>
 const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
 const hasLibraryTemplates = computed(() => Object.keys(props.availableTemplates).length > 0);
 
+/**
+ * Statamic's <Select> wraps <Combobox>, which expects `:options` as an
+ * Array of `{ value, label }` objects — NOT nested HTML <option> tags.
+ * Passing a `{ key: label }` Object (the shape PHP returns from
+ * Registry::options()) trips an internal `null.find()` once a tab swaps
+ * in. The computed wrappers below normalise everything we pass to
+ * <Select :options> into the Array shape Combobox expects.
+ */
+function objectToOptions(obj) {
+    if (!obj || typeof obj !== 'object') return [];
+    return Object.entries(obj).map(([value, label]) => ({ value, label }));
+}
+
+const triggerOptionsArray = computed(() => objectToOptions(props.triggerOptions));
+const authOptionsArray = computed(() => objectToOptions(props.authOptions));
+const methodOptionsArray = computed(() =>
+    (props.methodOptions || []).map(m => ({ value: m, label: m }))
+);
+const payloadTypeOptionsArray = computed(() => {
+    const opts = Object.keys(props.payloadTypeOptions).length
+        ? props.payloadTypeOptions
+        : { raw_json: __('Raw JSON template'), mapped: __('Mapped object'), form: __('Form encoded') };
+    return objectToOptions(opts);
+});
+const logBodyModeOptionsArray = computed(() => {
+    const opts = Object.keys(props.logBodyModeOptions).length
+        ? props.logBodyModeOptions
+        : { full: __('Full'), partial: __('Partial'), none: __('None') };
+    return objectToOptions(opts);
+});
+const availableTemplatesArray = computed(() => [
+    { value: '', label: __('— Pick a template —') },
+    ...objectToOptions(props.availableTemplates),
+]);
+
 // Surface server-side validation errors on the right tab — without it
 // users on the Identity tab miss errors on Trigger or Auth.
 const tabsWithErrors = computed(() => {
@@ -301,11 +336,7 @@ const authInstructions = computed(() => {
                             :error="form.errors.trigger_type"
                             :instructions="__('Internal event that fires this webhook.')"
                         >
-                            <Select id="trigger_type" v-model="form.trigger_type">
-                                <option v-for="(label, value) in triggerOptions" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
-                            </Select>
+                            <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
                     </div>
                 </Panel>
@@ -331,9 +362,7 @@ const authInstructions = computed(() => {
                             id="method"
                             :error="form.errors.method"
                         >
-                            <Select id="method" v-model="form.method">
-                                <option v-for="m in methodOptions" :key="m" :value="m">{{ m }}</option>
-                            </Select>
+                            <Select id="method" v-model="form.method" :options="methodOptionsArray" />
                         </Field>
 
                         <Field
@@ -370,9 +399,7 @@ const authInstructions = computed(() => {
                             id="auth_type"
                             :error="form.errors.auth_type"
                         >
-                            <Select id="auth_type" v-model="form.auth_type">
-                                <option v-for="(label, value) in authOptions" :key="value" :value="value">{{ label }}</option>
-                            </Select>
+                            <Select id="auth_type" v-model="form.auth_type" :options="authOptionsArray" />
                         </Field>
 
                         <div v-if="webhook.auth_configured" class="md:col-span-2">
@@ -412,15 +439,7 @@ const authInstructions = computed(() => {
                             id="payload_type"
                             :error="form.errors.payload_type"
                         >
-                            <Select id="payload_type" v-model="form.payload_type">
-                                <option
-                                    v-for="(label, value) in (Object.keys(payloadTypeOptions).length ? payloadTypeOptions : { raw_json: __('Raw JSON template'), mapped: __('Mapped object'), form: __('Form encoded') })"
-                                    :key="value"
-                                    :value="value"
-                                >
-                                    {{ label }}
-                                </option>
-                            </Select>
+                            <Select id="payload_type" v-model="form.payload_type" :options="payloadTypeOptionsArray" />
                         </Field>
 
                         <Field
@@ -450,13 +469,9 @@ const authInstructions = computed(() => {
                             <Select
                                 id="payload_template_handle"
                                 v-model="form.payload_template_handle"
+                                :options="availableTemplatesArray"
                                 :disabled="!hasLibraryTemplates"
-                            >
-                                <option value="">{{ __('— Pick a template —') }}</option>
-                                <option v-for="(label, handle) in availableTemplates" :key="handle" :value="handle">
-                                    {{ label }}
-                                </option>
-                            </Select>
+                            />
                         </Field>
 
                         <Field
@@ -501,15 +516,7 @@ const authInstructions = computed(() => {
                             :error="form.errors.log_body_mode"
                             :instructions="__('Controls how much of request/response bodies is persisted to delivery logs.')"
                         >
-                            <Select id="log_body_mode" v-model="form.log_body_mode">
-                                <option
-                                    v-for="(label, value) in (Object.keys(logBodyModeOptions).length ? logBodyModeOptions : { full: __('Full'), partial: __('Partial'), none: __('None') })"
-                                    :key="value"
-                                    :value="value"
-                                >
-                                    {{ label }}
-                                </option>
-                            </Select>
+                            <Select id="log_body_mode" v-model="form.log_body_mode" :options="logBodyModeOptionsArray" />
                         </Field>
                     </div>
                 </Panel>

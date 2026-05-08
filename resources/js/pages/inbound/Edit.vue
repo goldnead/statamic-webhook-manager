@@ -165,6 +165,19 @@ function jsonOrEmpty(value) {
     catch (e) { return ''; }
 }
 
+/**
+ * Statamic's <Select> wraps <Combobox>, which expects `:options` as an
+ * Array of `{ value, label }` objects. PHP-side Registry::options()
+ * returns `{ key: label }` Object — we normalise to Array here.
+ */
+function objectToOptions(obj) {
+    if (!obj || typeof obj !== 'object') return [];
+    return Object.entries(obj).map(([value, label]) => ({ value, label }));
+}
+
+const authOptionsArray = computed(() => objectToOptions(props.authOptions));
+const actionOptionsArray = computed(() => objectToOptions(props.actionOptions));
+
 function save() {
     const verb = props.isNew ? 'post' : 'patch';
     form[verb](props.saveUrl, { preserveScroll: true });
@@ -294,7 +307,7 @@ async function runTest() {
             <TabContent value="auth">
                 <Panel>
                     <Field :label="__('Auth Type')" :error="form.errors.auth_type" required>
-                        <Select v-model="form.auth_type" :options="authOptions" />
+                        <Select v-model="form.auth_type" :options="authOptionsArray" />
                     </Field>
 
                     <Field
@@ -361,7 +374,7 @@ async function runTest() {
             <TabContent value="action">
                 <Panel>
                     <Field :label="__('Action Type')" :error="form.errors.action_type" required>
-                        <Select v-model="form.action_type" :options="actionOptions" />
+                        <Select v-model="form.action_type" :options="actionOptionsArray" />
                     </Field>
 
                     <Field
