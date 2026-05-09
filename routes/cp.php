@@ -1,5 +1,11 @@
 <?php
 
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\PreviewTemplateController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\ReplayDeliveryController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\SimulateTriggerController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestInboundController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestOutboundController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestRuleController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DebugController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DeliveryController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\InboundController;
@@ -64,4 +70,33 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/debug', [DebugController::class, 'index'])->name('debug');
+
+    /*
+     * Action endpoints (POST handlers for the test/replay/preview/simulate
+     * buttons in the CP). Registered here under the same `webhook-manager.`
+     * route group as the index/edit pages so that:
+     *
+     *   1. cp_route('webhook-manager.actions.test-outbound', $hook)
+     *      resolves correctly — Statamic prefixes the lookup with
+     *      `statamic.cp.`, so the full registered name becomes
+     *      `statamic.cp.webhook-manager.actions.test-outbound`.
+     *
+     *   2. URLs land at /cp/webhook-manager/{slug}/{id}/{action} which is
+     *      the natural sibling of the edit pages and benefits from the CP
+     *      auth middleware stack.
+     *
+     * Previously these lived in `routes/actions.php` registered via
+     * AddonServiceProvider's `actions` route key, which prefixed the URL
+     * with the addon slug AGAIN (resulting in
+     * /webhook-manager/webhook-manager/...) and also did NOT prefix the
+     * route name with `statamic.cp.`, breaking every cp_route() lookup.
+     */
+    Route::name('actions.')->group(function () {
+        Route::post('outbound/{webhook}/test', TestOutboundController::class)->name('test-outbound');
+        Route::post('inbound/{endpoint}/test', TestInboundController::class)->name('test-inbound');
+        Route::post('rules/{rule}/test', TestRuleController::class)->name('test-rule');
+        Route::post('deliveries/{delivery}/replay', ReplayDeliveryController::class)->name('replay-delivery');
+        Route::post('templates/preview', PreviewTemplateController::class)->name('preview-template');
+        Route::post('triggers/simulate', SimulateTriggerController::class)->name('simulate-trigger');
+    });
 });
