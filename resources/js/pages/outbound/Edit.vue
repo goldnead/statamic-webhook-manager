@@ -154,8 +154,23 @@ watch(() => form.hasErrors, hasErrors => {
 });
 
 function save() {
+    // Defensive: never call form.post(undefined). Inertia's visit() crashes
+    // with "Cannot read properties of undefined (reading 'url')" inside the
+    // minified bundle when the URL prop is missing — log loudly so the
+    // problem is obvious in the browser console rather than as a silent
+    // visit() crash on click.
+    if (!props.saveUrl) {
+        console.error(
+            '[webhook-manager] Outbound/Edit: saveUrl prop is missing — cannot submit.',
+            'Inertia props received:', { isNew: props.isNew, saveUrl: props.saveUrl, indexUrl: props.indexUrl }
+        );
+        return;
+    }
     const verb = props.isNew ? 'post' : 'patch';
-    form[verb](props.saveUrl, { preserveScroll: true });
+    // Use form.submit(method, url, options) over form[verb](url, options).
+    // Same call internally, but more explicit and avoids the dynamic-key
+    // lookup that has tripped up some Inertia v2 versions.
+    form.submit(verb, props.saveUrl, { preserveScroll: true });
 }
 
 async function runTest() {
@@ -173,6 +188,10 @@ async function runTest() {
 }
 
 function destroy() {
+    if (!props.deleteUrl) {
+        console.error('[webhook-manager] Outbound/Edit: deleteUrl prop is missing — cannot delete.');
+        return;
+    }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
         onSuccess: () => { showDelete.value = false; },

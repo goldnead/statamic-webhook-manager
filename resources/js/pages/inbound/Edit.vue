@@ -179,11 +179,22 @@ const authOptionsArray = computed(() => objectToOptions(props.authOptions));
 const actionOptionsArray = computed(() => objectToOptions(props.actionOptions));
 
 function save() {
+    if (!props.saveUrl) {
+        console.error(
+            '[webhook-manager] Inbound/Edit: saveUrl prop is missing — cannot submit.',
+            'Inertia props received:', { isNew: props.isNew, saveUrl: props.saveUrl, indexUrl: props.indexUrl }
+        );
+        return;
+    }
     const verb = props.isNew ? 'post' : 'patch';
-    form[verb](props.saveUrl, { preserveScroll: true });
+    form.submit(verb, props.saveUrl, { preserveScroll: true });
 }
 
 function destroy() {
+    if (!props.deleteUrl) {
+        console.error('[webhook-manager] Inbound/Edit: deleteUrl prop is missing — cannot delete.');
+        return;
+    }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
         onSuccess: () => { showDelete.value = false; },
