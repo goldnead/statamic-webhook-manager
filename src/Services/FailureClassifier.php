@@ -42,4 +42,30 @@ class FailureClassifier
             default => self::INTERNAL,
         };
     }
+
+    /**
+     * Classify a thrown exception into a stable error_type. Used by the
+     * ActionExecutor to label exceptions raised from within rule action
+     * handlers, so the CP can colour-code them and the RetryPlanner can
+     * pick a sensible policy.
+     *
+     * Mapping (PRD §12.5):
+     * - InvalidArgumentException, TypeError, ValueError, JsonException
+     *   → PAYLOAD (handler input was wrong, retrying with the same input
+     *   won't help)
+     * - LogicException, RuntimeException and any other Throwable
+     *   → INTERNAL (programming/runtime error, retry policy decides)
+     */
+    public function classifyException(\Throwable $exception): string
+    {
+        return match (true) {
+            $exception instanceof \InvalidArgumentException,
+            $exception instanceof \TypeError,
+            $exception instanceof \ValueError,
+            $exception instanceof \JsonException => self::PAYLOAD,
+            $exception instanceof \LogicException,
+            $exception instanceof \RuntimeException => self::INTERNAL,
+            default => self::INTERNAL,
+        };
+    }
 }
