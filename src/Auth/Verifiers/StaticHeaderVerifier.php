@@ -22,8 +22,11 @@ class StaticHeaderVerifier implements AuthVerifierInterface
 
     public function verify(Request $request, array $config): bool
     {
-        $name = $config['header_name'] ?? null;
-        $expected = $config['secret'] ?? null;
+        // The CP edit form (resources/js/pages/inbound/Edit.vue) prompts
+        // for `{ "header": "...", "value": "..." }` and that's also the
+        // schema the seed examples and feature tests use.
+        $name = $config['header'] ?? $config['header_name'] ?? null;
+        $expected = $config['value'] ?? $config['secret'] ?? null;
         if (! $name || ! $expected) {
             return false;
         }
@@ -34,8 +37,8 @@ class StaticHeaderVerifier implements AuthVerifierInterface
 
     public function sign(array $request, array $config): array
     {
-        $name = $config['header_name'] ?? 'X-Webhook-Secret';
-        $secret = $config['secret'] ?? null;
+        $name = $config['header'] ?? $config['header_name'] ?? 'X-Webhook-Secret';
+        $secret = $config['value'] ?? $config['secret'] ?? null;
         if ($secret) {
             $request['headers'][$name] = $secret;
         }

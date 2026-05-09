@@ -29,13 +29,13 @@ class HmacSignatureVerifier implements AuthVerifierInterface
             return false;
         }
 
-        $algo = $config['algorithm'] ?? config('webhook-manager.security.default_hash_algorithm', 'sha256');
+        $algo = $config['algorithm'] ?? $this->configValue('webhook-manager.security.default_hash_algorithm', 'sha256');
         $sigHeader = $config['signature_header']
-            ?? config('webhook-manager.security.signature_header', 'X-Webhook-Signature');
+            ?? $this->configValue('webhook-manager.security.signature_header', 'X-Webhook-Signature');
         $tsHeader = $config['timestamp_header']
-            ?? config('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp');
+            ?? $this->configValue('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp');
         $tolerance = (int) ($config['timestamp_tolerance_seconds']
-            ?? config('webhook-manager.security.timestamp_tolerance_seconds', 300));
+            ?? $this->configValue('webhook-manager.security.timestamp_tolerance_seconds', 300));
         $requireTimestamp = (bool) ($config['require_timestamp'] ?? false);
 
         $providedSignature = (string) $request->header($sigHeader, '');
@@ -74,9 +74,9 @@ class HmacSignatureVerifier implements AuthVerifierInterface
         }
         $algo = $config['algorithm'] ?? 'sha256';
         $sigHeader = $config['signature_header']
-            ?? config('webhook-manager.security.signature_header', 'X-Webhook-Signature');
+            ?? $this->configValue('webhook-manager.security.signature_header', 'X-Webhook-Signature');
         $tsHeader = $config['timestamp_header']
-            ?? config('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp');
+            ?? $this->configValue('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp');
 
         $timestamp = (string) time();
         $payload = $timestamp.'.'.($request['body'] ?? '');
@@ -86,5 +86,21 @@ class HmacSignatureVerifier implements AuthVerifierInterface
         $request['headers'][$sigHeader] = $algo.'='.$signature;
 
         return $request;
+    }
+
+    /**
+     * Read a config value with a fallback default. Defensive: when this
+     * verifier is used outside a fully-booted Laravel container (e.g. in
+     * isolated unit tests that don't extend the package's TestCase) the
+     * `config()` helper throws a BindingResolutionException — fall back
+     * to the supplied default in that case.
+     */
+    private function configValue(string $key, mixed $default): mixed
+    {
+        try {
+            return config($key, $default);
+        } catch (\Throwable) {
+            return $default;
+        }
     }
 }
