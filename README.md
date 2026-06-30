@@ -67,7 +67,9 @@ Webhook **configuration** (outbound webhooks, inbound endpoints, rules, template
 - **`eloquent`** (default) — config lives in database tables. Run `php artisan migrate`.
 - **`flat`** — config lives as human-readable YAML under `content/webhooks/`, git-versionable alongside the rest of your site.
 
-Switch losslessly (records are copied id-for-id) with:
+You can switch the active driver **in the Control Panel** (Settings → Storage) — it migrates the existing config to the target store and activates it, no `.env` access needed. A Control-Panel choice is persisted under `storage/` and takes precedence over the config/env default.
+
+Or do it from the CLI (records are copied id-for-id either way):
 
 ```bash
 php artisan webhook-manager:storage:migrate --from=eloquent --to=flat --dry-run

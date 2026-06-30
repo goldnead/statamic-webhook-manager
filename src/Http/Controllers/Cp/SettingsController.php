@@ -2,6 +2,8 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Storage\StorageDriverManager;
+use Goldnead\WebhookManager\Storage\StorageMigrator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,7 +17,7 @@ class SettingsController extends CpController
      * v1: always read-only — config lives in config/webhook-manager.php.
      *     Set $isEditable = true once a DB-settings-layer exists.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, StorageDriverManager $driver, StorageMigrator $migrator): Response
     {
         abort_unless(
             $request->user()?->can('manage webhook settings'),
@@ -27,7 +29,63 @@ class SettingsController extends CpController
             'rawConfig'      => json_encode(config('webhook-manager'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             'configFilePath' => config_path('webhook-manager.php'),
             'isEditable'     => false, // v1: flip to true when DB-settings-layer lands
+            'storage'        => $this->storagePayload($driver, $migrator),
         ]);
+    }
+
+    /**
+     * Switch the active storage driver from the Control Panel: migrate the
+     * existing config to the target store, then persist the choice so it
+     * takes effect without any .env/shell access.
+     */
+    public function switchStorage(Request $request, StorageDriverManager $driver, StorageMigrator $migrator)
+    {
+        abort_unless($request->user()?->can('manage webhook settings'), 403);
+
+        $target = (string) $request->input('driver');
+        abort_unless(in_array($target, StorageMigrator::DRIVERS, true), 422);
+
+        $current = $driver->current();
+        if ($target === $current) {
+            return back()->with('success', __('webhook-manager::messages.storage_already_active', [
+                'driver' => $this->driverLabel($target),
+            ]));
+        }
+
+        $copied = $migrator->migrate($current, $target);
+        $driver->setDriver($target);
+
+        return back()->with('success', __('webhook-manager::messages.storage_switched', [
+            'driver' => $this->driverLabel($target),
+            'count'  => array_sum($copied),
+        ]));
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    protected function storagePayload(StorageDriverManager $driver, StorageMigrator $migrator): array
+    {
+        $active = $driver->current();
+        $other = $active === 'flat' ? 'eloquent' : 'flat';
+
+        return [
+            'driver'      => $active,
+            'driver_label' => $this->driverLabel($active),
+            'source'      => $driver->source(), // 'control_panel' | 'config'
+            'flat_path'   => (string) config('webhook-manager.storage.flat.path', base_path('content/webhooks')),
+            'counts'      => $migrator->counts($active),
+            'target'      => $other,
+            'target_label' => $this->driverLabel($other),
+            'switch_url'  => cp_route('webhook-manager.settings.storage'),
+        ];
+    }
+
+    protected function driverLabel(string $driver): string
+    {
+        return $driver === 'flat'
+            ? __('webhook-manager::messages.storage_flat')
+            : __('webhook-manager::messages.storage_database');
     }
 
     // -------------------------------------------------------------------------

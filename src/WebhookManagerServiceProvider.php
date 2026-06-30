@@ -184,12 +184,12 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
     /**
      * Bind each config repository contract to the Eloquent or FlatFile
-     * implementation selected by `webhook-manager.storage.driver`.
+     * implementation for the active driver (StorageDriverManager: a
+     * Control-Panel choice, else `webhook-manager.storage.driver`).
      *
-     * Bindings are lazy closures, so changing the driver in config (e.g.
-     * in a test) before the repository is first resolved still takes
-     * effect. Delivery and log repositories are database-only and are not
-     * part of this abstraction.
+     * Bindings are lazy closures, so changing the driver before the
+     * repository is first resolved still takes effect. Delivery and log
+     * repositories are database-only and are not part of this abstraction.
      */
     protected function bindStorageRepositories(): void
     {
@@ -200,6 +200,8 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         });
 
         $this->app->singleton(\Goldnead\WebhookManager\Storage\ModelHydrator::class);
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\StorageDriverManager::class);
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\StorageMigrator::class);
 
         $map = [
             \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class => [
@@ -222,7 +224,9 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
         foreach ($map as $contract => [$eloquent, $flat]) {
             $this->app->bind($contract, function ($app) use ($eloquent, $flat) {
-                return config('webhook-manager.storage.driver', 'eloquent') === 'flat'
+                // The active driver comes from the StorageDriverManager, which
+                // prefers a Control-Panel-persisted choice over config/env.
+                return $app->make(\Goldnead\WebhookManager\Storage\StorageDriverManager::class)->current() === 'flat'
                     ? $app->make($flat)
                     : $app->make($eloquent);
             });

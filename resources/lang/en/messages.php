@@ -8,6 +8,22 @@ return [
     'send_webhook_missing' => 'The selected webhook no longer exists.',
     'send_webhook_done' => 'Fired :name for :count entries.',
 
+    // Storage driver (Settings → Storage)
+    'storage_heading' => 'Storage',
+    'storage_sub' => 'Where your webhook configuration is stored. Delivery history always stays in the database.',
+    'storage_database' => 'Database',
+    'storage_flat' => 'Flat file (YAML)',
+    'storage_active_driver' => 'Active driver',
+    'storage_source_control_panel' => 'set in the Control Panel',
+    'storage_source_config' => 'from config / env',
+    'storage_flat_path_label' => 'YAML location',
+    'storage_records' => 'Stored configuration',
+    'storage_switch_to' => 'Switch to :driver',
+    'storage_switch_hint' => 'Copies all webhook configuration to :driver (id-for-id) and makes it the active store. Delivery records are untouched.',
+    'storage_switched' => 'Storage switched to :driver — :count record(s) migrated.',
+    'storage_already_active' => ':driver storage is already active.',
+    'storage_counts_line' => ':outbound outbound · :inbound inbound · :rules rules · :templates templates',
+
     // Insights / observability screen
     'insights_title' => 'Insights',
     'insights_subtitle' => 'Delivery volume, success rate, latency and failures across your outbound webhooks.',
