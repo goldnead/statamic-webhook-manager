@@ -8,11 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 
 /**
- * Inbound endpoint config.
- *
- * TODO: REVIEW — controller currently returns 501; this model is in place
- * so persistence and CP wiring can be developed iteratively without
- * breaking schema later.
+ * Inbound endpoint config — a stable, authenticated URL that receives and
+ * validates external requests, then dispatches a configured action. The
+ * runtime is served by InboundWebhookController → InboundRequestProcessor.
  */
 class InboundEndpoint extends Model
 {

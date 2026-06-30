@@ -6,10 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Stub model for the Rule engine.
- *
- * TODO: REVIEW — Rule evaluation is currently a no-op (Rules\RuleEngine).
- * Schema is finalised so existing rules survive the iterative rollout.
+ * A "When → If → Then" automation rule: a trigger, a condition tree and an
+ * ordered action list. Evaluated and executed by Rules\RuleEngine.
  */
 class Rule extends Model
 {

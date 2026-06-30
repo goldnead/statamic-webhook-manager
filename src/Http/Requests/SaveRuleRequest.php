@@ -6,8 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * TODO: REVIEW — rule engine evaluation is currently a no-op.
- * Validation in place so the schema can be exercised once the engine ships.
+ * Validates the payload for creating/updating an automation rule
+ * (trigger, condition tree and action list executed by Rules\RuleEngine).
  */
 class SaveRuleRequest extends FormRequest
 {

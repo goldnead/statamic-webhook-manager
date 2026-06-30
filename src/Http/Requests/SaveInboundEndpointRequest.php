@@ -6,9 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * TODO: REVIEW — inbound endpoints are wired through but the runtime
- * controller still returns 501. Validation rules are in place so a
- * future iteration can save endpoints and turn on the flow with a flip.
+ * Validates the payload for creating/updating an inbound endpoint
+ * (path, auth scheme, payload limits, mapping and action config).
  */
 class SaveInboundEndpointRequest extends FormRequest
 {

@@ -2,7 +2,7 @@
 
 A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)**. Manage **outbound webhooks**, **inbound endpoints**, **deliveries**, **retries**, **replays**, **rules** and **templates** — all from one place inside the Control Panel.
 
-> **Status:** v0.2.0 — Statamic 6 / Vue + Inertia migration. The **outbound module + delivery engine + Vue CP screens** are functional. Inbound, rules and template CRUD ship as architectural stubs marked `TODO: REVIEW`.
+> **Status:** Stable on Statamic 6 (Laravel 11/12/13). Outbound webhooks, the delivery engine with retries & replay, inbound endpoints, the rule engine, payload templates and the full Vue + Inertia Control Panel are implemented and covered by the test suite.
 
 ---
 
@@ -20,8 +20,8 @@ A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)
 
 - PHP **8.2+**
 - Statamic **6.0+**
-- Laravel **11+**
-- Node **18+** (for building the CP bundle)
+- Laravel **11, 12 or 13**
+- Node **18+** (only needed if you rebuild the CP bundle from source)
 - A queue driver other than `sync` is strongly recommended.
 
 ## Installation
@@ -96,9 +96,9 @@ Each registry has its own contract under `Goldnead\WebhookManager\Contracts`.
 - **Build** uses Vite + the `@statamic/cms/vite-plugin` to consume Statamic's `dist-package` (`@statamic/cms/ui`, `@statamic/cms/inertia`).
 - **Domain layer** (controllers, models, services, jobs, queue) is pure Laravel — no Vue, no Inertia coupling. The same code path serves both async deliveries and the CP test button.
 
-## Open architecture decisions
+## Roadmap
 
-These are deliberately marked `TODO: REVIEW` in code and will be revisited:
+Forward-looking design questions that may evolve in future releases:
 
 1. Antlers/Tokens vs. a dedicated mini-template language.
 2. Whether outbound hooks are modeled as specialised rules or kept separate.
@@ -117,10 +117,32 @@ These are deliberately marked `TODO: REVIEW` in code and will be revisited:
 
 ```bash
 composer install
-vendor/bin/phpunit
+composer test          # or: vendor/bin/phpunit
 ```
 
-Feature tests cover the outbound delivery flow, failure logging, replay and permission masking.
+Feature tests cover the outbound delivery flow, failure logging, replay,
+inbound dispatch & signature verification, rule execution, template CRUD and
+permission masking; unit tests cover the renderer, mapper, condition/rule
+engines, retry planner and HMAC verifier.
+
+### Local playground
+
+Spin up a full Statamic 6 site with the addon wired in as a path repository
+(SQLite, CP user, seeded sample records) so you can click through the Control
+Panel:
+
+```bash
+./scripts/setup-playground.sh
+cd playground && php artisan serve     # → http://127.0.0.1:8000/cp
+# login: admin@example.com / password
+```
+
+### End-to-end smoke test
+
+`./scripts/smoke-test.sh` installs a throwaway Statamic project, wires the
+addon, then renders a payload template and delivers it to a local receiver
+through the real `DeliveryEngine`, asserting the `Delivery` is recorded as a
+success.
 
 ## License
 
