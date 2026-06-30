@@ -128,6 +128,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->app->singleton(VariableResolverRegistry::class);
         $this->app->singleton(SuccessEvaluatorRegistry::class);
         $this->app->singleton(InboundActionHandlerRegistry::class);
+        $this->app->singleton(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
 
         $this->app->singleton(\Goldnead\WebhookManager\Auth\Support\ReplayProtectionService::class, function ($app) {
             return new \Goldnead\WebhookManager\Auth\Support\ReplayProtectionService(
@@ -238,6 +239,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         /** @var ActionRegistry $actions */
         $actions = $this->app->make(ActionRegistry::class);
         $actions->registerDefaults();
+
+        /** @var \Goldnead\WebhookManager\Registries\PresetRegistry $presets */
+        $presets = $this->app->make(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
+        $presets->registerDefaults();
     }
 
     protected function bootWebhookPublishables(): void

@@ -12,6 +12,7 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\InboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\LogController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OverviewController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\PresetController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\RuleController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\SettingsController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\TemplateController;
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
     Route::get('/', [OverviewController::class, 'index'])->name('overview');
+
+    Route::prefix('integrations')->name('integrations.')->group(function () {
+        Route::get('/', [PresetController::class, 'index'])->name('index');
+        Route::get('/{preset}', [PresetController::class, 'create'])->name('create');
+        Route::post('/{preset}', [PresetController::class, 'store'])->name('store');
+    });
 
     Route::prefix('outbound')->name('outbound.')->group(function () {
         Route::get('/', [OutboundController::class, 'index'])->name('index');

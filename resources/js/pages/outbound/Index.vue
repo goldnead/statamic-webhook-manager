@@ -30,6 +30,7 @@ const props = defineProps({
     actionUrl: { type: String, required: true },
     listingUrl: { type: String, required: true },
     createUrl: { type: String, required: true },
+    integrationsUrl: { type: String, default: null },
     canCreate: { type: Boolean, default: false },
     triggerOptions: { type: Object, default: () => ({}) },
 });
@@ -73,6 +74,13 @@ function toggle(hook) {
 
         <EmptyStateMenu :heading="__('webhook-manager::messages.outbound_empty_intro')">
             <EmptyStateItem
+                v-if="canCreate && integrationsUrl"
+                :href="integrationsUrl"
+                icon="flash-bolt-lightning"
+                :heading="__('Add an integration')"
+                :description="__('Slack, Discord, Zapier and more — pre-configured in a couple of clicks.')"
+            />
+            <EmptyStateItem
                 v-if="canCreate"
                 :href="createUrl"
                 icon="arrow-up-right"
@@ -86,6 +94,12 @@ function toggle(hook) {
 
     <div v-else class="max-w-page mx-auto">
         <Header :title="__('Outbound Webhooks')" icon="arrow-up-right">
+            <Button
+                v-if="canCreate && integrationsUrl"
+                :href="integrationsUrl"
+                :text="__('Add integration')"
+                icon="flash-bolt-lightning"
+            />
             <CommandPaletteItem
                 v-if="canCreate"
                 category="Actions"

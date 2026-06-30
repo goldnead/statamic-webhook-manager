@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static WebhookManagerService registerAuthScheme(\Goldnead\WebhookManager\Contracts\AuthVerifierInterface $verifier)
  * @method static WebhookManagerService registerVariableResolver(\Goldnead\WebhookManager\Contracts\TemplateVariableResolverInterface $resolver)
  * @method static WebhookManagerService registerSuccessEvaluator(\Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface $evaluator)
+ * @method static WebhookManagerService registerPreset(\Goldnead\WebhookManager\Contracts\PresetInterface $preset)
+ * @method static \Goldnead\WebhookManager\Registries\PresetRegistry presets()
  * @method static TriggerRegistry triggers()
  * @method static ConditionRegistry conditions()
  * @method static ActionRegistry actions()

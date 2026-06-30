@@ -70,6 +70,7 @@ class OutboundController extends CpController
             // chain — keep it pointing at a real route.
             'actionUrl' => cp_route('webhook-manager.outbound.index'),
             'createUrl' => cp_route('webhook-manager.outbound.create'),
+            'integrationsUrl' => cp_route('webhook-manager.integrations.index'),
             'canCreate' => (bool) $request->user()?->can('manage outbound webhooks'),
             'searchTerm' => $search,
             'triggerOptions' => $triggerLabels,

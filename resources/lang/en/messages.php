@@ -2,6 +2,7 @@
 
 return [
     'created' => 'Webhook created.',
+    'integration_created' => ':name integration created — review and save.',
     'updated' => 'Webhook updated.',
     'deleted' => 'Webhook deleted.',
     'enabled' => 'Webhook enabled.',
