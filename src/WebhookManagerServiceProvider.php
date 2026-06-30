@@ -90,6 +90,15 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         SeedWebhookExamplesCommand::class,
     ];
 
+    /**
+     * Native Statamic CP actions. Auto-discovery only scans the top level of
+     * src/Actions/ (which holds the internal rule actions), so the entry
+     * action under Actions/Cp/ is registered explicitly here.
+     */
+    protected $actions = [
+        \Goldnead\WebhookManager\Actions\Cp\SendWebhook::class,
+    ];
+
     public function bootAddon(): void
     {
         $this->bootWebhookConfig();

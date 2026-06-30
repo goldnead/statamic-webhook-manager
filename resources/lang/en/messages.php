@@ -3,6 +3,10 @@
 return [
     'created' => 'Webhook created.',
     'integration_created' => ':name integration created — review and save.',
+    'send_webhook' => 'Send webhook',
+    'send_webhook_button' => '{1} Send webhook|[2,*] Send webhook',
+    'send_webhook_missing' => 'The selected webhook no longer exists.',
+    'send_webhook_done' => 'Fired :name for :count entries.',
     'updated' => 'Webhook updated.',
     'deleted' => 'Webhook deleted.',
     'enabled' => 'Webhook enabled.',
