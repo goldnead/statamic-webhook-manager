@@ -13,10 +13,6 @@ import {
     Switch,
     Card,
     CodeEditor,
-    Tabs,
-    TabList,
-    TabTrigger,
-    TabContent,
     Panel,
 } from '@statamic/cms/ui';
 
@@ -44,7 +40,6 @@ const props = defineProps({
     isEditable: { type: Boolean, default: false },
 });
 
-const activeTab = ref('general');
 const copied = ref(false);
 
 function copyPath() {
@@ -99,17 +94,9 @@ const statusCodesToString = (val) => {
             </template>
         </Alert>
 
-        <!-- ── Tabs ─────────────────────────────────────────────────── -->
-        <Tabs v-model="activeTab">
-            <TabList>
-                <TabTrigger value="general">{{ __('General') }}</TabTrigger>
-                <TabTrigger value="defaults">{{ __('Defaults') }}</TabTrigger>
-                <TabTrigger value="security">{{ __('Security') }}</TabTrigger>
-                <TabTrigger value="logging">{{ __('Logging') }}</TabTrigger>
-            </TabList>
+        <div class="space-y-6">
 
             <!-- ── General ──────────────────────────────────────────── -->
-            <TabContent value="general">
                 <Panel :heading="__('Features')">
                     <Card>
                     <Field inline
@@ -198,10 +185,8 @@ const statusCodesToString = (val) => {
                     </Field>
                 </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Defaults ─────────────────────────────────────────── -->
-            <TabContent value="defaults">
                 <Panel :heading="__('Retry defaults')">
                     <Card>
                     <Field inline
@@ -290,10 +275,8 @@ const statusCodesToString = (val) => {
                     </Field>
                 </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Security ─────────────────────────────────────────── -->
-            <TabContent value="security">
                 <Panel :heading="__('Inbound route')">
                     <Card>
                     <Field inline
@@ -371,10 +354,8 @@ const statusCodesToString = (val) => {
                     </Field>
                 </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Logging ──────────────────────────────────────────── -->
-            <TabContent value="logging">
                 <Panel :heading="__('Delivery logging')">
                     <Card>
                     <Field inline
@@ -446,8 +427,7 @@ const statusCodesToString = (val) => {
                     </Field>
                 </Card>
                 </Panel>
-            </TabContent>
-        </Tabs>
+        </div>
 
         <!-- ── Raw config panel ─────────────────────────────────────── -->
         <Panel :heading="__('Raw configuration')" class="mt-6">
