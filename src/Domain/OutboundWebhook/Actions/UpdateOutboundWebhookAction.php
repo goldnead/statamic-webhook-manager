@@ -2,10 +2,15 @@
 
 namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 
 class UpdateOutboundWebhookAction
 {
+    public function __construct(protected OutboundWebhookRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(OutboundWebhook $hook, array $attributes): OutboundWebhook
     {
         // Auth config that comes through as an empty array means
@@ -16,8 +21,7 @@ class UpdateOutboundWebhookAction
         }
 
         $hook->fill($attributes);
-        $hook->save();
 
-        return $hook->fresh();
+        return $this->repository->save($hook);
     }
 }

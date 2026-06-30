@@ -20,7 +20,8 @@ class DeliveryFailedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $hook = $this->delivery->outboundWebhook;
+        $hook = app(\Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class)
+            ->find($this->delivery->outbound_webhook_id);
         $name = $hook?->name ?? 'Webhook';
 
         return (new MailMessage())

@@ -2,7 +2,7 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Services\DeliveryStatsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,7 +58,7 @@ class InsightsController extends CpController
         // resolves to 0 → null in index(), so the filter still clears cleanly.
         $options = [['value' => 'all', 'label' => __('webhook-manager::messages.insights_all_webhooks')]];
 
-        foreach (OutboundWebhook::query()->orderBy('name')->get(['id', 'name']) as $hook) {
+        foreach (app(OutboundWebhookRepositoryInterface::class)->all() as $hook) {
             $options[] = ['value' => $hook->id, 'label' => $hook->name];
         }
 

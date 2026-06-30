@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Listeners;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Notifications\DeliveryFailedNotification;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
@@ -19,6 +20,7 @@ class SendFailureAlertListener
     public function __construct(
         protected Cache $cache,
         protected SystemLogger $logger,
+        protected OutboundWebhookRepositoryInterface $webhooks,
     ) {
     }
 
@@ -29,7 +31,7 @@ class SendFailureAlertListener
         }
 
         $delivery = $event->delivery;
-        $hook = $delivery->outboundWebhook;
+        $hook = $this->webhooks->find($delivery->outbound_webhook_id);
         $hookId = $hook?->id ?? 'unknown';
 
         // Throttle: at most one alert per webhook per throttle window.

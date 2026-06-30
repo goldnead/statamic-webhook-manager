@@ -8,7 +8,7 @@ use Goldnead\WebhookManager\Domain\Template\Actions\UpdateTemplateAction;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveTemplateRequest;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
-use Goldnead\WebhookManager\Repositories\TemplateRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -19,7 +19,7 @@ class TemplateController extends CpController
     // Listing
     // ──────────────────────────────────────────────────────────────────
 
-    public function index(Request $request, TemplateRepository $repository)
+    public function index(Request $request, TemplateRepositoryInterface $repository)
     {
         $this->authorizeAny($request, 'manage webhook templates', 'view webhooks');
 

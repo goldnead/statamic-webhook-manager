@@ -2,7 +2,7 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers;
 
-use Goldnead\WebhookManager\Repositories\InboundEndpointRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Services\Inbound\InboundRequestProcessor;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +21,7 @@ use Illuminate\Routing\Controller;
 class InboundWebhookController extends Controller
 {
     public function __construct(
-        protected InboundEndpointRepository $endpoints,
+        protected InboundEndpointRepositoryInterface $endpoints,
         protected InboundRequestProcessor $processor,
         protected SystemLogger $logger,
     ) {

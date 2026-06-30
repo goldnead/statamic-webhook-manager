@@ -2,8 +2,8 @@
 
 namespace Goldnead\WebhookManager\Actions\Cp;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction;
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Support\StatamicSnapshot;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
@@ -25,7 +25,7 @@ class SendWebhook extends Action
     public function visibleTo($item)
     {
         return $item instanceof Entry
-            && OutboundWebhook::where('enabled', true)->exists();
+            && app(OutboundWebhookRepositoryInterface::class)->countActive() > 0;
     }
 
     public function authorize($user, $item)
@@ -46,9 +46,9 @@ class SendWebhook extends Action
                 'type' => 'select',
                 'display' => __('Webhook'),
                 'instructions' => __('Which outbound webhook to fire for the selected entries.'),
-                'options' => OutboundWebhook::where('enabled', true)
-                    ->orderBy('name')
-                    ->pluck('name', 'uuid')
+                'options' => app(OutboundWebhookRepositoryInterface::class)->all()
+                    ->filter(fn ($hook) => (bool) $hook->enabled)
+                    ->mapWithKeys(fn ($hook) => [$hook->uuid => $hook->name])
                     ->all(),
                 'validate' => ['required'],
             ],
@@ -57,7 +57,7 @@ class SendWebhook extends Action
 
     public function run($items, $values)
     {
-        $hook = OutboundWebhook::where('uuid', $values['webhook'] ?? null)->first();
+        $hook = app(OutboundWebhookRepositoryInterface::class)->findByUuid($values['webhook'] ?? '');
 
         if (! $hook) {
             throw new \RuntimeException(__('webhook-manager::messages.send_webhook_missing'));

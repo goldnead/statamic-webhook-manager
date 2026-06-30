@@ -3,8 +3,8 @@
 namespace Goldnead\WebhookManager\Services;
 
 use Carbon\CarbonImmutable;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Illuminate\Support\Collection;
 
 /**
@@ -191,9 +191,12 @@ class DeliveryStatsService
             return [];
         }
 
-        $names = OutboundWebhook::query()
-            ->whereIn('id', $failed->pluck('outbound_webhook_id')->filter()->unique()->all())
-            ->pluck('name', 'id');
+        // Resolve hook names through the repository so the lookup works under
+        // either storage driver (config may live in YAML, not the database).
+        $ids = $failed->pluck('outbound_webhook_id')->filter()->unique()->all();
+        $names = app(OutboundWebhookRepositoryInterface::class)->all()
+            ->whereIn('id', $ids)
+            ->mapWithKeys(fn ($hook) => [$hook->id => $hook->name]);
 
         return $failed
             ->groupBy(fn ($row) => $row->outbound_webhook_id ?: 'url:'.$row->request_url)

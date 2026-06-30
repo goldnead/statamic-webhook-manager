@@ -2,7 +2,8 @@
 
 namespace Goldnead\WebhookManager\Console\Commands;
 
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Illuminate\Console\Command;
 
@@ -12,6 +13,13 @@ class SeedWebhookExamplesCommand extends Command
         {--force : Recreate fixtures even if they already exist}';
 
     protected $description = 'Install sample outbound hooks and templates for local development.';
+
+    public function __construct(
+        protected OutboundWebhookRepositoryInterface $outbounds,
+        protected TemplateRepositoryInterface $templates,
+    ) {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -54,12 +62,14 @@ class SeedWebhookExamplesCommand extends Command
         ];
 
         foreach ($templates as $tpl) {
-            $existing = Template::where('handle', $tpl['handle'])->first();
+            $existing = $this->templates->findByHandle($tpl['handle']);
             if ($existing && ! $force) {
                 continue;
             }
-            $existing?->delete();
-            Template::create($tpl);
+            if ($existing) {
+                $this->templates->delete($existing);
+            }
+            $this->templates->create($tpl);
         }
     }
 
@@ -106,12 +116,14 @@ class SeedWebhookExamplesCommand extends Command
         ];
 
         foreach ($hooks as $h) {
-            $existing = OutboundWebhook::where('handle', $h['handle'])->first();
+            $existing = $this->outbounds->findByHandle($h['handle']);
             if ($existing && ! $force) {
                 continue;
             }
-            $existing?->delete();
-            OutboundWebhook::create($h);
+            if ($existing) {
+                $this->outbounds->delete($existing);
+            }
+            $this->outbounds->create($h);
         }
     }
 }

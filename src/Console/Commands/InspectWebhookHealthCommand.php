@@ -3,7 +3,7 @@
 namespace Goldnead\WebhookManager\Console\Commands;
 
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
-use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Illuminate\Console\Command;
 
 class InspectWebhookHealthCommand extends Command
@@ -12,7 +12,7 @@ class InspectWebhookHealthCommand extends Command
     protected $description = 'Show counts and a quick health snapshot.';
 
     public function handle(
-        OutboundWebhookRepository $hooks,
+        OutboundWebhookRepositoryInterface $hooks,
         DeliveryRepository $deliveries,
     ): int {
         $counts = $deliveries->counts();

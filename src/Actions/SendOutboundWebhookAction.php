@@ -4,7 +4,7 @@ namespace Goldnead\WebhookManager\Actions;
 
 use Goldnead\WebhookManager\Contracts\ActionInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction;
-use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
 
@@ -19,7 +19,7 @@ use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
 class SendOutboundWebhookAction implements ActionInterface
 {
     public function __construct(
-        protected OutboundWebhookRepository $hooks,
+        protected OutboundWebhookRepositoryInterface $hooks,
         protected DispatchOutboundWebhookAction $dispatch,
     ) {
     }

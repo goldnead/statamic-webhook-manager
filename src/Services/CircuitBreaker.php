@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Services;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 
@@ -12,15 +13,17 @@ use Goldnead\WebhookManager\Services\Logging\SystemLogger;
  */
 class CircuitBreaker
 {
-    public function __construct(protected SystemLogger $logger)
-    {
+    public function __construct(
+        protected SystemLogger $logger,
+        protected OutboundWebhookRepositoryInterface $repository,
+    ) {
     }
 
     public function recordSuccess(OutboundWebhook $hook): void
     {
         if ((int) $hook->consecutive_failures !== 0) {
             $hook->consecutive_failures = 0;
-            $hook->save();
+            $this->repository->save($hook);
         }
     }
 
@@ -48,7 +51,7 @@ class CircuitBreaker
             }
         }
 
-        $hook->save();
+        $this->repository->save($hook);
 
         return $tripped;
     }

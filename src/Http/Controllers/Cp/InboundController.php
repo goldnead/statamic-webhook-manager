@@ -10,7 +10,7 @@ use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Http\Requests\SaveInboundEndpointRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
-use Goldnead\WebhookManager\Repositories\InboundEndpointRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -19,7 +19,7 @@ class InboundController extends CpController
 {
     public function index(
         Request $request,
-        InboundEndpointRepository $repository,
+        InboundEndpointRepositoryInterface $repository,
         InboundActionHandlerRegistry $actions,
     ) {
         $this->authorizeAny($request, 'manage inbound endpoints', 'view webhooks');

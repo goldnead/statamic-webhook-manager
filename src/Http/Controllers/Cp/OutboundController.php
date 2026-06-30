@@ -11,8 +11,8 @@ use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveOutboundWebhookRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
-use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
-use Goldnead\WebhookManager\Repositories\TemplateRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -21,7 +21,7 @@ class OutboundController extends CpController
 {
     public function index(
         Request $request,
-        OutboundWebhookRepository $repository,
+        OutboundWebhookRepositoryInterface $repository,
         TriggerRegistry $triggers,
     ) {
         $this->authorizeAny($request, 'manage outbound webhooks', 'view webhooks');
@@ -81,7 +81,7 @@ class OutboundController extends CpController
         Request $request,
         TriggerRegistry $triggers,
         AuthSchemeRegistry $auth,
-        TemplateRepository $templates,
+        TemplateRepositoryInterface $templates,
     ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
@@ -128,7 +128,7 @@ class OutboundController extends CpController
         OutboundWebhook $webhook,
         TriggerRegistry $triggers,
         AuthSchemeRegistry $auth,
-        TemplateRepository $templates,
+        TemplateRepositoryInterface $templates,
     ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
@@ -302,7 +302,7 @@ class OutboundController extends CpController
      *
      * @return array<string,string>
      */
-    protected function availableTemplates(TemplateRepository $templates): array
+    protected function availableTemplates(TemplateRepositoryInterface $templates): array
     {
         $opts = [];
         foreach ($templates->ofType(Template::TYPE_OUTBOUND_BODY) as $template) {

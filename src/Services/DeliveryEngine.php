@@ -3,6 +3,7 @@
 namespace Goldnead\WebhookManager\Services;
 
 use Goldnead\WebhookManager\Contracts\DeliverySenderInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliveryFailureAction;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliverySuccessAction;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
@@ -34,12 +35,13 @@ class DeliveryEngine implements DeliverySenderInterface
         protected MarkDeliveryFailureAction $markFailure,
         protected DeliveryLogger $logger,
         protected CircuitBreaker $circuitBreaker,
+        protected OutboundWebhookRepositoryInterface $webhooks,
     ) {
     }
 
     public function send(Delivery $delivery): Delivery
     {
-        $hook = $delivery->outboundWebhook;
+        $hook = $this->webhooks->find($delivery->outbound_webhook_id);
         if (! $hook) {
             return ($this->markFailure)($delivery, FailureClassifier::CONFIGURATION, 'Outbound webhook missing.');
         }

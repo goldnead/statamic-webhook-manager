@@ -1,14 +1,15 @@
 <?php
 
-namespace Goldnead\WebhookManager\Repositories;
+namespace Goldnead\WebhookManager\Repositories\Eloquent;
 
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class InboundEndpointRepository
+class EloquentInboundEndpointRepository implements InboundEndpointRepositoryInterface
 {
-    public function find(int $id): ?InboundEndpoint
+    public function find(int|string $id): ?InboundEndpoint
     {
         return InboundEndpoint::find($id);
     }
@@ -30,14 +31,15 @@ class InboundEndpointRepository
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('handle', 'like', "%{$search}%")
-                  ->orWhere('path', 'like', "%{$search}%");
+                    ->orWhere('handle', 'like', "%{$search}%")
+                    ->orWhere('path', 'like', "%{$search}%");
             });
         }
 
         return $query->paginate($perPage);
     }
 
+    /** @return Collection<int, InboundEndpoint> */
     public function all(): Collection
     {
         return InboundEndpoint::orderBy('name')->get();
@@ -46,5 +48,26 @@ class InboundEndpointRepository
     public function countActive(): int
     {
         return InboundEndpoint::where('enabled', true)->count();
+    }
+
+    public function create(array $attributes): InboundEndpoint
+    {
+        $endpoint = new InboundEndpoint;
+        $endpoint->fill($attributes);
+        $endpoint->save();
+
+        return $endpoint->fresh();
+    }
+
+    public function save(InboundEndpoint $endpoint): InboundEndpoint
+    {
+        $endpoint->save();
+
+        return $endpoint->fresh();
+    }
+
+    public function delete(InboundEndpoint $endpoint): bool
+    {
+        return (bool) $endpoint->delete();
     }
 }

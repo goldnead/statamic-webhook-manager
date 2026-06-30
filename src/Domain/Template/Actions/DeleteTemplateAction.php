@@ -2,8 +2,9 @@
 
 namespace Goldnead\WebhookManager\Domain\Template\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 
 /**
  * Delete a template. If outbound webhooks reference this template by
@@ -13,19 +14,32 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
  */
 class DeleteTemplateAction
 {
+    public function __construct(
+        protected TemplateRepositoryInterface $templates,
+        protected OutboundWebhookRepositoryInterface $outbounds,
+    ) {
+    }
+
     /**
      * @return array{deleted:bool, detached_outbounds:int}
      */
     public function __invoke(Template $template): array
     {
-        $detached = OutboundWebhook::where('payload_template_handle', $template->handle)
-            ->update(['payload_template_handle' => null]);
+        // Detach via the repository so it works under either storage driver.
+        $detached = 0;
+        foreach ($this->outbounds->all() as $hook) {
+            if ($hook->payload_template_handle === $template->handle) {
+                $hook->payload_template_handle = null;
+                $this->outbounds->save($hook);
+                $detached++;
+            }
+        }
 
-        $template->delete();
+        $this->templates->delete($template);
 
         return [
             'deleted' => true,
-            'detached_outbounds' => (int) $detached,
+            'detached_outbounds' => $detached,
         ];
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\CreateOutboundWebhookAction;
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Registries\PresetRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Illuminate\Http\Request;
@@ -89,7 +89,7 @@ class PresetController extends CpController
         $base = Str::slug($name) ?: 'webhook';
         $handle = $base;
         $i = 1;
-        while (OutboundWebhook::where('handle', $handle)->exists()) {
+        while (app(OutboundWebhookRepositoryInterface::class)->findByHandle($handle) !== null) {
             $i++;
             $handle = "{$base}-{$i}";
         }

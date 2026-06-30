@@ -2,14 +2,19 @@
 
 namespace Goldnead\WebhookManager\Domain\InboundEndpoint\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 
 class ToggleInboundEndpointAction
 {
+    public function __construct(protected InboundEndpointRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(InboundEndpoint $endpoint, ?bool $enabled = null): InboundEndpoint
     {
         $endpoint->enabled = $enabled ?? ! $endpoint->enabled;
-        $endpoint->save();
-        return $endpoint->fresh();
+
+        return $this->repository->save($endpoint);
     }
 }

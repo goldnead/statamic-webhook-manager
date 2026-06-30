@@ -21,6 +21,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Storage Driver
+    |--------------------------------------------------------------------------
+    |
+    | Where the webhook *configuration* (outbound webhooks, inbound endpoints,
+    | rules and templates) is stored. Delivery records and logs are runtime
+    | telemetry and always live in the database regardless of this setting.
+    |
+    | - "eloquent" (default): config lives in database tables. Requires
+    |   running `php artisan migrate`.
+    |
+    | - "flat": config lives as human-readable YAML files under
+    |   content/webhooks/, true to Statamic's flat-file philosophy and
+    |   git-versionable alongside the rest of your site.
+    |
+    | Move existing config between drivers with:
+    |   php artisan webhook-manager:storage:migrate --from=eloquent --to=flat
+    */
+    'storage' => [
+        'driver' => env('WEBHOOK_MANAGER_DRIVER', 'eloquent'),
+
+        'flat' => [
+            // Where the config YAML files live.
+            'path' => env('WEBHOOK_MANAGER_FLAT_PATH', base_path('content/webhooks')),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue
     |--------------------------------------------------------------------------
     |

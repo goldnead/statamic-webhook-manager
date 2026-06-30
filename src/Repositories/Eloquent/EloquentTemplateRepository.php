@@ -1,14 +1,15 @@
 <?php
 
-namespace Goldnead\WebhookManager\Repositories;
+namespace Goldnead\WebhookManager\Repositories\Eloquent;
 
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class TemplateRepository
+class EloquentTemplateRepository implements TemplateRepositoryInterface
 {
-    public function find(int $id): ?Template
+    public function find(int|string $id): ?Template
     {
         return Template::find($id);
     }
@@ -23,9 +24,7 @@ class TemplateRepository
         return Template::where('uuid', $uuid)->first();
     }
 
-    /**
-     * @return Collection<int, Template>
-     */
+    /** @return Collection<int, Template> */
     public function ofType(string $type): Collection
     {
         return Template::where('type', $type)->orderBy('name')->get();
@@ -38,7 +37,7 @@ class TemplateRepository
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('handle', 'like', "%{$search}%");
+                    ->orWhere('handle', 'like', "%{$search}%");
             });
         }
         if ($type) {
@@ -48,8 +47,30 @@ class TemplateRepository
         return $query->paginate($perPage);
     }
 
+    /** @return Collection<int, Template> */
     public function all(): Collection
     {
         return Template::orderBy('name')->get();
+    }
+
+    public function create(array $attributes): Template
+    {
+        $template = new Template;
+        $template->fill($attributes);
+        $template->save();
+
+        return $template->fresh();
+    }
+
+    public function save(Template $template): Template
+    {
+        $template->save();
+
+        return $template->fresh();
+    }
+
+    public function delete(Template $template): bool
+    {
+        return (bool) $template->delete();
     }
 }
