@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
+import { useForm } from '@inertiajs/vue3';
 import {
     Header,
     Alert,
@@ -15,6 +16,7 @@ import {
     Card,
     CodeEditor,
     Panel,
+    ConfirmationModal,
 } from '@statamic/cms/ui';
 
 /**
@@ -39,9 +41,37 @@ const props = defineProps({
     configFilePath: { type: String, required: true },
     /** v1: always false; flip to true once a DB-settings-layer exists */
     isEditable: { type: Boolean, default: false },
+    /** Active storage driver + record counts + switch URL (SettingsController) */
+    storage: { type: Object, required: true },
 });
 
 const copied = ref(false);
+
+// ----- storage driver switch -----------------------------------------
+
+const showSwitch = ref(false);
+
+// Target driver to switch to (the other store). Uses form.submit('post', url)
+// — the proven submission helper in this Inertia build (the dynamic-verb
+// form.post()/router.post() helpers misbehave here, same as the edit forms).
+const switchForm = useForm({ driver: props.storage.target });
+
+const storageCountsLine = computed(() => {
+    const c = props.storage.counts || {};
+    return __('webhook-manager::messages.storage_counts_line', {
+        outbound: c['outbound webhooks'] ?? 0,
+        inbound: c['inbound endpoints'] ?? 0,
+        rules: c['rules'] ?? 0,
+        templates: c['templates'] ?? 0,
+    });
+});
+
+function switchStorage() {
+    switchForm.submit('post', props.storage.switch_url, {
+        preserveScroll: true,
+        onFinish: () => { showSwitch.value = false; },
+    });
+}
 
 function copyPath() {
     navigator.clipboard.writeText(props.configFilePath).then(() => {
@@ -96,6 +126,50 @@ const statusCodesToString = (val) => {
         </Alert>
 
         <div class="space-y-6">
+
+            <!-- ── Storage driver (interactive) ─────────────────────── -->
+                <Panel :heading="__('webhook-manager::messages.storage_heading')" :subheading="__('webhook-manager::messages.storage_sub')">
+                    <Card>
+                        <Field inline
+                            :label="__('webhook-manager::messages.storage_active_driver')"
+                        >
+                            <div class="flex items-center gap-2">
+                                <Badge
+                                    :color="storage.driver === 'flat' ? 'green' : 'blue'"
+                                    :text="storage.driver_label"
+                                />
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ storage.source === 'control_panel'
+                                        ? __('webhook-manager::messages.storage_source_control_panel')
+                                        : __('webhook-manager::messages.storage_source_config') }}
+                                </span>
+                            </div>
+                        </Field>
+
+                        <Field v-if="storage.driver === 'flat'" inline
+                            :label="__('webhook-manager::messages.storage_flat_path_label')"
+                        >
+                            <Input :model-value="storage.flat_path" read-only class="font-mono text-sm" />
+                        </Field>
+
+                        <Field inline
+                            :label="__('webhook-manager::messages.storage_records')"
+                        >
+                            <span class="text-sm text-gray-700 dark:text-gray-300 tabular-nums">{{ storageCountsLine }}</span>
+                        </Field>
+
+                        <Field inline
+                            :label="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+                            :instructions="__('webhook-manager::messages.storage_switch_hint', { driver: storage.target_label })"
+                        >
+                            <Button
+                                :text="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+                                :disabled="switchForm.processing"
+                                @click="showSwitch = true"
+                            />
+                        </Field>
+                    </Card>
+                </Panel>
 
             <!-- ── General ──────────────────────────────────────────── -->
                 <Panel :heading="__('Features')">
@@ -510,6 +584,15 @@ const statusCodesToString = (val) => {
             />
         </Card>
                 </Panel>
+
+        <ConfirmationModal
+            :open="showSwitch"
+            :title="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+            :body-text="__('webhook-manager::messages.storage_switch_hint', { driver: storage.target_label })"
+            :button-text="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+            @confirm="switchStorage"
+            @update:open="showSwitch = $event"
+        />
 
     </div>
 </template>

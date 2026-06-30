@@ -79,6 +79,7 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
     });
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings/storage', [SettingsController::class, 'switchStorage'])->name('settings.storage');
     Route::get('/debug', [DebugController::class, 'index'])->name('debug');
 
     /*
