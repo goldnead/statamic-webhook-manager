@@ -75,6 +75,9 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         TriggerDetected::class => [
             DispatchTriggerListener::class,
         ],
+        \Goldnead\WebhookManager\Events\DeliveryFailedTerminally::class => [
+            \Goldnead\WebhookManager\Listeners\SendFailureAlertListener::class,
+        ],
     ];
 
     protected $routes = [

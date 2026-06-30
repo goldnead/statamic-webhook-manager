@@ -131,6 +131,46 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Failure alerts
+    |--------------------------------------------------------------------------
+    |
+    | Notify an admin when a delivery exhausts its retries and fails for good.
+    | `throttle_minutes` caps how often a single webhook may alert, so a broken
+    | endpoint doesn't flood your inbox.
+    */
+    'alerts' => [
+        'enabled' => env('WEBHOOK_MANAGER_ALERTS', true),
+        'throttle_minutes' => (int) env('WEBHOOK_MANAGER_ALERT_THROTTLE', 15),
+        'mail' => [
+            'enabled' => env('WEBHOOK_MANAGER_ALERT_MAIL', true),
+            // Comma-separated list, e.g. WEBHOOK_MANAGER_ALERT_EMAILS=a@x.com,b@x.com
+            'recipients' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('WEBHOOK_MANAGER_ALERT_EMAILS', ''))
+            ))),
+        ],
+        'slack' => [
+            // A Slack/Discord/Teams incoming-webhook URL to post failure alerts to.
+            'webhook_url' => env('WEBHOOK_MANAGER_ALERT_SLACK_URL'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Circuit breaker
+    |--------------------------------------------------------------------------
+    |
+    | Auto-disable an outbound webhook after this many consecutive terminal
+    | failures, so a dead endpoint stops being hammered. The counter resets to
+    | zero on the next success. Set threshold to 0 to never auto-disable.
+    */
+    'circuit_breaker' => [
+        'enabled' => env('WEBHOOK_MANAGER_CIRCUIT_BREAKER', true),
+        'threshold' => (int) env('WEBHOOK_MANAGER_CIRCUIT_THRESHOLD', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Debug
     |--------------------------------------------------------------------------
     */
