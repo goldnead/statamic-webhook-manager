@@ -298,8 +298,8 @@ const authInstructions = computed(() => {
             <!-- ───────── General ───────── -->
             <TabContent value="general">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Name')"
                             id="name"
                             :required="true"
@@ -309,7 +309,7 @@ const authInstructions = computed(() => {
                             <Input id="name" v-model="form.name" autofocus />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Handle')"
                             id="handle"
                             :required="true"
@@ -319,7 +319,7 @@ const authInstructions = computed(() => {
                             <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Description')"
                             id="description"
                             class="md:col-span-2"
@@ -328,7 +328,7 @@ const authInstructions = computed(() => {
                             <Textarea id="description" v-model="form.description" :rows="2" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Status')"
                             id="enabled"
                             class="md:col-span-2"
@@ -347,8 +347,8 @@ const authInstructions = computed(() => {
             <!-- ───────── Trigger ───────── -->
             <TabContent value="trigger">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Trigger type')"
                             id="trigger_type"
                             :required="true"
@@ -364,8 +364,8 @@ const authInstructions = computed(() => {
             <!-- ───────── Request ───────── -->
             <TabContent value="request">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('URL')"
                             id="url"
                             :required="true"
@@ -376,7 +376,7 @@ const authInstructions = computed(() => {
                             <Input id="url" v-model="form.url" type="url" placeholder="https://example.com/hooks/incoming" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Method')"
                             id="method"
                             :error="form.errors.method"
@@ -384,7 +384,7 @@ const authInstructions = computed(() => {
                             <Select id="method" v-model="form.method" :options="methodOptionsArray" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Timeout (seconds)')"
                             id="timeout_seconds"
                             :error="form.errors.timeout_seconds"
@@ -393,7 +393,7 @@ const authInstructions = computed(() => {
                             <Input id="timeout_seconds" v-model.number="form.timeout_seconds" type="number" min="1" max="120" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Follow redirects')"
                             id="follow_redirects"
                             class="md:col-span-2"
@@ -412,8 +412,8 @@ const authInstructions = computed(() => {
             <!-- ───────── Authentication ───────── -->
             <TabContent value="auth">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Type')"
                             id="auth_type"
                             :error="form.errors.auth_type"
@@ -429,7 +429,7 @@ const authInstructions = computed(() => {
                             />
                         </div>
 
-                        <Field
+                        <Field inline
                             v-if="form.auth_type !== 'none'"
                             :label="__('Auth config (JSON)')"
                             id="auth_config_json"
@@ -452,8 +452,8 @@ const authInstructions = computed(() => {
             <!-- ───────── Payload ───────── -->
             <TabContent value="payload">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Type')"
                             id="payload_type"
                             :error="form.errors.payload_type"
@@ -461,11 +461,11 @@ const authInstructions = computed(() => {
                             <Select id="payload_type" v-model="form.payload_type" :options="payloadTypeOptionsArray" />
                         </Field>
 
-                        <Field
-                            :label="__('Body source')"
-                            id="body_source"
-                            :instructions="__('Use an inline template, or pick a reusable template from the library. Library templates win when both are set.')"
-                        >
+                        <Field inline
+ :label="__('Body source')"
+ id="body_source"
+ :instructions="__('Use an template, or pick a reusable template from the library. Library templates win when both are set.')"
+ >
                             <RadioGroup v-model="bodySource" id="body_source">
                                 <Radio value="inline" :label="__('Inline template')" />
                                 <Radio
@@ -476,7 +476,7 @@ const authInstructions = computed(() => {
                             </RadioGroup>
                         </Field>
 
-                        <Field
+                        <Field inline
                             v-if="bodySource === 'library'"
                             :label="__('Library template')"
                             id="payload_template_handle"
@@ -493,7 +493,7 @@ const authInstructions = computed(() => {
                             />
                         </Field>
 
-                        <Field
+                        <Field inline
                             v-else
                             :label="__('Template')"
                             id="payload_template"
@@ -514,8 +514,8 @@ const authInstructions = computed(() => {
             <!-- ───────── Delivery ───────── -->
             <TabContent value="delivery">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Queue')"
                             id="queue_enabled"
                             class="md:col-span-2"
@@ -529,7 +529,7 @@ const authInstructions = computed(() => {
                             />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Body logging')"
                             id="log_body_mode"
                             :error="form.errors.log_body_mode"

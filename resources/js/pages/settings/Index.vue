@@ -11,6 +11,7 @@ import {
     Textarea,
     Select,
     Switch,
+    Card,
     CodeEditor,
     Tabs,
     TabList,
@@ -110,6 +111,7 @@ const statusCodesToString = (val) => {
             <!-- ── General ──────────────────────────────────────────── -->
             <TabContent value="general">
                 <Panel :heading="__('Features')">
+                    <Card>
                     <Field inline
                         :label="__('Outbound webhooks')"
                         :instructions="__('Enable the outbound webhook engine.')"
@@ -159,9 +161,11 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Queue')">
+                    <Card>
                     <Field inline
                         :label="__('Queue connection')"
                         :instructions="__('WEBHOOK_MANAGER_QUEUE_CONNECTION env var. Leave empty to use the default connection.')"
@@ -192,12 +196,14 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── Defaults ─────────────────────────────────────────── -->
             <TabContent value="defaults">
                 <Panel :heading="__('Retry defaults')">
+                    <Card>
                     <Field inline
                         :label="__('Strategy')"
                         :instructions="__('none | linear | exponential')"
@@ -239,9 +245,11 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('HTTP defaults')">
+                    <Card>
                     <Field inline
                         :label="__('Timeout (seconds)')"
                         :instructions="__('Total request timeout.')"
@@ -280,12 +288,14 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── Security ─────────────────────────────────────────── -->
             <TabContent value="security">
                 <Panel :heading="__('Inbound route')">
+                    <Card>
                     <Field inline
                         :label="__('Route prefix')"
                         :instructions="__('URL prefix for all inbound webhook endpoints.')"
@@ -313,9 +323,11 @@ const statusCodesToString = (val) => {
                     >
                         <Input :model-value="String(config.security.inbound_replay_protection_ttl_seconds)" read-only />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Signature &amp; HMAC')">
+                    <Card>
                     <Field inline
                         :label="__('Allowed hash algorithms')"
                         :instructions="__('Algorithms available when generating or verifying signatures.')"
@@ -357,12 +369,14 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── Logging ──────────────────────────────────────────── -->
             <TabContent value="logging">
                 <Panel :heading="__('Delivery logging')">
+                    <Card>
                     <Field inline
                         :label="__('Log body mode')"
                         :instructions="__('full — store entire body · partial — store first N bytes · none — skip body storage.')"
@@ -398,9 +412,11 @@ const statusCodesToString = (val) => {
                             read-only
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Pruning')">
+                    <Card>
                     <Field inline
                         :label="__('Prune deliveries after (days)')"
                         :instructions="__('Deliveries older than this are removed by the webhook-manager:prune command. 0 = never.')"
@@ -414,9 +430,11 @@ const statusCodesToString = (val) => {
                     >
                         <Input :model-value="String(config.logging.logs_after_days)" read-only />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Debug')">
+                    <Card>
                     <Field inline
                         :label="__('Expose full response in dev')"
                         :instructions="__('When enabled, full response bodies are surfaced in the CP even in partial mode.')"
@@ -426,12 +444,14 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
             </TabContent>
         </Tabs>
 
         <!-- ── Raw config panel ─────────────────────────────────────── -->
         <Panel :heading="__('Raw configuration')" class="mt-6">
+                    <Card>
             <p class="text-sm text-gray-600 dark:text-dark-150 mb-4">
                 {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
             </p>
@@ -442,7 +462,8 @@ const statusCodesToString = (val) => {
                 :line-numbers="true"
                 class="font-mono text-sm"
             />
-        </Panel>
+        </Card>
+                </Panel>
 
     </div>
 </template>
