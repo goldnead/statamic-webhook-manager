@@ -318,7 +318,7 @@ async function runTest() {
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
                 :text="__('Test')"
-                icon="paper-airplane"
+                icon="arrow-up-right"
                 @click="() => { activeTab = 'test'; }"
             />
             <Button
@@ -367,8 +367,8 @@ async function runTest() {
             <!-- ───────── General ───────── -->
             <TabContent value="general">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Name')"
                             id="name"
                             :required="true"
@@ -378,7 +378,7 @@ async function runTest() {
                             <Input id="name" v-model="form.name" autofocus />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Handle')"
                             id="handle"
                             :required="true"
@@ -388,7 +388,7 @@ async function runTest() {
                             <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Description')"
                             id="description"
                             class="md:col-span-2"
@@ -397,7 +397,7 @@ async function runTest() {
                             <Textarea id="description" v-model="form.description" :rows="2" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Order')"
                             id="order_index"
                             :error="form.errors.order_index"
@@ -406,7 +406,7 @@ async function runTest() {
                             <Input id="order_index" v-model.number="form.order_index" type="number" min="0" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Status')"
                             id="enabled"
                             :error="form.errors.enabled"
@@ -424,8 +424,8 @@ async function runTest() {
             <!-- ───────── Trigger ───────── -->
             <TabContent value="trigger">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Trigger type')"
                             id="trigger_type"
                             :required="true"
@@ -435,7 +435,7 @@ async function runTest() {
                             <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Trigger config (JSON)')"
                             id="trigger_config"
                             :error="form.errors.trigger_config"
@@ -461,7 +461,7 @@ async function runTest() {
                             <p class="text-sm text-gray-600 dark:text-gray-400">
                                 {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
                             </p>
-                            <Field :label="__('Show JSON')" inline class="shrink-0 ms-4">
+                            <Field inline :label="__('Show JSON')" class="shrink-0 ms-4">
                                 <Switch v-model="showConditionJson" />
                             </Field>
                         </div>
@@ -511,7 +511,7 @@ async function runTest() {
                             :text="actionsError"
                         />
 
-                        <Field
+                        <Field inline
                             :label="__('Actions (JSON array)')"
                             id="actions"
                             :error="form.errors.actions"
@@ -547,8 +547,8 @@ async function runTest() {
             <!-- ───────── Settings ───────── -->
             <TabContent value="settings">
                 <Panel class="mt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Stop on first failure')"
                             id="stop_on_failure"
                             class="md:col-span-2"
@@ -569,7 +569,7 @@ async function runTest() {
             <TabContent v-if="!isNew && testUrl" value="test">
                 <Panel class="mt-4">
                     <div class="p-6 space-y-6">
-                        <Field
+                        <Field inline
                             :label="__('Sample payload (JSON)')"
                             id="sample_payload"
                             :instructions="__('This payload is passed to the rule engine as if it were a real trigger event.')"
@@ -587,7 +587,7 @@ async function runTest() {
                                 variant="primary"
                                 :loading="testing"
                                 :text="__('Run test')"
-                                icon="paper-airplane"
+                                icon="arrow-up-right"
                                 @click="runTest"
                             />
                         </div>
@@ -599,7 +599,7 @@ async function runTest() {
                                 :text="testResult.message ?? ''"
                             />
 
-                            <Field v-if="testResult.data && Object.keys(testResult.data).length" :label="__('Result detail')">
+                            <Field inline v-if="testResult.data && Object.keys(testResult.data).length" :label="__('Result detail')">
                                 <CodeEditor
                                     :model-value="JSON.stringify(testResult.data, null, 2)"
                                     mode="json"

@@ -7,16 +7,14 @@ return [
     | Feature Toggles
     |--------------------------------------------------------------------------
     |
-    | Enable or disable major modules of the addon. Inbound, rules and
-    | templates ship as stubs in the first release and may be toggled off
-    | until they are fully implemented.
-    |
-    | TODO: REVIEW — set defaults once iteration on each module ships.
+    | Enable or disable major modules of the addon. Each toggle hides the
+    | module's CP screens, navigation entries and runtime wiring, so you can
+    | run the addon as outbound-only (or any subset) without uninstalling.
     */
     'features' => [
         'outbound' => true,
-        'inbound' => true,    // stub responses, see InboundWebhookController
-        'rules' => true,      // stub engine, see Rules\RuleEngine
+        'inbound' => true,
+        'rules' => true,
         'templates' => true,
         'debug_tools' => true,
     ],

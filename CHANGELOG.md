@@ -5,6 +5,51 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Marketplace launch readiness
+
+Make the addon installable and verifiable on a current Statamic 6 install,
+and align the test/build tooling with the sibling LeadHub addon.
+
+### Fixed
+
+- **Install failed on a fresh Statamic 6 project (Laravel 13).** The Statamic 6
+  skeleton now ships Laravel 13, but `orchestra/testbench` was capped at
+  `^9|^10` (Laravel 12), so `composer require --dev`/`composer update` could not
+  resolve against a Laravel 13 host. Widened to `^9|^10|^11` (testbench 11 =
+  Laravel 13) and `phpunit/phpunit` to `^10.5|^11|^12`. Verified: the full
+  suite (78 tests) passes on `laravel/framework v13` + `statamic/cms v6.23`.
+
+### Added
+
+- **Persistent local playground** (`scripts/setup-playground.sh`): a fresh
+  Statamic 6 site with the addon wired in as a Composer path repo, SQLite, a
+  CP super-user and seeded sample records (outbound webhook, inbound endpoint,
+  payload template) plus a `pages` collection so `entry.*` triggers fire.
+- **End-to-end smoke test** (`scripts/smoke-test.sh`): installs a throwaway
+  Statamic project, renders a payload template and delivers it to a local
+  receiver through the real `DeliveryEngine`, asserting the `Delivery` is
+  recorded as a success.
+- **CI workflow** (`.github/workflows/tests.yml`): PHP 8.2/8.3/8.4 × Statamic 6.
+- `composer test` script; `support` block and author email in `composer.json`.
+- `MARKETPLACE.md` listing copy.
+
+### Changed
+
+- **Feature toggles are now enforced in the CP navigation.** Disabling
+  `inbound`, `rules`, `templates`, `debug_tools` (or `outbound`) in
+  `config/webhook-manager.php` hides that module's sidebar entry; previously
+  the toggles were only surfaced on the Settings screen.
+- Documentation accuracy: README status line, config comments and several
+  model/request docblocks described inbound, rules and templates as "stubs"
+  / "no-op" / "returns 501" — these modules are in fact fully implemented and
+  test-covered. Updated the copy to match the shipping behaviour.
+- `.devcontainer/post-create.sh` now delegates to `scripts/setup-playground.sh`.
+
+### Removed
+
+- Dead `Jobs/DispatchRuleActionsJob` placeholder (empty `handle()`, never
+  dispatched — the rule engine runs synchronously via `RuleEngine`).
+
 ## [0.6.0] — Polish: visual condition builder + failure classification
 
 Two PRD §29 / §54 polish items that were left as TODO REVIEW during

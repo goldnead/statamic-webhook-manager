@@ -108,14 +108,14 @@ class DeliveryController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['handle' => 'status',        'label' => __('Status'),    'visible' => true,  'sortable' => true],
-            ['handle' => 'outbound_name', 'label' => __('Trigger'),   'visible' => true,  'sortable' => false],
-            ['handle' => 'url',           'label' => __('URL'),       'visible' => true,  'sortable' => false],
-            ['handle' => 'method',        'label' => __('Method'),    'visible' => true,  'sortable' => false],
-            ['handle' => 'response_code', 'label' => __('Code'),      'visible' => true,  'sortable' => true],
-            ['handle' => 'attempts',      'label' => __('Attempts'),  'visible' => true,  'sortable' => true],
-            ['handle' => 'error_type',    'label' => __('Error'),     'visible' => false, 'sortable' => true],
-            ['handle' => 'when',          'label' => __('When'),      'visible' => true,  'sortable' => true],
+            ['field' => 'status',        'label' => __('Status'),    'visible' => true,  'sortable' => true],
+            ['field' => 'outbound_name', 'label' => __('Trigger'),   'visible' => true,  'sortable' => false],
+            ['field' => 'url',           'label' => __('URL'),       'visible' => true,  'sortable' => false],
+            ['field' => 'method',        'label' => __('Method'),    'visible' => true,  'sortable' => false],
+            ['field' => 'response_code', 'label' => __('Code'),      'visible' => true,  'sortable' => true],
+            ['field' => 'attempts',      'label' => __('Attempts'),  'visible' => true,  'sortable' => true],
+            ['field' => 'error_type',    'label' => __('Error'),     'visible' => false, 'sortable' => true],
+            ['field' => 'when',          'label' => __('When'),      'visible' => true,  'sortable' => true],
         ];
     }
 

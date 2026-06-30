@@ -175,7 +175,7 @@ function copyToClipboard(text) {
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
         <!-- ── Page header ─────────────────────────────────────────── -->
-        <Header :title="pageTitle" icon="layouts">
+        <Header :title="pageTitle" icon="layout-grid">
             <Button
                 :text="saveLabel"
                 variant="primary"
@@ -225,8 +225,8 @@ function copyToClipboard(text) {
             <!-- ── General tab ─────────────────────────────────────── -->
             <TabContent value="general">
                 <Panel>
-                    <div class="grid gap-6 p-6">
-                        <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Field inline
                             :label="__('Name')"
                             :error="form.errors.name"
                             required
@@ -239,7 +239,7 @@ function copyToClipboard(text) {
                             />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Handle')"
                             :error="form.errors.handle"
                             :instructions="__('Lowercase letters, numbers, underscores and hyphens only.')"
@@ -253,7 +253,7 @@ function copyToClipboard(text) {
                             />
                         </Field>
 
-                        <Field
+                        <Field inline
                             :label="__('Type')"
                             :error="form.errors.type"
                             required
@@ -268,7 +268,7 @@ function copyToClipboard(text) {
             <TabContent value="body">
                 <Panel>
                     <div class="p-6 space-y-4">
-                        <Field
+                        <Field inline
                             :label="__('Body')"
                             :error="form.errors.body"
                             :instructions="__('Template body. Twig / Antlers syntax is supported for non-JSON types.')"
@@ -300,7 +300,7 @@ function copyToClipboard(text) {
                                         size="xs"
                                         variant="default"
                                         :text="__('Copy')"
-                                        icon="copy"
+                                        icon="duplicate"
                                         @click="copyToClipboard('{{ ' + ns + ' }}')"
                                     />
                                 </li>
@@ -314,13 +314,13 @@ function copyToClipboard(text) {
             <TabContent value="preview">
                 <Panel>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Field :label="__('Source Type')">
+                        <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                            <Field inline :label="__('Source Type')">
                                 <Select v-model="sourceType" :options="sourceTypeOptions" />
                             </Field>
                         </div>
 
-                        <Field
+                        <Field inline
                             :label="__('Sample Payload')"
                             :instructions="__('Provide a JSON object that will be passed as data to the template renderer.')"
                         >
@@ -336,7 +336,7 @@ function copyToClipboard(text) {
                                 :text="__('Render preview')"
                                 variant="primary"
                                 :loading="previewing"
-                                icon="play"
+                                icon="flash-bolt-lightning"
                                 @click="runPreview"
                             />
                         </div>

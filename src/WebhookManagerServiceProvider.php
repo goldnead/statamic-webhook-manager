@@ -168,22 +168,45 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     protected function bootNavigation(): void
     {
         Nav::extend(function ($nav) {
+            $features = config('webhook-manager.features', []);
+            $enabled = fn (string $feature) => (bool) ($features[$feature] ?? true);
+
+            // Child items are gated by both the feature toggle and the user's
+            // permission, so disabling a module in config hides its CP screens
+            // from the sidebar. Overview, deliveries and logs are always shown.
+            $children = [
+                $nav->item(__('webhook-manager::nav.overview'))->route('webhook-manager.overview'),
+            ];
+
+            if ($enabled('outbound')) {
+                $children[] = $nav->item(__('webhook-manager::nav.outbound'))->route('webhook-manager.outbound.index')->can('manage outbound webhooks');
+            }
+            if ($enabled('inbound')) {
+                $children[] = $nav->item(__('webhook-manager::nav.inbound'))->route('webhook-manager.inbound.index')->can('manage inbound endpoints');
+            }
+            if ($enabled('rules')) {
+                $children[] = $nav->item(__('webhook-manager::nav.rules'))->route('webhook-manager.rules.index')->can('manage webhook rules');
+            }
+
+            $children[] = $nav->item(__('webhook-manager::nav.deliveries'))->route('webhook-manager.deliveries.index')->can('view webhook deliveries');
+            $children[] = $nav->item(__('webhook-manager::nav.logs'))->route('webhook-manager.logs.index')->can('view webhooks');
+
+            if ($enabled('templates')) {
+                $children[] = $nav->item(__('webhook-manager::nav.templates'))->route('webhook-manager.templates.index')->can('manage webhook templates');
+            }
+
+            $children[] = $nav->item(__('webhook-manager::nav.settings'))->route('webhook-manager.settings')->can('manage webhook settings');
+
+            if ($enabled('debug_tools')) {
+                $children[] = $nav->item(__('webhook-manager::nav.debug'))->route('webhook-manager.debug')->can('use webhook debug tools');
+            }
+
             $nav->create(__('webhook-manager::nav.webhooks'))
                 ->section(__('webhook-manager::nav.section'))
                 ->route('webhook-manager.overview')
-                ->icon('hyperlink')
+                ->icon('link')
                 ->can('view webhooks')
-                ->children([
-                    $nav->item(__('webhook-manager::nav.overview'))->route('webhook-manager.overview'),
-                    $nav->item(__('webhook-manager::nav.outbound'))->route('webhook-manager.outbound.index')->can('manage outbound webhooks'),
-                    $nav->item(__('webhook-manager::nav.inbound'))->route('webhook-manager.inbound.index')->can('manage inbound endpoints'),
-                    $nav->item(__('webhook-manager::nav.rules'))->route('webhook-manager.rules.index')->can('manage webhook rules'),
-                    $nav->item(__('webhook-manager::nav.deliveries'))->route('webhook-manager.deliveries.index')->can('view webhook deliveries'),
-                    $nav->item(__('webhook-manager::nav.logs'))->route('webhook-manager.logs.index')->can('view webhooks'),
-                    $nav->item(__('webhook-manager::nav.templates'))->route('webhook-manager.templates.index')->can('manage webhook templates'),
-                    $nav->item(__('webhook-manager::nav.settings'))->route('webhook-manager.settings')->can('manage webhook settings'),
-                    $nav->item(__('webhook-manager::nav.debug'))->route('webhook-manager.debug')->can('use webhook debug tools'),
-                ]);
+                ->children($children);
         });
     }
 

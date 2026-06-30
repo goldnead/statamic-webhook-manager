@@ -145,7 +145,7 @@ function toggle(rule) {
                 />
                 <DropdownItem
                     v-if="rule.can_toggle"
-                    icon="toggle"
+                    icon="fieldtype-toggle"
                     :text="rule.enabled ? __('Disable') : __('Enable')"
                     @click="toggle(rule)"
                 />

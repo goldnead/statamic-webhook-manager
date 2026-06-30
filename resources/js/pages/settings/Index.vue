@@ -11,11 +11,8 @@ import {
     Textarea,
     Select,
     Switch,
+    Card,
     CodeEditor,
-    Tabs,
-    TabList,
-    TabTrigger,
-    TabContent,
     Panel,
 } from '@statamic/cms/ui';
 
@@ -43,7 +40,6 @@ const props = defineProps({
     isEditable: { type: Boolean, default: false },
 });
 
-const activeTab = ref('general');
 const copied = ref(false);
 
 function copyPath() {
@@ -74,7 +70,7 @@ const statusCodesToString = (val) => {
     <div class="max-w-page mx-auto">
 
         <!-- ── Page header ──────────────────────────────────────────── -->
-        <Header :title="__('Webhook Manager Settings')" icon="settings-horizontal" />
+        <Header :title="__('Webhook Manager Settings')" icon="sliders-horizontal" />
 
         <!-- ── Config-file notice ───────────────────────────────────── -->
         <Alert variant="info" class="mb-6">
@@ -98,19 +94,12 @@ const statusCodesToString = (val) => {
             </template>
         </Alert>
 
-        <!-- ── Tabs ─────────────────────────────────────────────────── -->
-        <Tabs v-model="activeTab">
-            <TabList>
-                <TabTrigger value="general">{{ __('General') }}</TabTrigger>
-                <TabTrigger value="defaults">{{ __('Defaults') }}</TabTrigger>
-                <TabTrigger value="security">{{ __('Security') }}</TabTrigger>
-                <TabTrigger value="logging">{{ __('Logging') }}</TabTrigger>
-            </TabList>
+        <div class="space-y-6">
 
             <!-- ── General ──────────────────────────────────────────── -->
-            <TabContent value="general">
                 <Panel :heading="__('Features')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Outbound webhooks')"
                         :instructions="__('Enable the outbound webhook engine.')"
                     >
@@ -120,7 +109,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Inbound webhooks')"
                         :instructions="__('Enable the inbound webhook receiver.')"
                     >
@@ -130,7 +119,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Rules engine')"
                         :instructions="__('Enable the rule/routing engine.')"
                     >
@@ -140,7 +129,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Templates')"
                         :instructions="__('Enable payload template library.')"
                     >
@@ -150,7 +139,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Debug tools')"
                         :instructions="__('Enable the Debug section in the CP.')"
                     >
@@ -159,10 +148,12 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Queue')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Queue connection')"
                         :instructions="__('WEBHOOK_MANAGER_QUEUE_CONNECTION env var. Leave empty to use the default connection.')"
                     >
@@ -173,7 +164,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Queue name')"
                         :instructions="__('WEBHOOK_MANAGER_QUEUE_NAME env var.')"
                     >
@@ -183,7 +174,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Sync in console')"
                         :instructions="__('Process jobs synchronously when running via CLI (testing only).')"
                     >
@@ -192,163 +183,167 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Defaults ─────────────────────────────────────────── -->
-            <TabContent value="defaults">
                 <Panel :heading="__('Retry defaults')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Strategy')"
                         :instructions="__('none | linear | exponential')"
                     >
                         <Input :model-value="config.defaults.retry_strategy" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Max attempts')"
                         :instructions="__('Total delivery attempts including the first try.')"
                     >
                         <Input :model-value="String(config.defaults.retry_max_attempts)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Base delay (seconds)')"
                         :instructions="__('Initial backoff delay for linear/exponential strategies.')"
                     >
                         <Input :model-value="String(config.defaults.retry_base_delay_seconds)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Max delay (seconds)')"
                         :instructions="__('Upper cap for exponential backoff.')"
                     >
                         <Input :model-value="String(config.defaults.retry_max_delay_seconds)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Retry on HTTP status codes')"
                         :instructions="__('Comma-separated list of status codes that trigger a retry.')"
                     >
                         <Input :model-value="statusCodesToString(config.defaults.retry_on_status)" read-only />
                     </Field>
 
-                    <Field :label="__('Retry on network errors')">
+                    <Field inline :label="__('Retry on network errors')">
                         <Switch
                             :model-value="config.defaults.retry_on_network_errors"
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('HTTP defaults')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Timeout (seconds)')"
                         :instructions="__('Total request timeout.')"
                     >
                         <Input :model-value="String(config.defaults.http_timeout_seconds)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Connect timeout (seconds)')"
                         :instructions="__('TCP/TLS connection timeout.')"
                     >
                         <Input :model-value="String(config.defaults.http_connect_timeout_seconds)" read-only />
                     </Field>
 
-                    <Field :label="__('Follow redirects')">
+                    <Field inline :label="__('Follow redirects')">
                         <Switch
                             :model-value="config.defaults.http_follow_redirects"
                             :disabled="true"
                         />
                     </Field>
 
-                    <Field :label="__('Max redirects')">
+                    <Field inline :label="__('Max redirects')">
                         <Input :model-value="String(config.defaults.http_max_redirects)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('User agent')"
                         :instructions="__('Sent in the User-Agent header of every outbound request.')"
                     >
                         <Input :model-value="config.defaults.http_user_agent" read-only />
                     </Field>
 
-                    <Field :label="__('Verify SSL')">
+                    <Field inline :label="__('Verify SSL')">
                         <Switch
                             :model-value="config.defaults.http_verify_ssl"
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Security ─────────────────────────────────────────── -->
-            <TabContent value="security">
                 <Panel :heading="__('Inbound route')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Route prefix')"
                         :instructions="__('URL prefix for all inbound webhook endpoints.')"
                     >
                         <Input :model-value="config.security.inbound_route_prefix" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Max payload (KB)')"
                         :instructions="__('Requests larger than this value are rejected with 413.')"
                     >
                         <Input :model-value="String(config.security.inbound_max_payload_kb)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Rate limit (per minute)')"
                         :instructions="__('Per-endpoint rate limit. 0 = unlimited.')"
                     >
                         <Input :model-value="String(config.security.inbound_rate_limit_per_minute)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Replay protection TTL (seconds)')"
                         :instructions="__('Inbound requests with a timestamp older than this are rejected.')"
                     >
                         <Input :model-value="String(config.security.inbound_replay_protection_ttl_seconds)" read-only />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Signature &amp; HMAC')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Allowed hash algorithms')"
                         :instructions="__('Algorithms available when generating or verifying signatures.')"
                     >
                         <Input :model-value="arrayToString(config.security.hash_algorithms)" read-only />
                     </Field>
 
-                    <Field :label="__('Default hash algorithm')">
+                    <Field inline :label="__('Default hash algorithm')">
                         <Input :model-value="config.security.default_hash_algorithm" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Signature header')"
                         :instructions="__('HTTP header name used to transmit the HMAC signature.')"
                     >
                         <Input :model-value="config.security.signature_header" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Timestamp header')"
                         :instructions="__('HTTP header name used to transmit the request timestamp.')"
                     >
                         <Input :model-value="config.security.timestamp_header" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Timestamp tolerance (seconds)')"
                         :instructions="__('Outbound: how far the remote clock may drift before the signature is rejected.')"
                     >
                         <Input :model-value="String(config.security.timestamp_tolerance_seconds)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Mask secrets in UI')"
                         :instructions="__('Replaces secret values with *** in the CP.')"
                     >
@@ -357,27 +352,27 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
-            </TabContent>
 
             <!-- ── Logging ──────────────────────────────────────────── -->
-            <TabContent value="logging">
                 <Panel :heading="__('Delivery logging')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Log body mode')"
                         :instructions="__('full — store entire body · partial — store first N bytes · none — skip body storage.')"
                     >
                         <Input :model-value="config.logging.mode" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Partial bytes')"
                         :instructions="__('When mode = partial, store this many bytes of the body.')"
                     >
                         <Input :model-value="String(config.logging.partial_bytes)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Masked request headers')"
                         :instructions="__('Header names whose values are replaced with *** in stored logs.')"
                     >
@@ -388,7 +383,7 @@ const statusCodesToString = (val) => {
                         />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Masked payload keys')"
                         :instructions="__('Top-level JSON body keys whose values are replaced with *** in stored logs.')"
                     >
@@ -398,26 +393,30 @@ const statusCodesToString = (val) => {
                             read-only
                         />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Pruning')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Prune deliveries after (days)')"
                         :instructions="__('Deliveries older than this are removed by the webhook-manager:prune command. 0 = never.')"
                     >
                         <Input :model-value="String(config.logging.deliveries_after_days)" read-only />
                     </Field>
 
-                    <Field
+                    <Field inline
                         :label="__('Prune logs after (days)')"
                         :instructions="__('Log records older than this are removed. 0 = never.')"
                     >
                         <Input :model-value="String(config.logging.logs_after_days)" read-only />
                     </Field>
+                </Card>
                 </Panel>
 
                 <Panel :heading="__('Debug')">
-                    <Field
+                    <Card>
+                    <Field inline
                         :label="__('Expose full response in dev')"
                         :instructions="__('When enabled, full response bodies are surfaced in the CP even in partial mode.')"
                     >
@@ -426,12 +425,13 @@ const statusCodesToString = (val) => {
                             :disabled="true"
                         />
                     </Field>
+                </Card>
                 </Panel>
-            </TabContent>
-        </Tabs>
+        </div>
 
         <!-- ── Raw config panel ─────────────────────────────────────── -->
         <Panel :heading="__('Raw configuration')" class="mt-6">
+                    <Card>
             <p class="text-sm text-gray-600 dark:text-dark-150 mb-4">
                 {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
             </p>
@@ -442,7 +442,8 @@ const statusCodesToString = (val) => {
                 :line-numbers="true"
                 class="font-mono text-sm"
             />
-        </Panel>
+        </Card>
+                </Panel>
 
     </div>
 </template>

@@ -1,10 +1,22 @@
+# Files excluded from the distributed package (dist tarball) — they are
+# dev/CI/marketplace tooling and not needed at runtime. The compiled CP assets
+# under resources/dist/build/ ARE shipped (Statamic publishes them to the
+# host's public/vendor/ on install), so resources/ is deliberately kept.
 /.github               export-ignore
+/.devcontainer         export-ignore
+/scripts               export-ignore
 /tests                 export-ignore
+/docs                  export-ignore
+/playground            export-ignore
+/vendor                export-ignore
+/node_modules          export-ignore
 /.editorconfig         export-ignore
 /.gitattributes        export-ignore
 /.gitignore            export-ignore
 /phpunit.xml           export-ignore
 /phpunit.xml.dist      export-ignore
+/MARKETPLACE.md        export-ignore
+
 *.md text eol=lf
 *.php text eol=lf
 *.json text eol=lf

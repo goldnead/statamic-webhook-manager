@@ -80,11 +80,11 @@ class LogController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['handle' => 'level',          'label' => __('Level'),          'visible' => true, 'sortable' => true],
-            ['handle' => 'message',        'label' => __('Message'),        'visible' => true, 'sortable' => false],
-            ['handle' => 'correlation_id', 'label' => __('Correlation ID'), 'visible' => true, 'sortable' => false],
-            ['handle' => 'error_type',     'label' => __('Error Type'),     'visible' => true, 'sortable' => true],
-            ['handle' => 'created_at',     'label' => __('When'),           'visible' => true, 'sortable' => true],
+            ['field' => 'level',          'label' => __('Level'),          'visible' => true, 'sortable' => true],
+            ['field' => 'message',        'label' => __('Message'),        'visible' => true, 'sortable' => false],
+            ['field' => 'correlation_id', 'label' => __('Correlation ID'), 'visible' => true, 'sortable' => false],
+            ['field' => 'error_type',     'label' => __('Error Type'),     'visible' => true, 'sortable' => true],
+            ['field' => 'created_at',     'label' => __('When'),           'visible' => true, 'sortable' => true],
         ];
     }
 

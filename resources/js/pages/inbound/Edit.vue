@@ -289,39 +289,42 @@ async function runTest() {
             <!-- ── GENERAL ── -->
             <TabContent value="general">
                 <Panel>
-                    <Field :label="__('Name')" :error="form.errors.name" required>
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Field inline :label="__('Name')" :error="form.errors.name" required>
                         <Input v-model="form.name" :placeholder="__('My Inbound Endpoint')" />
                     </Field>
 
-                    <Field :label="__('Handle')" :error="form.errors.handle" required>
+                    <Field inline :label="__('Handle')" :error="form.errors.handle" required>
                         <Input v-model="form.handle" :placeholder="__('my-inbound-endpoint')" class="font-mono" />
                     </Field>
 
-                    <Field :label="__('Path')" :error="form.errors.path" :instructions="__('The URL path segment for this endpoint.')">
+                    <Field inline :label="__('Path')" :error="form.errors.path" :instructions="__('The URL path segment for this endpoint.')">
                         <Input v-model="form.path" :placeholder="__('my-endpoint')" class="font-mono" />
                         <div class="mt-1 text-xs text-gray-500 font-mono">
                             {{ __('Full URL:') }} <span class="text-blue-600 dark:text-blue-400">{{ fullUrl }}</span>
                         </div>
                     </Field>
 
-                    <Field :label="__('Enabled')" :error="form.errors.enabled">
+                    <Field inline :label="__('Enabled')" :error="form.errors.enabled">
                         <Switch v-model="form.enabled">{{ __('Enabled') }}</Switch>
                     </Field>
 
-                    <Field :label="__('Description')" :error="form.errors.description">
+                    <Field inline :label="__('Description')" :error="form.errors.description">
                         <Textarea v-model="form.description" :rows="3" />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── AUTHENTICATION ── -->
             <TabContent value="auth">
                 <Panel>
-                    <Field :label="__('Auth Type')" :error="form.errors.auth_type" required>
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Field inline :label="__('Auth Type')" :error="form.errors.auth_type" required>
                         <Select v-model="form.auth_type" :options="authOptionsArray" />
                     </Field>
 
-                    <Field
+                    <Field inline
                         v-if="form.auth_type !== 'none'"
                         :label="__('Auth Config (JSON)')"
                         :error="form.errors.auth_config_json || form.errors.auth_config"
@@ -334,13 +337,15 @@ async function runTest() {
                             :min-lines="4"
                         />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── ALLOWED METHODS ── -->
             <TabContent value="methods">
                 <Panel>
-                    <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Field inline
                         :label="__('Allowed HTTP Methods')"
                         :error="form.errors.allowed_methods"
                         :instructions="__('Select which HTTP methods this endpoint will accept.')"
@@ -350,12 +355,14 @@ async function runTest() {
                             :options="allowedMethodOptions"
                         />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── MAPPING ── -->
             <TabContent value="mapping">
                 <Panel>
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
                     <Alert variant="info" class="mb-4">
                         {{ __('Define a JSON mapping to transform the incoming payload before it is passed to the action.') }}
                         <a
@@ -366,7 +373,7 @@ async function runTest() {
                         >{{ __('View mapping documentation') }}</a>
                     </Alert>
 
-                    <Field
+                    <Field inline
                         :label="__('Mapping Config (JSON)')"
                         :error="form.errors.mapping_config_json || form.errors.mapping_config"
                         :instructions="__('Map incoming fields to output fields. Leave empty to pass the payload through unchanged.')"
@@ -378,17 +385,19 @@ async function runTest() {
                             :min-lines="8"
                         />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── ACTION ── -->
             <TabContent value="action">
                 <Panel>
-                    <Field :label="__('Action Type')" :error="form.errors.action_type" required>
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Field inline :label="__('Action Type')" :error="form.errors.action_type" required>
                         <Select v-model="form.action_type" :options="actionOptionsArray" />
                     </Field>
 
-                    <Field
+                    <Field inline
                         v-if="form.action_type && form.action_type !== 'noop'"
                         :label="__('Action Config (JSON)')"
                         :error="form.errors.action_config_json || form.errors.action_config"
@@ -401,13 +410,15 @@ async function runTest() {
                             :min-lines="6"
                         />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── RESPONSE ── -->
             <TabContent value="response">
                 <Panel>
-                    <Field
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Field inline
                         :label="__('Response Config (JSON)')"
                         :error="form.errors.response_config_json || form.errors.response_config"
                         :instructions="__('Customise the HTTP response returned to the caller. Leave empty for the default 200 OK.')"
@@ -419,13 +430,14 @@ async function runTest() {
                             :min-lines="6"
                         />
                     </Field>
+                    </div>
                 </Panel>
             </TabContent>
 
             <!-- ── TEST ── -->
             <TabContent value="test">
                 <Panel :heading="__('Send a test payload')">
-                    <Field
+                    <Field inline
                         :label="__('Sample Payload (JSON)')"
                         :instructions="__('This payload will be processed through the mapping and action pipeline.')"
                     >

@@ -1,6 +1,7 @@
 /vendor/
 /node_modules/
 /resources/dist/hot
+composer.lock
 package-lock.json
 yarn.lock
 .phpunit.cache/

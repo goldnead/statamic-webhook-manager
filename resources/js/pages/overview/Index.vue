@@ -4,6 +4,7 @@ import { Head, Link } from '@statamic/cms/inertia';
 import {
     Header,
     Panel,
+    Widget,
     Badge,
     Icon,
     Listing,
@@ -46,18 +47,6 @@ const props = defineProps({
 });
 
 const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
-
-/**
- * Map a stat key to its accent colour token. Mirrors Statamic Badge
- * colour conventions so the icon chip inherits the page's visual language
- * (green for healthy / amber for warnings / red for failures).
- */
-function statAccent(key) {
-    if (key.includes('failures')) return { ring: 'ring-red-200 dark:ring-red-900/40', bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-600 dark:text-red-400' };
-    if (key.includes('success_rate')) return { ring: 'ring-green-200 dark:ring-green-900/40', bg: 'bg-green-50 dark:bg-green-950/40', text: 'text-green-600 dark:text-green-400' };
-    if (key.includes('inbound')) return { ring: 'ring-purple-200 dark:ring-purple-900/40', bg: 'bg-purple-50 dark:bg-purple-950/40', text: 'text-purple-600 dark:text-purple-400' };
-    return { ring: 'ring-blue-200 dark:ring-blue-900/40', bg: 'bg-blue-50 dark:bg-blue-950/40', text: 'text-blue-600 dark:text-blue-400' };
-}
 </script>
 
 <template>
@@ -78,14 +67,14 @@ function statAccent(key) {
         >
             <EmptyStateItem
                 v-if="canCreateOutbound"
-                icon="outgoing"
+                icon="arrow-up-right"
                 :heading="__('Create Outbound Webhook')"
                 :href="createOutboundUrl"
                 :description="__('webhook-manager::messages.outbound_create_description')"
             />
             <EmptyStateItem
                 v-if="canCreateInbound"
-                icon="incoming"
+                icon="download"
                 :heading="__('Create Inbound Endpoint')"
                 :href="createInboundUrl"
                 :description="__('webhook-manager::messages.inbound_create_description')"
@@ -106,32 +95,19 @@ function statAccent(key) {
     <template v-else>
         <Header :title="__('Webhook Manager')" icon="link" />
 
-        <!-- Stat cards: container-query layout — 1col / 2col / 4col based on
-             the container width, NOT the viewport. Matches the Statamic
-             core Dashboard.vue pattern. -->
-        <div class="@container/stats mt-4">
-            <div class="flex flex-wrap gap-4">
-                <div
-                    v-for="stat in stats"
-                    :key="stat.key"
-                    class="w-full @md/stats:w-[calc(50%-0.5rem)] @4xl/stats:w-[calc(25%-0.75rem)]"
-                >
-                    <Panel>
-                        <div class="p-5 flex items-center gap-4">
-                            <div
-                                class="size-11 rounded-lg flex items-center justify-center flex-shrink-0 ring-1"
-                                :class="[statAccent(stat.key).ring, statAccent(stat.key).bg, statAccent(stat.key).text]"
-                            >
-                                <Icon :name="stat.icon" class="size-5" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="text-2xl font-bold leading-tight tabular-nums">{{ stat.value }}</div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ stat.label }}</div>
-                            </div>
-                        </div>
-                    </Panel>
-                </div>
-            </div>
+        <!-- Stat widgets: native Statamic dashboard Widget tiles. An auto-fit
+             grid keeps this to one CSS class so it reflows responsively without
+             relying on breakpoint utilities that Statamic core defines unlayered
+             (a layered override would lose the cascade). -->
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 mt-4">
+            <Widget
+                v-for="stat in stats"
+                :key="stat.key"
+                :title="stat.label"
+                :icon="stat.icon"
+            >
+                <div class="text-3xl font-bold leading-none tabular-nums">{{ stat.value }}</div>
+            </Widget>
         </div>
 
         <!-- Recent Failures listing -->
