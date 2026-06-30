@@ -78,14 +78,14 @@ function statAccent(key) {
         >
             <EmptyStateItem
                 v-if="canCreateOutbound"
-                icon="outgoing"
+                icon="arrow-up-right"
                 :heading="__('Create Outbound Webhook')"
                 :href="createOutboundUrl"
                 :description="__('webhook-manager::messages.outbound_create_description')"
             />
             <EmptyStateItem
                 v-if="canCreateInbound"
-                icon="incoming"
+                icon="download"
                 :heading="__('Create Inbound Endpoint')"
                 :href="createInboundUrl"
                 :description="__('webhook-manager::messages.inbound_create_description')"
@@ -110,11 +110,10 @@ function statAccent(key) {
              the container width, NOT the viewport. Matches the Statamic
              core Dashboard.vue pattern. -->
         <div class="@container/stats mt-4">
-            <div class="flex flex-wrap gap-4">
+            <div class="grid grid-cols-1 gap-4 @md/stats:grid-cols-2 @4xl/stats:grid-cols-4">
                 <div
                     v-for="stat in stats"
                     :key="stat.key"
-                    class="w-full @md/stats:w-[calc(50%-0.5rem)] @4xl/stats:w-[calc(25%-0.75rem)]"
                 >
                     <Panel>
                         <div class="p-5 flex items-center gap-4">

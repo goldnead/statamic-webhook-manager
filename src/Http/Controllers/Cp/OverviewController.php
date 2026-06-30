@@ -40,25 +40,25 @@ class OverviewController extends CpController
             'stats' => [
                 [
                     'key' => 'outbound_active',
-                    'icon' => 'outgoing',
+                    'icon' => 'arrow-up-right',
                     'label' => __('Active Outbound'),
                     'value' => (string) $outboundCount,
                 ],
                 [
                     'key' => 'inbound_active',
-                    'icon' => 'incoming',
+                    'icon' => 'download',
                     'label' => __('Active Inbound'),
                     'value' => (string) $inboundCount,
                 ],
                 [
                     'key' => 'success_rate_24h',
-                    'icon' => 'check-circle',
+                    'icon' => 'checkmark',
                     'label' => __('Success rate (24h)'),
                     'value' => $successRate24h.'%',
                 ],
                 [
                     'key' => 'failures_total',
-                    'icon' => 'exclamation-triangle',
+                    'icon' => 'warning-diamond',
                     'label' => __('Failed deliveries'),
                     'value' => (string) ($counts['failed'] ?? 0),
                 ],
@@ -67,10 +67,10 @@ class OverviewController extends CpController
             // expects `:items` as an Array when used in client-side mode.
             'recentFailures' => $this->buildRecentFailures($triggerLabels),
             'failureColumns' => [
-                ['handle' => 'when',    'label' => __('When'),    'visible' => true, 'sortable' => false],
-                ['handle' => 'trigger', 'label' => __('Trigger'), 'visible' => true, 'sortable' => false],
-                ['handle' => 'url',     'label' => __('URL'),     'visible' => true, 'sortable' => false],
-                ['handle' => 'status',  'label' => __('Error'),   'visible' => true, 'sortable' => false],
+                ['field' => 'when',    'label' => __('When'),    'visible' => true, 'sortable' => false],
+                ['field' => 'trigger', 'label' => __('Trigger'), 'visible' => true, 'sortable' => false],
+                ['field' => 'url',     'label' => __('URL'),     'visible' => true, 'sortable' => false],
+                ['field' => 'status',  'label' => __('Error'),   'visible' => true, 'sortable' => false],
             ],
             'isEmpty' => $outboundCount === 0 && $inboundCount === 0 && $rulesCount === 0,
 

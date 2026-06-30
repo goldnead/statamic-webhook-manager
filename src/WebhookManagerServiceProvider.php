@@ -204,7 +204,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
             $nav->create(__('webhook-manager::nav.webhooks'))
                 ->section(__('webhook-manager::nav.section'))
                 ->route('webhook-manager.overview')
-                ->icon('hyperlink')
+                ->icon('link')
                 ->can('view webhooks')
                 ->children($children);
         });

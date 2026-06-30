@@ -78,13 +78,13 @@ const errorTypeLabel = (type) => ({
 
         <!-- ── Empty state ──────────────────────────────────────────── -->
         <div v-if="isEmpty">
-            <Header :title="__('Logs')" icon="notepad" />
+            <Header :title="__('Logs')" icon="clipboard" />
 
             <EmptyStateMenu :heading="__('No logs yet')">
                 <EmptyStateItem
                     :heading="__('Nothing logged so far')"
                     :description="__('Logs are written automatically when webhooks are dispatched or received. Check back once some activity has occurred.')"
-                    icon="notepad"
+                    icon="clipboard"
                 >
                     <DocsCallout
                         :heading="__('Learn about logs')"
@@ -96,7 +96,7 @@ const errorTypeLabel = (type) => ({
 
         <!-- ── Populated state ─────────────────────────────────────── -->
         <div v-else>
-            <Header :title="__('Logs')" icon="notepad" />
+            <Header :title="__('Logs')" icon="clipboard" />
 
             <Listing
                 :url="listingUrl"

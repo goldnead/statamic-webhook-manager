@@ -120,7 +120,6 @@ function toggle(endpoint) {
         </Header>
 
         <Listing
-            :items="endpoints"
             :columns="initialColumns"
             :action-url="actionUrl"
             :url="listingUrl"
@@ -149,7 +148,7 @@ function toggle(endpoint) {
                         :title="__('Copy URL')"
                         @click.prevent="$clipboard(fullUrl(row))"
                     >
-                        <Icon name="copy" class="w-3.5 h-3.5" />
+                        <Icon name="duplicate" class="w-3.5 h-3.5" />
                     </button>
                 </div>
             </template>
@@ -190,7 +189,7 @@ function toggle(endpoint) {
                 />
                 <DropdownItem
                     :text="row.enabled ? __('Disable') : __('Enable')"
-                    :icon="row.enabled ? 'circle-x' : 'circle-check'"
+                    :icon="row.enabled ? 'x' : 'checkmark'"
                     @click="toggle(row)"
                 />
             </template>

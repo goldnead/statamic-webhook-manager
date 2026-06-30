@@ -74,7 +74,7 @@ const statusCodesToString = (val) => {
     <div class="max-w-page mx-auto">
 
         <!-- ── Page header ──────────────────────────────────────────── -->
-        <Header :title="__('Webhook Manager Settings')" icon="settings-horizontal" />
+        <Header :title="__('Webhook Manager Settings')" icon="sliders-horizontal" />
 
         <!-- ── Config-file notice ───────────────────────────────────── -->
         <Alert variant="info" class="mb-6">

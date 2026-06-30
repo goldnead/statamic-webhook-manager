@@ -215,10 +215,10 @@ class TemplateController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['handle' => 'name',       'label' => __('Name'),       'visible' => true,  'sortable' => true],
-            ['handle' => 'handle',     'label' => __('Handle'),     'visible' => true,  'sortable' => true],
-            ['handle' => 'type',       'label' => __('Type'),       'visible' => true,  'sortable' => true],
-            ['handle' => 'updated_at', 'label' => __('Updated'),    'visible' => true,  'sortable' => true],
+            ['field' => 'name',       'label' => __('Name'),    'visible' => true, 'sortable' => true],
+            ['field' => 'handle',     'label' => __('Handle'),  'visible' => true, 'sortable' => true],
+            ['field' => 'type',       'label' => __('Type'),    'visible' => true, 'sortable' => true],
+            ['field' => 'updated_at', 'label' => __('Updated'), 'visible' => true, 'sortable' => true],
         ];
     }
 

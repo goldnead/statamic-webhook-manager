@@ -148,7 +148,7 @@ function namespaceExample(value) {
 
     <div class="max-w-page mx-auto">
 
-        <Header :title="__('Debug')" icon="hammer" />
+        <Header :title="__('Debug')" icon="code-block" />
 
         <!-- ── Trigger Inspector ───────────────────────────────────────── -->
         <Panel

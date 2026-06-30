@@ -175,7 +175,7 @@ function copyToClipboard(text) {
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
         <!-- ── Page header ─────────────────────────────────────────── -->
-        <Header :title="pageTitle" icon="layouts">
+        <Header :title="pageTitle" icon="layout-grid">
             <Button
                 :text="saveLabel"
                 variant="primary"
@@ -300,7 +300,7 @@ function copyToClipboard(text) {
                                         size="xs"
                                         variant="default"
                                         :text="__('Copy')"
-                                        icon="copy"
+                                        icon="duplicate"
                                         @click="copyToClipboard('{{ ' + ns + ' }}')"
                                     />
                                 </li>
@@ -336,7 +336,7 @@ function copyToClipboard(text) {
                                 :text="__('Render preview')"
                                 variant="primary"
                                 :loading="previewing"
-                                icon="play"
+                                icon="flash-bolt-lightning"
                                 @click="runPreview"
                             />
                         </div>

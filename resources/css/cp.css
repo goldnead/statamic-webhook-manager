@@ -1,9 +1,17 @@
 /**
  * Statamic Webhook Manager — CP styles.
  *
- * Kept minimal: Statamic 6 ships its own design tokens and the @ui
- * components handle most styling. Only addon-specific niceties live here.
+ * Pulls Statamic 6's Tailwind theme + utilities (no Preflight reset, so it
+ * never clobbers the Control Panel) and scans the addon's own Vue/JS so the
+ * utility classes used in our pages — including container-query and arbitrary
+ * values like @container/stats, size-11 and w-[calc(50%-0.5rem)] — actually
+ * get generated. Without this @source the addon would depend on whatever
+ * utilities Statamic core happens to ship, and screens like the Overview
+ * stat-card grid would silently lose their layout.
  */
+@import "@statamic/cms/tailwind.css";
+
+@source "../js/**/*.{vue,js}";
 
 .webhook-manager-snapshot-pre {
     max-height: 360px;

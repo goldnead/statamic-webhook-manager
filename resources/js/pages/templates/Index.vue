@@ -62,7 +62,7 @@ const typeColor = (type) => {
             <EmptyStateItem
                 v-if="canCreate"
                 :href="createUrl"
-                icon="layouts"
+                icon="layout-grid"
                 :heading="__('Create Template')"
                 :description="__('webhook-manager::messages.templates_create_description')"
             />
@@ -73,7 +73,7 @@ const typeColor = (type) => {
 
     <!-- ── Listing ─────────────────────────────────────────────────── -->
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Templates')" icon="layouts">
+        <Header :title="__('Templates')" icon="layout-grid">
             <Button
                 v-if="canCreate"
                 :href="createUrl"
@@ -88,7 +88,6 @@ const typeColor = (type) => {
         </Header>
 
         <Listing
-            :items="templates"
             :columns="initialColumns"
             :url="listingUrl"
             :action-url="actionUrl"
@@ -120,7 +119,7 @@ const typeColor = (type) => {
                     v-if="row.duplicate_url"
                     :text="__('Duplicate')"
                     :href="row.duplicate_url"
-                    icon="copy"
+                    icon="duplicate"
                 />
                 <DropdownItem
                     v-if="row.can_delete"

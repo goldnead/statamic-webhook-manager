@@ -135,7 +135,7 @@ function headersJson(headers) {
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
         <!-- ── Page header ───────────────────────────────────────────── -->
-        <Header :title="`${__('Delivery')} #${delivery.id}`" icon="paper-airplane">
+        <Header :title="`${__('Delivery')} #${delivery.id}`" icon="arrow-up-right">
             <template #subtitle>
                 <Badge :color="statusColor" :text="delivery.status" />
             </template>

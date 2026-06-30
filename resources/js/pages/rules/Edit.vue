@@ -318,7 +318,7 @@ async function runTest() {
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
                 :text="__('Test')"
-                icon="paper-airplane"
+                icon="arrow-up-right"
                 @click="() => { activeTab = 'test'; }"
             />
             <Button
@@ -587,7 +587,7 @@ async function runTest() {
                                 variant="primary"
                                 :loading="testing"
                                 :text="__('Run test')"
-                                icon="paper-airplane"
+                                icon="arrow-up-right"
                                 @click="runTest"
                             />
                         </div>

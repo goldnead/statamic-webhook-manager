@@ -220,7 +220,7 @@ const authInstructions = computed(() => {
     <Head :title="[pageTitle, __('Outbound'), __('Webhook Manager')]" />
 
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
-        <Header :title="pageTitle" icon="outgoing">
+        <Header :title="pageTitle" icon="arrow-up-right">
             <template v-if="!isNew" #subtitle>
                 <StatusIndicator :status="webhook.enabled ? 'published' : 'draft'" />
                 <Badge
@@ -233,7 +233,7 @@ const authInstructions = computed(() => {
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
                 :text="__('Test')"
-                icon="paper-airplane"
+                icon="arrow-up-right"
                 @click="runTest"
             />
             <Button
@@ -247,7 +247,7 @@ const authInstructions = computed(() => {
                 v-if="!isNew && canTest && testUrl"
                 category="Actions"
                 :text="__('Test webhook')"
-                icon="paper-airplane"
+                icon="arrow-up-right"
                 :action="runTest"
             />
             <CommandPaletteItem

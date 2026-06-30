@@ -88,13 +88,13 @@ const errorTypeLabel = (type) => ({
 
         <!-- ── Empty state ─────────────────────────────────────────────── -->
         <div v-if="isEmpty" class="max-w-page mx-auto">
-            <Header :title="__('Deliveries')" icon="paper-airplane" />
+            <Header :title="__('Deliveries')" icon="arrow-up-right" />
 
             <EmptyStateMenu :heading="__('No deliveries yet')">
                 <EmptyStateItem
                     :heading="__('Nothing dispatched so far')"
                     :description="__('Deliveries are recorded automatically when outbound webhooks are fired. Check back once some activity has occurred.')"
-                    icon="paper-airplane"
+                    icon="arrow-up-right"
                 />
             </EmptyStateMenu>
 
@@ -106,7 +106,7 @@ const errorTypeLabel = (type) => ({
 
         <!-- ── Populated state ─────────────────────────────────────────── -->
         <div v-else class="max-w-page mx-auto">
-            <Header :title="__('Deliveries')" icon="paper-airplane" />
+            <Header :title="__('Deliveries')" icon="arrow-up-right" />
 
             <Listing
                 :url="listingUrl"
@@ -186,7 +186,7 @@ const errorTypeLabel = (type) => ({
                     />
                     <DropdownItem
                         v-if="row.can_replay"
-                        icon="refresh"
+                        icon="sync"
                         :text="__('Replay')"
                         @click="row.replay_url && router.post(row.replay_url, {}, { preserveScroll: true })"
                     />

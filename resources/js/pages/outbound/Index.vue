@@ -66,7 +66,7 @@ function toggle(hook) {
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
-                <Icon name="outgoing" class="size-5 text-gray-500" />
+                <Icon name="arrow-up-right" class="size-5 text-gray-500" />
                 {{ __('Outbound Webhooks') }}
             </h1>
         </header>
@@ -75,7 +75,7 @@ function toggle(hook) {
             <EmptyStateItem
                 v-if="canCreate"
                 :href="createUrl"
-                icon="outgoing"
+                icon="arrow-up-right"
                 :heading="__('Create Outbound Webhook')"
                 :description="__('webhook-manager::messages.outbound_create_description')"
             />
@@ -85,12 +85,12 @@ function toggle(hook) {
     </div>
 
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Outbound Webhooks')" icon="outgoing">
+        <Header :title="__('Outbound Webhooks')" icon="arrow-up-right">
             <CommandPaletteItem
                 v-if="canCreate"
                 category="Actions"
                 :text="__('Create Outbound Webhook')"
-                icon="outgoing"
+                icon="arrow-up-right"
                 :url="createUrl"
                 v-slot="{ text, url }"
             >
@@ -141,13 +141,13 @@ function toggle(hook) {
                 />
                 <DropdownItem
                     v-if="hook.can_test && hook.test_url"
-                    icon="paper-airplane"
+                    icon="arrow-up-right"
                     :text="__('Test')"
                     :href="hook.test_url"
                 />
                 <DropdownItem
                     v-if="hook.can_toggle"
-                    icon="toggle"
+                    icon="fieldtype-toggle"
                     :text="hook.enabled ? __('Disable') : __('Enable')"
                     @click="toggle(hook)"
                 />
