@@ -201,6 +201,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
                 $children[] = $nav->item(__('webhook-manager::nav.rules'))->route('webhook-manager.rules.index')->can('manage webhook rules');
             }
 
+            $children[] = $nav->item(__('webhook-manager::nav.insights'))->route('webhook-manager.insights')->can('view webhook deliveries');
             $children[] = $nav->item(__('webhook-manager::nav.deliveries'))->route('webhook-manager.deliveries.index')->can('view webhook deliveries');
             $children[] = $nav->item(__('webhook-manager::nav.logs'))->route('webhook-manager.logs.index')->can('view webhooks');
 

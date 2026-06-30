@@ -7,6 +7,7 @@ return [
     'outbound' => 'Outbound',
     'inbound' => 'Inbound',
     'rules' => 'Rules',
+    'insights' => 'Insights',
     'deliveries' => 'Deliveries',
     'logs' => 'Logs',
     'templates' => 'Templates',

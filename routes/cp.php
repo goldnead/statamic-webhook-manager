@@ -9,6 +9,7 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestRuleController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DebugController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DeliveryController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\InboundController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\InsightsController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\LogController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OverviewController;
@@ -56,6 +57,8 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::delete('/{rule}', [RuleController::class, 'destroy'])->name('destroy');
         Route::patch('/{rule}/toggle', [RuleController::class, 'toggle'])->name('toggle');
     });
+
+    Route::get('/insights', [InsightsController::class, 'index'])->name('insights');
 
     Route::prefix('deliveries')->name('deliveries.')->group(function () {
         Route::get('/', [DeliveryController::class, 'index'])->name('index');
