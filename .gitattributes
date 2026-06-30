@@ -16,7 +16,9 @@
 /phpunit.xml           export-ignore
 /phpunit.xml.dist      export-ignore
 /MARKETPLACE.md        export-ignore
+/art                   export-ignore
 
 *.md text eol=lf
+*.svg text eol=lf
 *.php text eol=lf
 *.json text eol=lf

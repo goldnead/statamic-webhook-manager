@@ -5,21 +5,47 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — Marketplace launch readiness
+## [1.0.0] — 2026-06-30 — Marketplace launch
 
-Make the addon installable and verifiable on a current Statamic 6 install,
-and align the test/build tooling with the sibling LeadHub addon.
-
-### Fixed
-
-- **Install failed on a fresh Statamic 6 project (Laravel 13).** The Statamic 6
-  skeleton now ships Laravel 13, but `orchestra/testbench` was capped at
-  `^9|^10` (Laravel 12), so `composer require --dev`/`composer update` could not
-  resolve against a Laravel 13 host. Widened to `^9|^10|^11` (testbench 11 =
-  Laravel 13) and `phpunit/phpunit` to `^10.5|^11|^12`. Verified: the full
-  suite (78 tests) passes on `laravel/framework v13` + `statamic/cms v6.23`.
+First stable release. Completes the post-MVP feature set that positions the
+addon for the Statamic marketplace, and makes it installable and verifiable
+on a current Statamic 6 install (Laravel 13).
 
 ### Added
+
+#### Integrations & Insights
+
+- **Integration presets** — a guided "pick a destination → fill a URL → done"
+  flow that builds a fully-configured outbound webhook from a recipe, so users
+  never hand-write a payload template. Ships **Slack, Discord, Microsoft Teams,
+  Zapier, Make, n8n and Generic JSON**, with a native gallery and setup form.
+- **"Send webhook" entry action** — a native CP action that fires a chosen
+  enabled outbound webhook for the selected entries through the same delivery
+  pipeline as automatic triggers.
+- **Failure alerting & circuit breaker** — throttled email + Slack alerts when
+  a delivery fails after all retries, and automatic disabling of a hook after
+  N consecutive terminal failures (`consecutive_failures`, configurable
+  threshold). Surfaced as native "Circuit breaker" / "Failure alerts" sections
+  on the Settings screen.
+- **Insights dashboard** — delivery volume, success-rate trend, latency
+  percentiles (p50/p95/p99), error breakdown and top-failing endpoints, with
+  day-range and per-webhook filters. Self-contained charts (no charting
+  dependency) using the CP's own Tailwind tokens.
+
+#### Storage
+
+- **Flat-file (YAML) storage driver** — webhook *configuration* (outbound,
+  inbound, rules, templates) can live as human-readable, git-versionable YAML
+  under `content/webhooks/` instead of database tables. Delivery records and
+  logs always stay in the database. Records keep a stable integer id so the
+  delivery/log history resolves under either driver.
+- **`webhook-manager:storage:migrate`** — copies config between the `eloquent`
+  and `flat` drivers id-for-id (with `--dry-run`).
+- **Control-Panel storage switch** (Settings → Storage) — shows the active
+  driver and record counts, and switches drivers (migrate + activate) without
+  any `.env`/shell access.
+
+#### Tooling
 
 - **Persistent local playground** (`scripts/setup-playground.sh`): a fresh
   Statamic 6 site with the addon wired in as a Composer path repo, SQLite, a
@@ -32,6 +58,15 @@ and align the test/build tooling with the sibling LeadHub addon.
 - **CI workflow** (`.github/workflows/tests.yml`): PHP 8.2/8.3/8.4 × Statamic 6.
 - `composer test` script; `support` block and author email in `composer.json`.
 - `MARKETPLACE.md` listing copy.
+- Brand logo asset (`art/logo.svg`) for the marketplace listing.
+
+### Fixed
+
+- **Install failed on a fresh Statamic 6 project (Laravel 13).** The Statamic 6
+  skeleton now ships Laravel 13, but `orchestra/testbench` was capped at
+  `^9|^10` (Laravel 12), so `composer require --dev`/`composer update` could not
+  resolve against a Laravel 13 host. Widened to `^9|^10|^11` (testbench 11 =
+  Laravel 13) and `phpunit/phpunit` to `^10.5|^11|^12`.
 
 ### Changed
 

@@ -3,6 +3,7 @@
     "description": "Statamic 6 Webhook Manager — central CP-native integration layer for outbound hooks, inbound endpoints, deliveries, retries, rules and templates.",
     "type": "statamic-addon",
     "license": "MIT",
+    "homepage": "https://github.com/goldnead/statamic-webhook-manager",
     "keywords": [
         "statamic",
         "statamic-addon",
