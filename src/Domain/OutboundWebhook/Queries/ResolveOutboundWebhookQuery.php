@@ -3,7 +3,7 @@
 namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Queries;
 
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
-use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Rules\ConditionEvaluator;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Illuminate\Support\Collection;
@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 class ResolveOutboundWebhookQuery
 {
     public function __construct(
-        protected OutboundWebhookRepository $repository,
+        protected OutboundWebhookRepositoryInterface $repository,
         protected ConditionEvaluator $conditions,
     ) {
     }

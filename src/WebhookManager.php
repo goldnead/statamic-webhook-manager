@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Contracts\ActionInterface;
 use Goldnead\WebhookManager\Contracts\AuthVerifierInterface;
 use Goldnead\WebhookManager\Contracts\ConditionInterface;
 use Goldnead\WebhookManager\Contracts\InboundActionHandlerInterface;
+use Goldnead\WebhookManager\Contracts\PresetInterface;
 use Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface;
 use Goldnead\WebhookManager\Contracts\TemplateVariableResolverInterface;
 use Goldnead\WebhookManager\Contracts\TriggerInterface;
@@ -13,6 +14,7 @@ use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\ConditionRegistry;
 use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
+use Goldnead\WebhookManager\Registries\PresetRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
@@ -35,7 +37,19 @@ class WebhookManager
         protected VariableResolverRegistry $variableResolvers,
         protected SuccessEvaluatorRegistry $successEvaluators,
         protected InboundActionHandlerRegistry $inboundActionHandlers,
+        protected PresetRegistry $presets,
     ) {
+    }
+
+    public function registerPreset(PresetInterface $preset): self
+    {
+        $this->presets->register($preset);
+        return $this;
+    }
+
+    public function presets(): PresetRegistry
+    {
+        return $this->presets;
     }
 
     public function registerTrigger(TriggerInterface $trigger): self

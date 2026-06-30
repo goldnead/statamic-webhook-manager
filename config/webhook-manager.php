@@ -21,6 +21,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Storage Driver
+    |--------------------------------------------------------------------------
+    |
+    | Where the webhook *configuration* (outbound webhooks, inbound endpoints,
+    | rules and templates) is stored. Delivery records and logs are runtime
+    | telemetry and always live in the database regardless of this setting.
+    |
+    | - "eloquent" (default): config lives in database tables. Requires
+    |   running `php artisan migrate`.
+    |
+    | - "flat": config lives as human-readable YAML files under
+    |   content/webhooks/, true to Statamic's flat-file philosophy and
+    |   git-versionable alongside the rest of your site.
+    |
+    | Move existing config between drivers with:
+    |   php artisan webhook-manager:storage:migrate --from=eloquent --to=flat
+    */
+    'storage' => [
+        'driver' => env('WEBHOOK_MANAGER_DRIVER', 'eloquent'),
+
+        'flat' => [
+            // Where the config YAML files live.
+            'path' => env('WEBHOOK_MANAGER_FLAT_PATH', base_path('content/webhooks')),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue
     |--------------------------------------------------------------------------
     |
@@ -127,6 +155,46 @@ return [
         'max_redirects' => 3,
         'user_agent' => 'Statamic-Webhook-Manager/1.0',
         'verify_ssl' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failure alerts
+    |--------------------------------------------------------------------------
+    |
+    | Notify an admin when a delivery exhausts its retries and fails for good.
+    | `throttle_minutes` caps how often a single webhook may alert, so a broken
+    | endpoint doesn't flood your inbox.
+    */
+    'alerts' => [
+        'enabled' => env('WEBHOOK_MANAGER_ALERTS', true),
+        'throttle_minutes' => (int) env('WEBHOOK_MANAGER_ALERT_THROTTLE', 15),
+        'mail' => [
+            'enabled' => env('WEBHOOK_MANAGER_ALERT_MAIL', true),
+            // Comma-separated list, e.g. WEBHOOK_MANAGER_ALERT_EMAILS=a@x.com,b@x.com
+            'recipients' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('WEBHOOK_MANAGER_ALERT_EMAILS', ''))
+            ))),
+        ],
+        'slack' => [
+            // A Slack/Discord/Teams incoming-webhook URL to post failure alerts to.
+            'webhook_url' => env('WEBHOOK_MANAGER_ALERT_SLACK_URL'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Circuit breaker
+    |--------------------------------------------------------------------------
+    |
+    | Auto-disable an outbound webhook after this many consecutive terminal
+    | failures, so a dead endpoint stops being hammered. The counter resets to
+    | zero on the next success. Set threshold to 0 to never auto-disable.
+    */
+    'circuit_breaker' => [
+        'enabled' => env('WEBHOOK_MANAGER_CIRCUIT_BREAKER', true),
+        'threshold' => (int) env('WEBHOOK_MANAGER_CIRCUIT_THRESHOLD', 10),
     ],
 
     /*

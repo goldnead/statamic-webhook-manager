@@ -4,6 +4,7 @@ import { Head } from '@statamic/cms/inertia';
 import {
     Header,
     Alert,
+    Badge,
     Button,
     Icon,
     Field,
@@ -271,6 +272,71 @@ const statusCodesToString = (val) => {
                         <Switch
                             :model-value="config.defaults.http_verify_ssl"
                             :disabled="true"
+                        />
+                    </Field>
+                </Card>
+                </Panel>
+
+            <!-- ── Reliability & alerts ─────────────────────────────── -->
+                <Panel :heading="__('Circuit breaker')">
+                    <Card>
+                    <Field inline
+                        :label="__('Enabled')"
+                        :instructions="__('Auto-disable a webhook after too many consecutive failures.')"
+                    >
+                        <Switch :model-value="config.reliability.circuit_breaker_enabled" :disabled="true" />
+                    </Field>
+
+                    <Field inline
+                        :label="__('Failure threshold')"
+                        :instructions="__('Consecutive terminal failures before a webhook is auto-disabled. 0 = never.')"
+                    >
+                        <Input :model-value="String(config.reliability.circuit_breaker_threshold)" read-only />
+                    </Field>
+                </Card>
+                </Panel>
+
+                <Panel :heading="__('Failure alerts')">
+                    <Card>
+                    <Field inline
+                        :label="__('Enabled')"
+                        :instructions="__('Notify an admin when a delivery fails after all retries.')"
+                    >
+                        <Switch :model-value="config.reliability.alerts_enabled" :disabled="true" />
+                    </Field>
+
+                    <Field inline
+                        :label="__('Throttle (minutes)')"
+                        :instructions="__('Minimum minutes between alerts for the same webhook.')"
+                    >
+                        <Input :model-value="String(config.reliability.alerts_throttle_minutes)" read-only />
+                    </Field>
+
+                    <Field inline
+                        :label="__('Email alerts')"
+                        :instructions="__('WEBHOOK_MANAGER_ALERT_EMAILS env var (comma-separated).')"
+                    >
+                        <Switch :model-value="config.reliability.alerts_mail_enabled" :disabled="true" />
+                    </Field>
+
+                    <Field inline
+                        :label="__('Recipients')"
+                        :instructions="__('Email addresses that receive failure alerts.')"
+                    >
+                        <Input
+                            :model-value="config.reliability.alerts_mail_recipients"
+                            :placeholder="__('(none configured)')"
+                            read-only
+                        />
+                    </Field>
+
+                    <Field inline
+                        :label="__('Slack/Discord alert webhook')"
+                        :instructions="__('WEBHOOK_MANAGER_ALERT_SLACK_URL env var. Posts failure alerts to a chat channel.')"
+                    >
+                        <Badge
+                            :color="config.reliability.alerts_slack_configured ? 'green' : 'gray'"
+                            :text="config.reliability.alerts_slack_configured ? __('Configured') : __('Not set')"
                         />
                     </Field>
                 </Card>

@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Console\Commands\InspectWebhookHealthCommand;
 use Goldnead\WebhookManager\Console\Commands\PruneWebhookDataCommand;
 use Goldnead\WebhookManager\Console\Commands\ReplayFailedDeliveriesCommand;
 use Goldnead\WebhookManager\Console\Commands\SeedWebhookExamplesCommand;
+use Goldnead\WebhookManager\Console\Commands\StorageMigrateCommand;
 use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Listeners\DispatchTriggerListener;
 use Goldnead\WebhookManager\Listeners\HandleAssetSavedListener;
@@ -75,6 +76,9 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         TriggerDetected::class => [
             DispatchTriggerListener::class,
         ],
+        \Goldnead\WebhookManager\Events\DeliveryFailedTerminally::class => [
+            \Goldnead\WebhookManager\Listeners\SendFailureAlertListener::class,
+        ],
     ];
 
     protected $routes = [
@@ -88,6 +92,16 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         ReplayFailedDeliveriesCommand::class,
         InspectWebhookHealthCommand::class,
         SeedWebhookExamplesCommand::class,
+        StorageMigrateCommand::class,
+    ];
+
+    /**
+     * Native Statamic CP actions. Auto-discovery only scans the top level of
+     * src/Actions/ (which holds the internal rule actions), so the entry
+     * action under Actions/Cp/ is registered explicitly here.
+     */
+    protected $actions = [
+        \Goldnead\WebhookManager\Actions\Cp\SendWebhook::class,
     ];
 
     public function bootAddon(): void
@@ -99,6 +113,32 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->bootPermissions();
         $this->bootNavigation();
         $this->bootRegistries();
+        $this->bootRouteBindings();
+    }
+
+    /**
+     * Resolve the config-entity route parameters through the repository
+     * layer instead of Eloquent implicit binding, so CP routes work under
+     * both the database and the flat-file storage driver. Delivery/log
+     * params remain database-bound (those tables are always Eloquent).
+     */
+    protected function bootRouteBindings(): void
+    {
+        $bindings = [
+            'webhook' => \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class,
+            'endpoint' => \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class,
+            'rule' => \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class,
+            'template' => \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class,
+        ];
+
+        foreach ($bindings as $param => $contract) {
+            \Illuminate\Support\Facades\Route::bind($param, function ($value) use ($contract) {
+                $model = $this->app->make($contract)->find($value);
+                abort_if($model === null, 404);
+
+                return $model;
+            });
+        }
     }
 
     protected function bootWebhookConfig(): void
@@ -128,6 +168,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->app->singleton(VariableResolverRegistry::class);
         $this->app->singleton(SuccessEvaluatorRegistry::class);
         $this->app->singleton(InboundActionHandlerRegistry::class);
+        $this->app->singleton(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
 
         $this->app->singleton(\Goldnead\WebhookManager\Auth\Support\ReplayProtectionService::class, function ($app) {
             return new \Goldnead\WebhookManager\Auth\Support\ReplayProtectionService(
@@ -137,6 +178,55 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         });
 
         $this->app->singleton('webhook-manager', WebhookManager::class);
+
+        $this->bindStorageRepositories();
+    }
+
+    /**
+     * Bind each config repository contract to the Eloquent or FlatFile
+     * implementation selected by `webhook-manager.storage.driver`.
+     *
+     * Bindings are lazy closures, so changing the driver in config (e.g.
+     * in a test) before the repository is first resolved still takes
+     * effect. Delivery and log repositories are database-only and are not
+     * part of this abstraction.
+     */
+    protected function bindStorageRepositories(): void
+    {
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\FileStore::class, function () {
+            return new \Goldnead\WebhookManager\Storage\FileStore(
+                (string) config('webhook-manager.storage.flat.path', base_path('content/webhooks')),
+            );
+        });
+
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\ModelHydrator::class);
+
+        $map = [
+            \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class => [
+                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentOutboundWebhookRepository::class,
+                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileOutboundWebhookRepository::class,
+            ],
+            \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class => [
+                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentInboundEndpointRepository::class,
+                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileInboundEndpointRepository::class,
+            ],
+            \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class => [
+                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentRuleRepository::class,
+                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileRuleRepository::class,
+            ],
+            \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class => [
+                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentTemplateRepository::class,
+                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository::class,
+            ],
+        ];
+
+        foreach ($map as $contract => [$eloquent, $flat]) {
+            $this->app->bind($contract, function ($app) use ($eloquent, $flat) {
+                return config('webhook-manager.storage.driver', 'eloquent') === 'flat'
+                    ? $app->make($flat)
+                    : $app->make($eloquent);
+            });
+        }
     }
 
     protected function bootPermissions(): void
@@ -188,6 +278,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
                 $children[] = $nav->item(__('webhook-manager::nav.rules'))->route('webhook-manager.rules.index')->can('manage webhook rules');
             }
 
+            $children[] = $nav->item(__('webhook-manager::nav.insights'))->route('webhook-manager.insights')->can('view webhook deliveries');
             $children[] = $nav->item(__('webhook-manager::nav.deliveries'))->route('webhook-manager.deliveries.index')->can('view webhook deliveries');
             $children[] = $nav->item(__('webhook-manager::nav.logs'))->route('webhook-manager.logs.index')->can('view webhooks');
 
@@ -238,6 +329,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         /** @var ActionRegistry $actions */
         $actions = $this->app->make(ActionRegistry::class);
         $actions->registerDefaults();
+
+        /** @var \Goldnead\WebhookManager\Registries\PresetRegistry $presets */
+        $presets = $this->app->make(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
+        $presets->registerDefaults();
     }
 
     protected function bootWebhookPublishables(): void

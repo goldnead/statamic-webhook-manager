@@ -2,20 +2,19 @@
 
 namespace Goldnead\WebhookManager\Domain\Rule\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Illuminate\Support\Str;
 
 class CreateRuleAction
 {
+    public function __construct(protected RuleRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(array $attributes): Rule
     {
-        $attributes = $this->normalize($attributes);
-
-        $rule = new Rule();
-        $rule->fill($attributes);
-        $rule->save();
-
-        return $rule->fresh();
+        return $this->repository->create($this->normalize($attributes));
     }
 
     protected function normalize(array $attributes): array

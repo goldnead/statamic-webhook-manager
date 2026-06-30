@@ -43,10 +43,28 @@ class SettingsController extends CpController
     protected function extractConfig(): array
     {
         return [
-            'general'  => $this->extractGeneral(),
-            'defaults' => $this->extractDefaults(),
-            'security' => $this->extractSecurity(),
-            'logging'  => $this->extractLogging(),
+            'general'     => $this->extractGeneral(),
+            'defaults'    => $this->extractDefaults(),
+            'reliability' => $this->extractReliability(),
+            'security'    => $this->extractSecurity(),
+            'logging'     => $this->extractLogging(),
+        ];
+    }
+
+    protected function extractReliability(): array
+    {
+        $alerts = config('webhook-manager.alerts', []);
+        $breaker = config('webhook-manager.circuit_breaker', []);
+
+        return [
+            'circuit_breaker_enabled'   => (bool) ($breaker['enabled'] ?? true),
+            'circuit_breaker_threshold' => (int) ($breaker['threshold'] ?? 10),
+
+            'alerts_enabled'          => (bool) ($alerts['enabled'] ?? true),
+            'alerts_throttle_minutes' => (int) ($alerts['throttle_minutes'] ?? 15),
+            'alerts_mail_enabled'     => (bool) ($alerts['mail']['enabled'] ?? true),
+            'alerts_mail_recipients'  => implode(', ', (array) ($alerts['mail']['recipients'] ?? [])),
+            'alerts_slack_configured' => ! empty($alerts['slack']['webhook_url'] ?? null),
         ];
     }
 

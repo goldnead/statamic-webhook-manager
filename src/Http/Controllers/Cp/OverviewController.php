@@ -5,9 +5,9 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
-use Goldnead\WebhookManager\Repositories\InboundEndpointRepository;
-use Goldnead\WebhookManager\Repositories\OutboundWebhookRepository;
-use Goldnead\WebhookManager\Repositories\RuleRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -16,9 +16,9 @@ class OverviewController extends CpController
 {
     public function index(
         Request $request,
-        OutboundWebhookRepository $outboundRepo,
-        InboundEndpointRepository $inboundRepo,
-        RuleRepository $ruleRepo,
+        OutboundWebhookRepositoryInterface $outboundRepo,
+        InboundEndpointRepositoryInterface $inboundRepo,
+        RuleRepositoryInterface $ruleRepo,
         DeliveryRepository $deliveryRepo,
         TriggerRegistry $triggers,
     ) {

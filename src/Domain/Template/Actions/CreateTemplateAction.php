@@ -2,20 +2,19 @@
 
 namespace Goldnead\WebhookManager\Domain\Template\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Illuminate\Support\Str;
 
 class CreateTemplateAction
 {
+    public function __construct(protected TemplateRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(array $attributes): Template
     {
-        $attributes = $this->normalize($attributes);
-
-        $template = new Template();
-        $template->fill($attributes);
-        $template->save();
-
-        return $template->fresh();
+        return $this->repository->create($this->normalize($attributes));
     }
 
     protected function normalize(array $attributes): array

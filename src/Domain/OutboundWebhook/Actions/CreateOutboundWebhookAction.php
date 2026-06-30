@@ -2,20 +2,19 @@
 
 namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Illuminate\Support\Str;
 
 class CreateOutboundWebhookAction
 {
+    public function __construct(protected OutboundWebhookRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(array $attributes): OutboundWebhook
     {
-        $attributes = $this->normalize($attributes);
-
-        $hook = new OutboundWebhook();
-        $hook->fill($attributes);
-        $hook->save();
-
-        return $hook->fresh();
+        return $this->repository->create($this->normalize($attributes));
     }
 
     protected function normalize(array $attributes): array

@@ -3,9 +3,11 @@
 namespace Goldnead\WebhookManager\Services;
 
 use Goldnead\WebhookManager\Contracts\DeliverySenderInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliveryFailureAction;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliverySuccessAction;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
+use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Services\Http\HttpClient;
 use Goldnead\WebhookManager\Services\Http\HttpResponseNormalizer;
@@ -32,12 +34,14 @@ class DeliveryEngine implements DeliverySenderInterface
         protected MarkDeliverySuccessAction $markSuccess,
         protected MarkDeliveryFailureAction $markFailure,
         protected DeliveryLogger $logger,
+        protected CircuitBreaker $circuitBreaker,
+        protected OutboundWebhookRepositoryInterface $webhooks,
     ) {
     }
 
     public function send(Delivery $delivery): Delivery
     {
-        $hook = $delivery->outboundWebhook;
+        $hook = $this->webhooks->find($delivery->outbound_webhook_id);
         if (! $hook) {
             return ($this->markFailure)($delivery, FailureClassifier::CONFIGURATION, 'Outbound webhook missing.');
         }
@@ -68,6 +72,7 @@ class DeliveryEngine implements DeliverySenderInterface
         $isSuccess = ($response['ok'] ?? false) && $evaluator->isSuccess($response, (array) ($hook->success_matcher ?? []));
 
         if ($isSuccess) {
+            $this->circuitBreaker->recordSuccess($hook);
             $this->logger->success($delivery);
             return ($this->markSuccess)($delivery);
         }
@@ -83,6 +88,10 @@ class DeliveryEngine implements DeliverySenderInterface
         if ($nextRetry) {
             $delivery->next_retry_at = $nextRetry;
             $delivery->save();
+        } else {
+            // No more retries — failed for good. Trip the circuit breaker and alert.
+            $this->circuitBreaker->recordFailure($hook);
+            DeliveryFailedTerminally::dispatch($delivery);
         }
 
         return $delivery;

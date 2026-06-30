@@ -6,7 +6,7 @@ use Goldnead\WebhookManager\Auth\Support\SecretMasker;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
-use Goldnead\WebhookManager\Repositories\TemplateRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Services\FailureClassifier;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Goldnead\WebhookManager\Templates\TemplateRenderer;
@@ -23,7 +23,7 @@ class HttpRequestFactory
     public function __construct(
         protected TemplateRenderer $renderer,
         protected AuthSchemeRegistry $authSchemes,
-        protected TemplateRepository $templates,
+        protected TemplateRepositoryInterface $templates,
         protected SystemLogger $logger,
     ) {
     }

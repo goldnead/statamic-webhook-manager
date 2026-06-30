@@ -9,7 +9,7 @@ use Goldnead\WebhookManager\Domain\Rule\Actions\UpdateRuleAction;
 use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Http\Requests\SaveRuleRequest;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
-use Goldnead\WebhookManager\Repositories\RuleRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -18,7 +18,7 @@ class RuleController extends CpController
 {
     public function index(
         Request $request,
-        RuleRepository $repository,
+        RuleRepositoryInterface $repository,
         TriggerRegistry $triggers,
     ) {
         $this->authorizeAny($request, 'manage webhook rules', 'view webhooks');

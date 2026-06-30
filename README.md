@@ -9,10 +9,15 @@ A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)
 ## Features
 
 - **Outbound webhooks** triggered by Statamic events (entry/form/user/asset) with conditional execution, payload templates, header & auth control, retry policies and queue-first delivery.
+- **Integration presets** — guided "pick a destination → fill a URL" setup for Slack, Discord, Microsoft Teams, Zapier, Make, n8n and generic JSON, so you never hand-write a payload template.
 - **Delivery snapshots** with full request/response bodies, status, error classification, attempts, retry schedule and replay support.
 - **Replay** failed deliveries individually or in batches, optionally re-rendering against current data.
+- **Failure alerting & circuit breaker** — email + Slack alerts (throttled per hook) when a delivery fails for good, and automatic disabling of a hook after too many consecutive failures.
+- **Insights dashboard** — delivery volume, success-rate trend, latency percentiles (p50/p95/p99), error breakdown and top-failing endpoints, with day-range and per-webhook filters.
+- **"Send webhook" entry action** — fire any enabled outbound webhook for selected entries straight from the native CP action toolbar.
 - **Auth schemes**: none, bearer token, basic auth, custom header, HMAC SHA256 signature.
 - **Token-based template renderer** (`{{ entry:title }}`, `{{ system:timestamp_iso }}`, …) with variable resolver registry.
+- **Pluggable storage driver** — keep webhook config in the database, or as human-readable, git-versionable YAML under `content/webhooks/` (delivery history always stays in the database).
 - **Permissions** for granular access to outbound config, sensitive payloads, replays, debug tools.
 - **Native Statamic 6 CP** — built with Vue 3, Inertia.js and Statamic's `@ui` component library; fits seamlessly into the CP look & feel.
 
@@ -43,7 +48,39 @@ The Webhook Manager appears in the CP sidebar as **Webhooks**.
 
 ## Configuration
 
-See `config/webhook-manager.php` after publishing — feature toggles, retry policy, logging mode, masking rules, route prefixes, etc.
+See `config/webhook-manager.php` after publishing — feature toggles, retry policy, logging mode, masking rules, route prefixes, alerting/circuit-breaker, storage driver, etc.
+
+### Storage driver
+
+Webhook **configuration** (outbound webhooks, inbound endpoints, rules, templates) can be stored two ways. Delivery records and logs are runtime telemetry and always live in the database.
+
+```php
+// config/webhook-manager.php
+'storage' => [
+    'driver' => env('WEBHOOK_MANAGER_DRIVER', 'eloquent'), // 'eloquent' | 'flat'
+    'flat' => [
+        'path' => env('WEBHOOK_MANAGER_FLAT_PATH', base_path('content/webhooks')),
+    ],
+],
+```
+
+- **`eloquent`** (default) — config lives in database tables. Run `php artisan migrate`.
+- **`flat`** — config lives as human-readable YAML under `content/webhooks/`, git-versionable alongside the rest of your site.
+
+Switch losslessly (records are copied id-for-id) with:
+
+```bash
+php artisan webhook-manager:storage:migrate --from=eloquent --to=flat --dry-run
+php artisan webhook-manager:storage:migrate --from=eloquent --to=flat
+```
+
+### Failure alerting
+
+Set recipients (and an optional Slack webhook) so an admin is notified when a delivery fails after all retries; alerts are throttled per hook. A hook is auto-disabled after `circuit_breaker.threshold` consecutive terminal failures.
+
+```dotenv
+WEBHOOK_MANAGER_ALERT_EMAILS="ops@example.com,team@example.com"
+```
 
 ## Concepts
 
@@ -112,6 +149,7 @@ Forward-looking design questions that may evolve in future releases:
 - `php please webhook-manager:replay-failed` — bulk replay failures from the last N hours.
 - `php please webhook-manager:health` — show counts and recent failures.
 - `php please webhook-manager:seed-examples` — install sample fixtures.
+- `php please webhook-manager:storage:migrate --from=… --to=…` — move config between the `eloquent` and `flat` storage drivers.
 
 ## Testing
 

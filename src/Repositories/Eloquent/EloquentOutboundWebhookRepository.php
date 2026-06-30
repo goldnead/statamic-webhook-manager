@@ -1,14 +1,19 @@
 <?php
 
-namespace Goldnead\WebhookManager\Repositories;
+namespace Goldnead\WebhookManager\Repositories\Eloquent;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class OutboundWebhookRepository
+/**
+ * Database-backed outbound webhook repository (default driver). Thin
+ * wrapper over the Eloquent model.
+ */
+class EloquentOutboundWebhookRepository implements OutboundWebhookRepositoryInterface
 {
-    public function find(int $id): ?OutboundWebhook
+    public function find(int|string $id): ?OutboundWebhook
     {
         return OutboundWebhook::find($id);
     }
@@ -23,9 +28,7 @@ class OutboundWebhookRepository
         return OutboundWebhook::where('uuid', $uuid)->first();
     }
 
-    /**
-     * @return Collection<int, OutboundWebhook>
-     */
+    /** @return Collection<int, OutboundWebhook> */
     public function activeForTrigger(string $triggerHandle): Collection
     {
         return OutboundWebhook::query()
@@ -41,14 +44,15 @@ class OutboundWebhookRepository
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('handle', 'like', "%{$search}%")
-                  ->orWhere('url', 'like', "%{$search}%");
+                    ->orWhere('handle', 'like', "%{$search}%")
+                    ->orWhere('url', 'like', "%{$search}%");
             });
         }
 
         return $query->paginate($perPage);
     }
 
+    /** @return Collection<int, OutboundWebhook> */
     public function all(): Collection
     {
         return OutboundWebhook::orderBy('name')->get();
@@ -57,5 +61,26 @@ class OutboundWebhookRepository
     public function countActive(): int
     {
         return OutboundWebhook::where('enabled', true)->count();
+    }
+
+    public function create(array $attributes): OutboundWebhook
+    {
+        $hook = new OutboundWebhook;
+        $hook->fill($attributes);
+        $hook->save();
+
+        return $hook->fresh();
+    }
+
+    public function save(OutboundWebhook $hook): OutboundWebhook
+    {
+        $hook->save();
+
+        return $hook->fresh();
+    }
+
+    public function delete(OutboundWebhook $hook): bool
+    {
+        return (bool) $hook->delete();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Domain\Delivery\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Services\DeliveryEngine;
@@ -26,12 +27,13 @@ class ReplayDeliveryAction
         protected HttpRequestFactory $requestFactory,
         protected DeliveryLogger $logger,
         protected TemplateRenderer $renderer,
+        protected OutboundWebhookRepositoryInterface $webhooks,
     ) {
     }
 
     public function __invoke(Delivery $delivery, bool $reRender = false): Delivery
     {
-        $hook = $delivery->outboundWebhook;
+        $hook = $this->webhooks->find($delivery->outbound_webhook_id);
 
         if ($reRender && $hook instanceof OutboundWebhook) {
             $event = new TriggerEvent(

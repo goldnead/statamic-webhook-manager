@@ -3,7 +3,7 @@
 namespace Goldnead\WebhookManager\Rules;
 
 use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
-use Goldnead\WebhookManager\Repositories\RuleRepository;
+use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
@@ -20,7 +20,7 @@ use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
 class RuleEngine
 {
     public function __construct(
-        protected RuleRepository $repository,
+        protected RuleRepositoryInterface $repository,
         protected ConditionEvaluator $conditions,
         protected ActionExecutor $actions,
         protected SystemLogger $logger,

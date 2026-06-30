@@ -2,20 +2,19 @@
 
 namespace Goldnead\WebhookManager\Domain\InboundEndpoint\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Illuminate\Support\Str;
 
 class CreateInboundEndpointAction
 {
+    public function __construct(protected InboundEndpointRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(array $attributes): InboundEndpoint
     {
-        $attributes = $this->normalize($attributes);
-
-        $endpoint = new InboundEndpoint();
-        $endpoint->fill($attributes);
-        $endpoint->save();
-
-        return $endpoint->fresh();
+        return $this->repository->create($this->normalize($attributes));
     }
 
     protected function normalize(array $attributes): array

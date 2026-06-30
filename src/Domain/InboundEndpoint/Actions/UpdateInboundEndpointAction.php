@@ -2,10 +2,15 @@
 
 namespace Goldnead\WebhookManager\Domain\InboundEndpoint\Actions;
 
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 
 class UpdateInboundEndpointAction
 {
+    public function __construct(protected InboundEndpointRepositoryInterface $repository)
+    {
+    }
+
     public function __invoke(InboundEndpoint $endpoint, array $attributes): InboundEndpoint
     {
         // Auth config that comes through as an empty array means
@@ -16,8 +21,7 @@ class UpdateInboundEndpointAction
         }
 
         $endpoint->fill($attributes);
-        $endpoint->save();
 
-        return $endpoint->fresh();
+        return $this->repository->save($endpoint);
     }
 }
