@@ -60,5 +60,7 @@ class InboundActionHandlerRegistry
         $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\CreateFormSubmissionHandler());
         $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\DispatchEventHandler());
         $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\AuditLogHandler());
+        // Self-guards on LeadHub presence, so registering it unconditionally is safe.
+        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpsertLeadHandler());
     }
 }
