@@ -131,6 +131,33 @@ WebhookManager::registerSuccessEvaluator(new MyCustomEvaluator());
 
 Each registry has its own contract under `Goldnead\WebhookManager\Contracts`.
 
+### Load order & overwriting
+
+Register from the `boot()` method of your own service provider. Statamic boots
+addon providers before application providers, so by the time your `boot()`
+runs the Webhook Manager registries exist and are seeded with the built-in
+defaults. Registering from `register()` (or before this addon boots) is not
+supported.
+
+Registries are keyed by handle: registering a trigger, condition, action,
+auth scheme, resolver, evaluator, preset or inbound action handler whose
+`handle()` matches an existing one **replaces** it. That is the supported way
+to override a built-in — but pick unique handles for genuinely new
+registrations to avoid clobbering defaults.
+
+### Boundary vs. `goldnead/statamic-automations`
+
+- **Webhook Manager is the transport layer**: it delivers and receives HTTP
+  hooks, with retries, signing/auth, templates and delivery logging.
+- **Automations is the orchestration layer**: it runs multi-step workflows
+  (conditions, delays, branching) and can send webhooks *through* Webhook
+  Manager as one of its steps.
+
+Both addons can react to the same Statamic events (e.g. `EntrySaved`). Pick
+one place per concern: if an automation already fires a webhook for an event,
+don't also configure a Webhook Manager trigger for that same event and
+destination — you will double-fire.
+
 ## Architecture
 
 - **Controllers** return `Inertia::render('webhook-manager::Page/Name', $props)` — they never render Blade for the CP.
