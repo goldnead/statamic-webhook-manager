@@ -18,7 +18,7 @@ use Illuminate\Queue\SerializesModels;
  * because DeliveryEngine guards against double-success and increments
  * `attempts` on every send.
  *
- * Note: we do NOT rely on Laravel's queue retry for fachliches Retry — the
+ * Note: we do NOT rely on Laravel's queue retry for business-level retries — the
  * RetryPlanner schedules the next attempt via `next_retry_at` and a
  * scheduled job dispatcher (or the replay command) picks it up.
  */
