@@ -83,7 +83,6 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
     protected $routes = [
         'cp' => __DIR__.'/../routes/cp.php',
-        'actions' => __DIR__.'/../routes/actions.php',
         'web' => __DIR__.'/../routes/inbound.php',
     ];
 
