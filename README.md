@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="art/logo.svg" width="96" height="96" alt="Webhook Manager">
+</p>
+
 # Statamic Webhook Manager
 
 A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)**. Manage **outbound webhooks**, **inbound endpoints**, **deliveries**, **retries**, **replays**, **rules** and **templates** — all from one place inside the Control Panel.

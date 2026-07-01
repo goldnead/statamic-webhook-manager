@@ -1,0 +1,75 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Statamic Webhook Manager">
+  <defs>
+    <linearGradient id="cv-bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B49C0"/>
+      <stop offset="1" stop-color="#372A93"/>
+    </linearGradient>
+    <linearGradient id="cv-tile" x1="828" y1="150" x2="1108" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C6BE0"/>
+      <stop offset="1" stop-color="#4634B1"/>
+    </linearGradient>
+    <style>
+      .t { font-family: Inter, 'Helvetica Neue', Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#cv-bg)"/>
+
+  <!-- Subtle connection-graph decoration -->
+  <g stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2" fill="none">
+    <path d="M120 540 L300 470 L470 545 L250 600"/>
+    <path d="M980 70 L1080 150 L1040 250"/>
+    <path d="M170 120 L60 210"/>
+  </g>
+  <g fill="#FFFFFF" fill-opacity="0.12">
+    <circle cx="120" cy="540" r="6"/><circle cx="300" cy="470" r="6"/>
+    <circle cx="470" cy="545" r="6"/><circle cx="980" cy="70" r="6"/>
+    <circle cx="1080" cy="150" r="6"/><circle cx="170" cy="120" r="6"/>
+  </g>
+
+  <!-- Addon pill -->
+  <g>
+    <rect x="80" y="74" width="232" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.14"/>
+    <text x="104" y="103" class="t" font-size="20" font-weight="700" letter-spacing="2" fill="#FFFFFF">STATAMIC 6 ADDON</text>
+  </g>
+
+  <!-- Title + tagline -->
+  <text x="78" y="278" class="t" font-size="86" font-weight="800" fill="#FFFFFF">Webhook</text>
+  <text x="78" y="372" class="t" font-size="86" font-weight="800" fill="#FFFFFF">Manager</text>
+
+  <text x="80" y="442" class="t" font-size="29" font-weight="400" fill="#FFFFFF" fill-opacity="0.85">Outbound &amp; inbound webhooks, deliveries, retries,</text>
+  <text x="80" y="481" class="t" font-size="29" font-weight="400" fill="#FFFFFF" fill-opacity="0.85">rules and insights — native to the Control Panel.</text>
+
+  <!-- Feature chips -->
+  <g class="t" font-size="20" font-weight="600" fill="#FFFFFF">
+    <g>
+      <rect x="80" y="528" width="138" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.12"/>
+      <text x="100" y="554" fill-opacity="0.95">Presets</text>
+    </g>
+    <g>
+      <rect x="230" y="528" width="120" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.12"/>
+      <text x="250" y="554" fill-opacity="0.95">Alerts</text>
+    </g>
+    <g>
+      <rect x="362" y="528" width="135" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.12"/>
+      <text x="382" y="554" fill-opacity="0.95">Insights</text>
+    </g>
+    <g>
+      <rect x="509" y="528" width="168" height="40" rx="20" fill="#FFFFFF" fill-opacity="0.12"/>
+      <text x="529" y="554" fill-opacity="0.95">Flat-file</text>
+    </g>
+  </g>
+
+  <!-- Logo tile (right) -->
+  <g>
+    <rect x="828" y="175" width="280" height="280" rx="64" fill="url(#cv-tile)"/>
+    <g transform="translate(828,175) scale(1.09375)" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M80 100 H164"/>
+      <path d="M148 82 L176 100 L148 118"/>
+      <path d="M176 156 H92"/>
+      <path d="M108 138 L80 156 L108 174"/>
+    </g>
+    <circle cx="968" cy="315" r="23" fill="#FFFFFF"/>
+    <circle cx="968" cy="315" r="10" fill="#4634B1"/>
+  </g>
+</svg>
