@@ -5,6 +5,16 @@ All notable changes to `goldnead/statamic-webhook-manager` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-07-02
+
+### Fixed
+
+- Inbound endpoint route (`!/webhooks/inbound/{handle}`) now excludes the CSRF
+  middleware. It runs in the `web` middleware group, so real external webhook
+  deliveries (which never carry a CSRF token) were rejected with a 419.
+  Endpoint authentication is unaffected and still enforced by the configured
+  verifier (HMAC, static header, bearer, ...).
+
 ## [1.0.0] — 2026-06-30 — Marketplace launch
 
 First stable release. Completes the post-MVP feature set that positions the
