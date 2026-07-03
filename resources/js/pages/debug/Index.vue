@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { ref, computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import {
@@ -53,7 +54,7 @@ async function runPreview() {
     previewing.value = true;
     previewResult.value = null;
     try {
-        const res = await window.axios.post(props.previewUrl, {
+        const res = await axios.post(props.previewUrl, {
             template:       template.value,
             sample_payload: payload,
             source_type:    sourceType.value,
@@ -104,7 +105,7 @@ async function runSimulate() {
     simulating.value = true;
     simulateResult.value = null;
     try {
-        const res = await window.axios.post(props.simulateUrl, {
+        const res = await axios.post(props.simulateUrl, {
             trigger:        selectedTrigger.value,
             sample_payload: payload,
         });
@@ -165,7 +166,7 @@ function namespaceExample(value) {
                     <code class="font-mono text-sm">{{ value }}</code>
                 </template>
                 <template #cell-source_type="{ value }">
-                    <Badge :text="value" color="gray" />
+                    <Badge :text="value" color="default" />
                 </template>
             </Listing>
         </Panel>

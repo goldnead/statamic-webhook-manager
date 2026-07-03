@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
@@ -285,7 +286,7 @@ async function runTest() {
     testResult.value = null;
     try {
         const payload = samplePayload.value.trim() ? JSON.parse(samplePayload.value) : {};
-        const res = await window.axios.post(props.testUrl, { sample_payload: payload });
+        const res = await axios.post(props.testUrl, { sample_payload: payload });
         testResult.value = res.data;
     } catch (e) {
         testResult.value = {
@@ -309,7 +310,7 @@ async function runTest() {
             <template v-if="!isNew" #subtitle>
                 <StatusIndicator :status="rule.enabled ? 'published' : 'draft'" />
                 <Badge
-                    :color="rule.enabled ? 'green' : 'gray'"
+                    :color="rule.enabled ? 'green' : 'default'"
                     :text="rule.enabled ? __('Active') : __('Disabled')"
                 />
             </template>

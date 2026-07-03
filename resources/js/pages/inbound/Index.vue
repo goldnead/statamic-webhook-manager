@@ -45,26 +45,26 @@ const reloadPage = () => router.reload({ only: ['endpoints'] });
 // Kept in Vue (not PHP) so it stays in sync with dark-mode-aware ui.
 const authColor = (type) => {
     switch ((type || '').toLowerCase()) {
-        case 'none':          return 'gray';
+        case 'none':          return 'default';
         case 'hmac':          return 'green';
         case 'signature':
         case 'static_header':
         case 'bearer':
         case 'basic':         return 'blue';
         case 'ip_allowlist':  return 'purple';
-        default:              return 'gray';
+        default:              return 'default';
     }
 };
 
 // Centralised colour mapping for action_type badges.
 const actionColor = (type) => {
     switch ((type || '').toLowerCase()) {
-        case 'noop':            return 'gray';
+        case 'noop':            return 'default';
         case 'forward':         return 'blue';
         case 'store':           return 'green';
         case 'notify':          return 'amber';
         case 'rule_trigger':    return 'purple';
-        default:                return 'gray';
+        default:                return 'default';
     }
 };
 
@@ -174,7 +174,7 @@ function toggle(endpoint) {
             <!-- Status column -->
             <template #cell-enabled="{ row }">
                 <Badge
-                    :color="row.enabled ? 'green' : 'gray'"
+                    :color="row.enabled ? 'green' : 'default'"
                     :text="row.enabled ? __('Active') : __('Disabled')"
                 />
             </template>

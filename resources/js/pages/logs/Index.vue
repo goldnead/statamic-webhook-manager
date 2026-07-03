@@ -45,8 +45,8 @@ const levelColor = (level) => ({
     error:   'red',
     warning: 'amber',
     info:    'blue',
-    debug:   'gray',
-}[level] ?? 'gray');
+    debug:   'default',
+}[level] ?? 'default');
 
 const errorTypeColor = (type) => ({
     network:       'orange',
@@ -56,8 +56,8 @@ const errorTypeColor = (type) => ({
     server:        'red',
     payload:       'purple',
     configuration: 'blue',
-    internal:      'gray',
-}[type] ?? 'gray');
+    internal:      'default',
+}[type] ?? 'default');
 
 // Human-readable labels for error_type badges.
 const errorTypeLabel = (type) => ({
