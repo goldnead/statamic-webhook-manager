@@ -44,7 +44,7 @@ const typeColor = (type) => {
     switch (type) {
         case 'outbound_body':   return 'blue';
         case 'notification':    return 'amber';
-        default:                return 'gray';
+        default:                return 'default';
     }
 };
 </script>

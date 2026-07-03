@@ -44,7 +44,7 @@ const statusColor = (status) => ({
     failed:  'red',
     pending: 'amber',
     retry:   'amber',
-}[status] ?? 'gray');
+}[status] ?? 'default');
 
 /** HTTP method → Statamic Badge colour token (mirrors Outbound/Index). */
 const methodColor = (method) => ({
@@ -53,7 +53,7 @@ const methodColor = (method) => ({
     PUT:    'amber',
     PATCH:  'amber',
     DELETE: 'red',
-}[(method || '').toUpperCase()] ?? 'gray');
+}[(method || '').toUpperCase()] ?? 'default');
 
 /**
  * error_type colour mapping — identical to Logs/Index so the two pages
@@ -67,8 +67,8 @@ const errorTypeColor = (type) => ({
     server:        'red',
     payload:       'purple',
     configuration: 'blue',
-    internal:      'gray',
-}[type] ?? 'gray');
+    internal:      'default',
+}[type] ?? 'default');
 
 const errorTypeLabel = (type) => ({
     network:       'Network',

@@ -51,7 +51,7 @@ const methodColor = (method) => {
         case 'PUT':    return 'amber';
         case 'PATCH':  return 'amber';
         case 'DELETE': return 'red';
-        default:       return 'gray';
+        default:       return 'default';
     }
 };
 
@@ -141,7 +141,7 @@ function toggle(hook) {
 
             <template #cell-enabled="{ row: hook }">
                 <Badge
-                    :color="hook.enabled ? 'green' : 'gray'"
+                    :color="hook.enabled ? 'green' : 'default'"
                     :text="hook.enabled ? __('Active') : __('Disabled')"
                 />
             </template>
