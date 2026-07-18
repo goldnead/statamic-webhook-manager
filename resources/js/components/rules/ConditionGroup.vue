@@ -59,34 +59,35 @@ function removeChild(index) {
 
 <template>
     <div
-        class="rounded border p-3 space-y-2"
+        class="rounded-lg border p-3 space-y-2"
         :class="isRoot
-            ? 'border-gray-200 bg-gray-50 dark:bg-gray-900/40'
-            : 'border-gray-300 bg-white dark:bg-gray-800'"
+            ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40'
+            : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800'"
     >
         <!-- Group header: AND/OR toggle + remove (non-root) -->
         <div class="flex items-center justify-between">
-            <div class="inline-flex rounded border border-gray-300 overflow-hidden text-xs">
-                <button
-                    type="button"
-                    class="px-3 py-1"
-                    :class="modelValue.logic === 'and'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+            <div class="inline-flex gap-1">
+                <Button
+                    size="sm"
+                    :variant="modelValue.logic === 'and' ? 'primary' : 'default'"
+                    :text="__('AND')"
                     @click="setLogic('and')"
-                >{{ __('AND') }}</button>
-                <button
-                    type="button"
-                    class="px-3 py-1 border-l border-gray-300"
-                    :class="modelValue.logic === 'or'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                />
+                <Button
+                    size="sm"
+                    :variant="modelValue.logic === 'or' ? 'primary' : 'default'"
+                    :text="__('OR')"
                     @click="setLogic('or')"
-                >{{ __('OR') }}</button>
+                />
             </div>
-            <Button v-if="!isRoot" variant="default" size="sm" @click="$emit('remove')">
-                {{ __('Remove group') }}
-            </Button>
+            <Button
+                v-if="!isRoot"
+                variant="subtle"
+                size="sm"
+                icon="trash"
+                :text="__('Remove group')"
+                @click="$emit('remove')"
+            />
         </div>
 
         <!-- Empty state -->
@@ -114,12 +115,8 @@ function removeChild(index) {
 
         <!-- Toolbar -->
         <div class="flex gap-2 pt-1">
-            <Button variant="default" size="sm" @click="addCondition">
-                + {{ __('Condition') }}
-            </Button>
-            <Button variant="default" size="sm" @click="addGroup">
-                + {{ __('Group') }}
-            </Button>
+            <Button variant="default" size="sm" icon="plus" :text="__('Condition')" @click="addCondition" />
+            <Button variant="default" size="sm" icon="plus" :text="__('Group')" @click="addGroup" />
         </div>
     </div>
 </template>

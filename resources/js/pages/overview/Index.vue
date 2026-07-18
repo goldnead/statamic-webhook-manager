@@ -4,7 +4,6 @@ import { Head, Link } from '@statamic/cms/inertia';
 import {
     Header,
     Panel,
-    Widget,
     Badge,
     Icon,
     Listing,
@@ -13,6 +12,7 @@ import {
     DocsCallout,
     MiddleEllipsis,
 } from '@statamic/cms/ui';
+import StatTile from '../../components/StatTile.vue';
 
 /**
  * Overview dashboard.
@@ -95,19 +95,18 @@ const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
     <template v-else>
         <Header :title="__('Webhook Manager')" icon="link" />
 
-        <!-- Stat widgets: native Statamic dashboard Widget tiles. An auto-fit
-             grid keeps this to one CSS class so it reflows responsively without
-             relying on breakpoint utilities that Statamic core defines unlayered
-             (a layered override would lose the cascade). -->
+        <!-- Compact native stat tiles (shared StatTile). An auto-fit grid
+             keeps this to one CSS class so it reflows responsively without
+             relying on breakpoint utilities that Statamic core defines
+             unlayered (a layered override would lose the cascade). -->
         <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 mt-4">
-            <Widget
+            <StatTile
                 v-for="stat in stats"
                 :key="stat.key"
-                :title="stat.label"
+                :label="stat.label"
+                :value="stat.value"
                 :icon="stat.icon"
-            >
-                <div class="text-3xl font-bold leading-none tabular-nums">{{ stat.value }}</div>
-            </Widget>
+            />
         </div>
 
         <!-- Recent Failures listing -->
