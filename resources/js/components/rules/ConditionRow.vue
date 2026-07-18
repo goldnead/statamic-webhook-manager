@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Button, Input } from '@statamic/cms/ui';
+import { Button, Input, Select } from '@statamic/cms/ui';
 
 /**
  * A single condition leaf — { field, op, value }.
@@ -34,6 +34,11 @@ const OPS = [
     { value: 'lte',        label: 'less or equal' },
     { value: 'regex',      label: 'matches regex' },
 ];
+
+// Statamic's <Select> wraps <Combobox>, which expects `:options` as an
+// array of { value, label } objects. Labels run through __() so they stay
+// translatable rather than hard-coded English.
+const opOptions = computed(() => OPS.map(o => ({ value: o.value, label: __(o.label) })));
 
 const showsValue = computed(() => !['exists', 'empty'].includes(props.modelValue.op));
 const isList = computed(() => ['in', 'not_in'].includes(props.modelValue.op));
@@ -79,13 +84,13 @@ function update(patch) {
             <option v-for="s in FIELD_SHORTCUTS" :key="s" :value="s" />
         </datalist>
 
-        <select
-            class="input-text w-44"
-            :value="modelValue.op"
-            @change="update({ op: $event.target.value })"
-        >
-            <option v-for="op in OPS" :key="op.value" :value="op.value">{{ op.label }}</option>
-        </select>
+        <div class="w-44 shrink-0">
+            <Select
+                :model-value="modelValue.op"
+                :options="opOptions"
+                @update:model-value="update({ op: $event })"
+            />
+        </div>
 
         <Input
             v-if="showsValue"
@@ -93,12 +98,18 @@ function update(patch) {
             class="flex-1"
             :model-value="valueInput"
             @update:model-value="valueInput = $event"
-            :placeholder="isList ? 'comma, separated, values' : 'value'"
+            :placeholder="isList ? __('comma, separated, values') : __('value')"
         />
-        <span v-else class="text-xs text-gray-500 italic w-32 self-center px-2">
-            (no value needed)
+        <span v-else class="text-xs text-gray-500 dark:text-gray-400 italic w-32 self-center px-2">
+            {{ __('No value needed') }}
         </span>
 
-        <Button variant="default" size="sm" @click="$emit('remove')" :title="__('Remove')">×</Button>
+        <Button
+            variant="subtle"
+            size="sm"
+            icon="trash"
+            :aria-label="__('Remove')"
+            @click="$emit('remove')"
+        />
     </div>
 </template>

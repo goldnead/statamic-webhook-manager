@@ -2,8 +2,8 @@
 /**
  * Insights / observability dashboard.
  *
- * Layout follows Statamic core's dashboard idiom — native Header, Widget
- * stat tiles in an auto-fit container grid, and Panels for each chart.
+ * Layout follows Statamic core's dashboard idiom — native Header, compact
+ * StatTile cards in an auto-fit container grid, and Panels for each chart.
  * Charts are self-contained (responsive HTML bars + a single inline-SVG
  * trend line) so the addon ships no charting dependency and inherits the
  * CP's Tailwind tokens for a fully native look in light and dark mode.
@@ -14,12 +14,12 @@ import { router } from '@inertiajs/vue3';
 import {
     Header,
     Panel,
-    Widget,
     Badge,
     Button,
     Select,
     MiddleEllipsis,
 } from '@statamic/cms/ui';
+import StatTile from '../../components/StatTile.vue';
 
 const props = defineProps({
     stats: { type: Object, required: true },
@@ -134,11 +134,15 @@ function shortDate(iso) {
         {{ __('webhook-manager::messages.insights_subtitle') }}
     </p>
 
-    <!-- Stat tiles -->
+    <!-- Compact native stat tiles (shared StatTile) -->
     <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mt-4">
-        <Widget v-for="tile in tiles" :key="tile.key" :title="tile.label" :icon="tile.icon">
-            <div class="text-3xl font-bold leading-none tabular-nums">{{ tile.value }}</div>
-        </Widget>
+        <StatTile
+            v-for="tile in tiles"
+            :key="tile.key"
+            :label="tile.label"
+            :value="tile.value"
+            :icon="tile.icon"
+        />
     </div>
 
     <template v-if="hasData">
