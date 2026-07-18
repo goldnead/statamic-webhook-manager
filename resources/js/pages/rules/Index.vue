@@ -49,7 +49,7 @@ const triggerColor = (triggerType) => {
         case 'user.saved':
         case 'user.created':   return 'purple';
         case 'user.deleted':   return 'red';
-        default:               return 'gray';
+        default:               return 'default';
     }
 };
 
@@ -118,7 +118,7 @@ function toggle(rule) {
 
             <template #cell-action_count="{ row: rule }">
                 <Badge
-                    :color="rule.action_count === 0 ? 'red' : 'gray'"
+                    :color="rule.action_count === 0 ? 'red' : 'default'"
                     :text="String(rule.action_count)"
                 />
             </template>
@@ -131,7 +131,7 @@ function toggle(rule) {
 
             <template #cell-enabled="{ row: rule }">
                 <Badge
-                    :color="rule.enabled ? 'green' : 'gray'"
+                    :color="rule.enabled ? 'green' : 'default'"
                     :text="rule.enabled ? __('Active') : __('Disabled')"
                 />
             </template>

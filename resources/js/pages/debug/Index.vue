@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { ref, computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import {
@@ -22,9 +23,9 @@ const props = defineProps({
 
 // ── Trigger Inspector columns ──────────────────────────────────────────────
 const inspectorColumns = [
-    { handle: 'handle',      label: __('Handle'),      sortable: false },
-    { handle: 'label',       label: __('Label'),        sortable: false },
-    { handle: 'source_type', label: __('Source Type'),  sortable: false },
+    { field: 'handle',      label: __('Handle'),      sortable: false },
+    { field: 'label',       label: __('Label'),        sortable: false },
+    { field: 'source_type', label: __('Source Type'),  sortable: false },
 ];
 
 // ── Template Preview state ─────────────────────────────────────────────────
@@ -53,7 +54,7 @@ async function runPreview() {
     previewing.value = true;
     previewResult.value = null;
     try {
-        const res = await window.axios.post(props.previewUrl, {
+        const res = await axios.post(props.previewUrl, {
             template:       template.value,
             sample_payload: payload,
             source_type:    sourceType.value,
@@ -104,7 +105,7 @@ async function runSimulate() {
     simulating.value = true;
     simulateResult.value = null;
     try {
-        const res = await window.axios.post(props.simulateUrl, {
+        const res = await axios.post(props.simulateUrl, {
             trigger:        selectedTrigger.value,
             sample_payload: payload,
         });
@@ -128,7 +129,7 @@ const simulateResponseJson = computed(() =>
 
 // ── Resolver Inspector ─────────────────────────────────────────────────────
 const resolverColumns = [
-    { handle: 'namespace', label: __('Namespace'), sortable: false },
+    { field: 'namespace', label: __('Namespace'), sortable: false },
 ];
 
 /**
@@ -165,7 +166,7 @@ function namespaceExample(value) {
                     <code class="font-mono text-sm">{{ value }}</code>
                 </template>
                 <template #cell-source_type="{ value }">
-                    <Badge :text="value" color="gray" />
+                    <Badge :text="value" color="default" />
                 </template>
             </Listing>
         </Panel>
@@ -195,15 +196,15 @@ function namespaceExample(value) {
         >
             <div class="space-y-4 p-4">
 
-                <Field :handle="'template'" :display="__('Template (JSON)')" :instructions="__('Enter a JSON template using Antlers or plain values.')">
+                <Field :label="__('Template (JSON)')" :instructions="__('Enter a JSON template using Antlers or plain values.')">
                     <CodeEditor v-model="template" mode="json" />
                 </Field>
 
-                <Field :handle="'source_type'" :display="__('Source Type')">
+                <Field :label="__('Source Type')">
                     <Select v-model="sourceType" :options="sourceTypeOptions" />
                 </Field>
 
-                <Field :handle="'sample_payload'" :display="__('Sample Payload')" :instructions="__('JSON object that will be passed to the template renderer.')">
+                <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be passed to the template renderer.')">
                     <CodeEditor v-model="samplePayload" mode="json" />
                 </Field>
 
@@ -220,8 +221,7 @@ function namespaceExample(value) {
                     <Alert :variant="previewVariant" :message="previewMessage" />
                     <Field
                         v-if="previewResult.rendered"
-                        :handle="'preview_output'"
-                        :display="__('Rendered Output')"
+                        :label="__('Rendered Output')"
                     >
                         <CodeEditor :model-value="previewResult.rendered" read-only />
                     </Field>
@@ -238,11 +238,11 @@ function namespaceExample(value) {
         >
             <div class="space-y-4 p-4">
 
-                <Field :handle="'trigger'" :display="__('Trigger')">
+                <Field :label="__('Trigger')">
                     <Select v-model="selectedTrigger" :options="triggerOptions" />
                 </Field>
 
-                <Field :handle="'trigger_payload'" :display="__('Sample Payload')" :instructions="__('JSON object that will be dispatched as the trigger payload.')">
+                <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be dispatched as the trigger payload.')">
                     <CodeEditor v-model="triggerPayload" mode="json" />
                 </Field>
 
@@ -262,8 +262,7 @@ function namespaceExample(value) {
                     />
                     <Field
                         v-if="simulateResponseJson"
-                        :handle="'simulate_response'"
-                        :display="__('Response')"
+                        :label="__('Response')"
                     >
                         <CodeEditor :model-value="simulateResponseJson" mode="json" read-only />
                     </Field>

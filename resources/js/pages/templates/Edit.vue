@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
@@ -137,7 +138,7 @@ async function runPreview() {
         const payload = samplePayload.value.trim()
             ? JSON.parse(samplePayload.value)
             : {};
-        const res = await window.axios.post(props.previewUrl, {
+        const res = await axios.post(props.previewUrl, {
             template:       form.body,
             sample_payload: payload,
             source_type:    sourceType.value,

@@ -61,7 +61,7 @@ const statusColor = computed(() => props.delivery.status_color ?? ({
     failed:  'red',
     pending: 'amber',
     retry:   'amber',
-}[props.delivery.status] ?? 'gray'));
+}[props.delivery.status] ?? 'default'));
 
 /** HTTP method → Statamic Badge colour token. */
 const methodColor = computed(() => props.delivery.method_color ?? ({
@@ -70,7 +70,7 @@ const methodColor = computed(() => props.delivery.method_color ?? ({
     PUT:    'amber',
     PATCH:  'amber',
     DELETE: 'red',
-}[(props.delivery.method || '').toUpperCase()] ?? 'gray'));
+}[(props.delivery.method || '').toUpperCase()] ?? 'default'));
 
 /** HTTP response code → semantic colour for the Badge. */
 const responseCodeColor = computed(() => {
@@ -80,7 +80,7 @@ const responseCodeColor = computed(() => {
     if (code >= 400) return 'amber';
     if (code >= 300) return 'blue';
     if (code >= 200) return 'green';
-    return 'gray';
+    return 'default';
 });
 
 // ── CodeEditor mode detection ───────────────────────────────────────────────
@@ -273,7 +273,7 @@ function headersJson(headers) {
                         {{ __('Error Type') }}
                     </p>
                     <Badge
-                        :color="delivery.error_type_color ?? 'gray'"
+                        :color="delivery.error_type_color ?? 'default'"
                         :text="delivery.error_type_label ?? delivery.error_type"
                     />
                 </div>

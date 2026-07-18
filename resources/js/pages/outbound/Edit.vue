@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@inertiajs/vue3';
@@ -178,7 +179,7 @@ async function runTest() {
     testing.value = true;
     testResult.value = null;
     try {
-        const res = await window.axios.post(props.testUrl, { sample_payload: {} });
+        const res = await axios.post(props.testUrl, { sample_payload: {} });
         testResult.value = res.data;
     } catch (e) {
         testResult.value = { ok: false, error_message: e?.response?.data?.message ?? e.message };
@@ -224,7 +225,7 @@ const authInstructions = computed(() => {
             <template v-if="!isNew" #subtitle>
                 <StatusIndicator :status="webhook.enabled ? 'published' : 'draft'" />
                 <Badge
-                    :color="webhook.enabled ? 'green' : 'gray'"
+                    :color="webhook.enabled ? 'green' : 'default'"
                     :text="webhook.enabled ? __('Active') : __('Disabled')"
                 />
             </template>

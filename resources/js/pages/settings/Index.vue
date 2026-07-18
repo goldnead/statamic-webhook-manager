@@ -409,7 +409,7 @@ const statusCodesToString = (val) => {
                         :instructions="__('WEBHOOK_MANAGER_ALERT_SLACK_URL env var. Posts failure alerts to a chat channel.')"
                     >
                         <Badge
-                            :color="config.reliability.alerts_slack_configured ? 'green' : 'gray'"
+                            :color="config.reliability.alerts_slack_configured ? 'green' : 'default'"
                             :text="config.reliability.alerts_slack_configured ? __('Configured') : __('Not set')"
                         />
                     </Field>
