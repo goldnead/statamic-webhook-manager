@@ -89,6 +89,12 @@ return [
     'templates_empty_intro' => 'Templates are reusable payload bodies and notification messages referenced by outbound webhooks and rules.',
     'templates_create_description' => 'Create a template with a handle, type and rendered body using token variables like {{ entry:title }}.',
 
+    // Persistent help copy shown above the populated listings and edit screens.
+    'rules_help' => 'Rules react to an incoming trigger (a Statamic event or an inbound webhook), evaluate optional conditions, and then run actions such as dispatching an outbound webhook. Use them to wire events to webhook deliveries without writing code.',
+    'templates_help' => 'Templates define the reusable JSON or body payload that an outbound webhook sends. Reference template variables that get filled from the trigger payload at delivery time. Attach a template to an outbound webhook so multiple webhooks can share one payload shape.',
+    'rules_edit_hint' => 'Pick a trigger, add optional conditions, then define the actions that run when it matches. This is how you connect an event to one or more webhook deliveries.',
+    'templates_edit_hint' => 'Define a reusable payload body with template variables that get filled from the trigger payload at delivery time. Attach it to an outbound webhook so multiple webhooks can share one shape.',
+
     'errors' => [
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',

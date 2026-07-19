@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router } from '@statamic/cms/inertia';
 import {
     Header,
     Button,
@@ -192,6 +192,11 @@ function copyToClipboard(text) {
                 @click="showDelete = true"
             />
         </Header>
+
+        <!-- ── Contextual hint ────────────────────────────────────── -->
+        <Alert variant="info" class="mb-6">
+            {{ __('webhook-manager::messages.templates_edit_hint') }}
+        </Alert>
 
         <!-- ── Global error banner ────────────────────────────────── -->
         <Alert

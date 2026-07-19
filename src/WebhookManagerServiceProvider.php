@@ -336,6 +336,35 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         /** @var \Goldnead\WebhookManager\Registries\PresetRegistry $presets */
         $presets = $this->app->make(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
         $presets->registerDefaults();
+
+        $this->registerCustomEventTriggers();
+    }
+
+    /**
+     * Wire up config-driven custom event triggers. Each entry under
+     * `webhook-manager.event_triggers` turns an arbitrary event class into a
+     * webhook trigger via WebhookManager::registerEventTrigger(), which
+     * registers the trigger in the registry AND attaches the generic listener
+     * that feeds the standard dispatch pipeline.
+     */
+    protected function registerCustomEventTriggers(): void
+    {
+        $manager = $this->app->make('webhook-manager');
+
+        foreach ((array) config('webhook-manager.event_triggers', []) as $key => $definition) {
+            if (! is_array($definition)) {
+                continue;
+            }
+
+            $eventClass = $definition['event'] ?? null;
+            if (! is_string($eventClass) || $eventClass === '') {
+                continue;
+            }
+
+            $definition['handle'] ??= is_string($key) ? $key : $eventClass;
+
+            $manager->registerEventTrigger($eventClass, $definition);
+        }
     }
 
     protected function bootWebhookPublishables(): void

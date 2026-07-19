@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static WebhookManagerService registerTrigger(\Goldnead\WebhookManager\Contracts\TriggerInterface $trigger)
+ * @method static WebhookManagerService registerEventTrigger(string $eventClass, array $config = [])
  * @method static WebhookManagerService registerCondition(\Goldnead\WebhookManager\Contracts\ConditionInterface $condition)
  * @method static WebhookManagerService registerAction(\Goldnead\WebhookManager\Contracts\ActionInterface $action)
  * @method static WebhookManagerService registerAuthScheme(\Goldnead\WebhookManager\Contracts\AuthVerifierInterface $verifier)

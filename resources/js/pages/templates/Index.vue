@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link } from '@statamic/cms/inertia';
-import { router } from '@inertiajs/vue3';
+import { router } from '@statamic/cms/inertia';
 import {
     Header,
     Button,
@@ -10,9 +10,22 @@ import {
     EmptyStateMenu,
     EmptyStateItem,
     DocsCallout,
+    Alert,
+    Icon,
     Listing,
     CommandPaletteItem,
 } from '@statamic/cms/ui';
+
+// Persistent-but-dismissible intro shown above the populated listing.
+// The dismissed flag is remembered per browser so power users only see it once.
+const INTRO_KEY = 'webhook-manager.templates.intro-dismissed';
+const introDismissed = ref(
+    typeof localStorage !== 'undefined' && localStorage.getItem(INTRO_KEY) === '1',
+);
+function dismissIntro() {
+    introDismissed.value = true;
+    try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) { /* private mode */ }
+}
 
 /**
  * Templates listing.
@@ -68,7 +81,7 @@ const typeColor = (type) => {
             />
         </EmptyStateMenu>
 
-        <DocsCallout topic="Templates" url="https://statamic.com/addons/goldnead/webhook-manager/docs/templates" />
+        <DocsCallout :topic="__('Templates')" url="https://github.com/goldnead/statamic-webhook-manager#templates" />
     </div>
 
     <!-- ── Listing ─────────────────────────────────────────────────── -->
@@ -86,6 +99,20 @@ const typeColor = (type) => {
                 :url="createUrl"
             />
         </Header>
+
+        <Alert v-if="!introDismissed" variant="info" class="mb-6">
+            <div class="flex items-start justify-between gap-3">
+                <span>{{ __('webhook-manager::messages.templates_help') }}</span>
+                <button
+                    type="button"
+                    class="shrink-0 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    :aria-label="__('Dismiss')"
+                    @click="dismissIntro"
+                >
+                    <Icon name="x" class="h-4 w-4" />
+                </button>
+            </div>
+        </Alert>
 
         <Listing
             :columns="initialColumns"

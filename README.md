@@ -131,6 +131,66 @@ WebhookManager::registerSuccessEvaluator(new MyCustomEvaluator());
 
 Each registry has its own contract under `Goldnead\WebhookManager\Contracts`.
 
+### Custom event triggers (any event class)
+
+Out of the box the addon reacts to a fixed set of Statamic events (entry
+saved/published/…, form submitted, user saved, asset saved). If you want **any
+other** Laravel or Statamic event — your own domain events or a third-party
+addon's — to fire webhooks, register it as a *custom event trigger*. No listener
+class required: the addon attaches one generic listener that normalises the
+event into the standard dispatch pipeline, and the trigger shows up in the CP
+trigger picker (Outbound + Rules) automatically.
+
+**Config-driven** — add entries to the `event_triggers` map in
+`config/webhook-manager.php`. The array key is the trigger handle (unless you set
+`handle` explicitly):
+
+```php
+'event_triggers' => [
+    'order.shipped' => [
+        'event'       => \App\Events\OrderShipped::class, // FQCN to listen for (required)
+        'label'       => 'Order — shipped',               // shown in the CP picker
+        'source_type' => 'order',                         // optional, default "event"
+        'description' => 'Fires when an order ships',      // optional
+        // Optional payload mapper: Closure, invokable class-string, or [class, method].
+        // Omit it to serialise the event via toArray()/public properties.
+        'payload'     => \App\Webhooks\OrderShippedPayload::class,
+    ],
+],
+```
+
+A `payload` class is just an invokable that maps the event to an array:
+
+```php
+class OrderShippedPayload
+{
+    public function __invoke(\App\Events\OrderShipped $event): array
+    {
+        return ['id' => $event->order->id, 'total' => $event->order->total];
+    }
+}
+```
+
+**Programmatic** — register the same thing in code from your service provider's
+`boot()` method (e.g. to ship a preconfigured trigger with your own addon). It
+funnels into the exact same generic listener + registry registration as the
+config path:
+
+```php
+use Goldnead\WebhookManager\Facades\WebhookManager;
+
+WebhookManager::registerEventTrigger(\App\Events\OrderShipped::class, [
+    'handle'      => 'order.shipped',
+    'label'       => 'Order — shipped',
+    'source_type' => 'order',
+    'payload'     => fn (\App\Events\OrderShipped $e) => ['id' => $e->order->id],
+]);
+```
+
+When no `payload` mapper is given, the listener builds the payload from the
+event's `toArray()` if present, otherwise its public properties (and passes
+through an event that is already an array).
+
 ### Load order & overwriting
 
 Register from the `boot()` method of your own service provider. Statamic boots

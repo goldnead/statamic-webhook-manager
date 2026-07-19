@@ -21,6 +21,40 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Custom Event Triggers
+    |--------------------------------------------------------------------------
+    |
+    | Turn ANY Laravel/Statamic event class into a webhook trigger without
+    | writing a listener. Each entry registers a generic trigger (so it shows
+    | up in the CP trigger picker) and attaches ONE listener to the event that
+    | re-emits the normal dispatch pipeline. The array key is used as the
+    | trigger handle unless an explicit `handle` is given.
+    |
+    | Each entry declares:
+    |   'event'       (required) FQCN of the event class to listen for.
+    |   'handle'      (optional) unique trigger handle; defaults to the key.
+    |   'label'       (optional) human label shown in the CP; defaults to handle.
+    |   'source_type' (optional) source category, e.g. "order"; default "event".
+    |   'payload'     (optional) how to map the event → array payload. A Closure,
+    |                 an invokable class-string, or a [class, method] pair. When
+    |                 omitted the listener serialises the event via toArray(),
+    |                 else its public properties (arrays are passed through).
+    |   'description' (optional) human description.
+    |
+    | Example:
+    |   'order.shipped' => [
+    |       'event'       => \App\Events\OrderShipped::class,
+    |       'label'       => 'Order — shipped',
+    |       'source_type' => 'order',
+    |       'payload'     => \App\Webhooks\OrderShippedPayload::class,
+    |   ],
+    */
+    'event_triggers' => [
+        //
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Storage Driver
     |--------------------------------------------------------------------------
     |
