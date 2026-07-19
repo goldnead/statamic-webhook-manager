@@ -18,6 +18,9 @@ use Goldnead\WebhookManager\Registries\PresetRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
+use Goldnead\WebhookManager\Events\TriggerDetected;
+use Goldnead\WebhookManager\Triggers\CustomEventTrigger;
+use Illuminate\Contracts\Events\Dispatcher;
 
 /**
  * Public extension API. Resolved as `app('webhook-manager')` and reachable
@@ -38,7 +41,95 @@ class WebhookManager
         protected SuccessEvaluatorRegistry $successEvaluators,
         protected InboundActionHandlerRegistry $inboundActionHandlers,
         protected PresetRegistry $presets,
+        protected Dispatcher $events,
     ) {
+    }
+
+    /**
+     * Turn ANY Laravel/Statamic event class into a webhook trigger.
+     *
+     * This funnels both the config-driven `webhook-manager.event_triggers`
+     * entries and programmatic callers into one place:
+     *
+     *   1. Register a generic CustomEventTrigger in the TriggerRegistry so
+     *      the event shows up in the CP trigger picker automatically.
+     *   2. Attach ONE generic listener to the event class that normalises
+     *      the raw event into a TriggerEvent and re-emits the existing
+     *      TriggerDetected event — reusing the standard dispatch pipeline
+     *      (TriggerDetected → DispatchTriggerListener → TriggerDispatcher).
+     *
+     * Example:
+     *   WebhookManager::registerEventTrigger(\App\Events\OrderShipped::class, [
+     *       'handle'      => 'order.shipped',
+     *       'label'       => 'Order — shipped',
+     *       'source_type' => 'order',
+     *       'payload'     => fn ($event) => ['id' => $event->orderId],
+     *   ]);
+     *
+     * @param  string  $eventClass  FQCN of the event to listen for.
+     * @param  array{handle?:string,label?:string,source_type?:string,payload?:mixed,description?:string}  $config
+     */
+    public function registerEventTrigger(string $eventClass, array $config = []): self
+    {
+        $handle = $config['handle'] ?? $eventClass;
+
+        $trigger = new CustomEventTrigger(
+            handle: $handle,
+            label: $config['label'] ?? $handle,
+            sourceType: $config['source_type'] ?? 'event',
+            payloadResolver: $this->normalisePayloadResolver($config['payload'] ?? null),
+            description: $config['description'] ?? null,
+        );
+
+        $this->triggers->register($trigger);
+
+        // ONE generic listener per configured event. It looks the trigger up
+        // by handle at fire time (so re-registration under the same handle is
+        // honoured) and re-emits the standard TriggerDetected event.
+        $this->events->listen($eventClass, function ($event = null) use ($handle) {
+            $trigger = $this->triggers->get($handle);
+            if (! $trigger) {
+                return;
+            }
+
+            // Laravel passes the event object for object events; for classic
+            // string events the payload arrives as the first argument.
+            $this->events->dispatch(new TriggerDetected($trigger->build($event)));
+        });
+
+        return $this;
+    }
+
+    /**
+     * Coerce a configured payload mapper into a callable.
+     *
+     * Accepts: a Closure/callable, an invokable class-string, or a
+     * [class, method] pair. Class-strings are resolved through the container.
+     *
+     * @return (callable(mixed): mixed)|null
+     */
+    protected function normalisePayloadResolver(mixed $payload): ?callable
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        if ($payload instanceof \Closure) {
+            return $payload;
+        }
+
+        // Invokable class-string, e.g. \App\Webhooks\OrderShippedPayload::class.
+        if (is_string($payload) && class_exists($payload)) {
+            $instance = app($payload);
+
+            return fn (mixed $event) => $instance($event);
+        }
+
+        if (is_callable($payload)) {
+            return $payload;
+        }
+
+        return null;
     }
 
     public function registerPreset(PresetInterface $preset): self

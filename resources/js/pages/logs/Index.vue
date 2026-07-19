@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
-import { router } from '@inertiajs/vue3';
+import { router } from '@statamic/cms/inertia';
 import {
     Header,
     Badge,

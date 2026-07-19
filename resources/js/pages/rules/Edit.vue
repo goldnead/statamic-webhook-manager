@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router } from '@statamic/cms/inertia';
 import {
     Header,
     Button,
@@ -338,6 +338,10 @@ async function runTest() {
             />
         </Header>
 
+        <Alert variant="info" class="mt-4">
+            {{ __('webhook-manager::messages.rules_edit_hint') }}
+        </Alert>
+
         <Tabs v-model="activeTab" class="mt-4">
             <TabList>
                 <TabTrigger value="general">
@@ -457,7 +461,7 @@ async function runTest() {
             <!-- ───────── Conditions ───────── -->
             <TabContent value="conditions">
                 <Panel class="mt-4">
-                    <div class="p-6 space-y-4">
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-4">
                         <div class="flex items-center justify-between">
                             <p class="text-sm text-gray-600 dark:text-gray-400">
                                 {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
@@ -499,7 +503,7 @@ async function runTest() {
             <!-- ───────── Actions ───────── -->
             <TabContent value="actions">
                 <Panel class="mt-4">
-                    <div class="p-6 space-y-4">
+                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-4">
                         <Alert
                             variant="info"
                             :heading="__('JSON format')"

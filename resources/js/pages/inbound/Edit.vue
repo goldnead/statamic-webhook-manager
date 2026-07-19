@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router } from '@statamic/cms/inertia';
 import {
     Header,
     Button,

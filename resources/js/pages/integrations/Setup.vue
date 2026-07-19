@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
-import { useForm } from '@inertiajs/vue3';
+import { useForm } from '@statamic/cms/inertia';
 import {
     Header,
     Button,
