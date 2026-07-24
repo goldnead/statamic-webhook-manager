@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Domain\Log\Models;
 
+use Goldnead\BrandContext\Concerns\HasBrand;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class LogEntry extends Model
 {
+    use HasBrand;
     use HasFactory;
 
     public const UPDATED_AT = null;

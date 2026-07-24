@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Models;
 
+use Goldnead\BrandContext\Concerns\HasBrand;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -34,6 +35,7 @@ use Illuminate\Support\Facades\Crypt;
  */
 class OutboundWebhook extends Model
 {
+    use HasBrand;
     use HasFactory;
 
     protected $table = 'webhook_outbounds';

@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Tests;
 
+use Goldnead\BrandContext\ServiceProvider as BrandContextServiceProvider;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
@@ -25,6 +26,9 @@ abstract class TestCase extends BaseTestCase
     protected function getPackageProviders($app): array
     {
         return [
+            // brand-context first: it ships the `brands` table + default brand
+            // that the addon's brand_id backfill migration depends on.
+            BrandContextServiceProvider::class,
             WebhookManagerServiceProvider::class,
         ];
     }
@@ -48,6 +52,14 @@ abstract class TestCase extends BaseTestCase
 
     protected function defineDatabaseMigrations(): void
     {
+        // brand-context migrations first — they create the `brands` table + the
+        // default brand that the addon's brand_id backfill migration reads.
+        // testbench's loadMigrationsFrom scopes each migrate run to one path, so
+        // the provider's own path is not run automatically here.
+        $this->loadMigrationsFrom(
+            dirname((new \ReflectionClass(BrandContextServiceProvider::class))->getFileName(), 2).'/database/migrations'
+        );
+
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 

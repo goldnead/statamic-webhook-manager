@@ -2,11 +2,13 @@
 
 namespace Goldnead\WebhookManager\Domain\Template\Models;
 
+use Goldnead\BrandContext\Concerns\HasBrand;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Template extends Model
 {
+    use HasBrand;
     use HasFactory;
 
     public const TYPE_OUTBOUND_BODY = 'outbound_body';

@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Domain\Delivery\Models;
 
+use Goldnead\BrandContext\Concerns\HasBrand;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Delivery extends Model
 {
+    use HasBrand;
     use HasFactory;
 
     public const STATUS_PENDING = 'pending';

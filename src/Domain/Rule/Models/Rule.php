@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Domain\Rule\Models;
 
+use Goldnead\BrandContext\Concerns\HasBrand;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Rule extends Model
 {
+    use HasBrand;
     use HasFactory;
 
     protected $table = 'webhook_rules';
