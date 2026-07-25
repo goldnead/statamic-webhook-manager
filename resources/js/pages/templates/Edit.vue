@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@statamic/cms/inertia';
 import {
+    Card,
     Header,
     Button,
     Badge,
@@ -231,7 +232,7 @@ function copyToClipboard(text) {
             <!-- ── General tab ─────────────────────────────────────── -->
             <TabContent value="general">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Name')"
                             :error="form.errors.name"
@@ -266,7 +267,7 @@ function copyToClipboard(text) {
                         >
                             <Select v-model="form.type" :options="typeOptionsArray" />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
@@ -320,11 +321,11 @@ function copyToClipboard(text) {
             <TabContent value="preview">
                 <Panel>
                     <div class="p-6 space-y-6">
-                        <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                        <Card inset class="p-6 space-y-6">
                             <Field inline :label="__('Source Type')">
                                 <Select v-model="sourceType" :options="sourceTypeOptions" />
                             </Field>
-                        </div>
+                        </Card>
 
                         <Field inline
                             :label="__('Sample Payload')"

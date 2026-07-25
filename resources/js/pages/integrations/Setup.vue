@@ -7,6 +7,7 @@ import { computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm } from '@statamic/cms/inertia';
 import {
+    Card,
     Header,
     Button,
     Panel,
@@ -62,7 +63,7 @@ function submit() {
         </Header>
 
         <Panel class="mt-4">
-            <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+            <Card inset class="p-6 space-y-6">
                 <Field inline :label="__('Name')" :error="form.errors.name" required>
                     <Input v-model="form.name" autofocus />
                 </Field>
@@ -91,7 +92,7 @@ function submit() {
                     />
                     <Input v-else v-model="form[f.handle]" :class="{ 'font-mono': String(f.handle).includes('url') }" />
                 </Field>
-            </div>
+            </Card>
         </Panel>
     </div>
 </template>

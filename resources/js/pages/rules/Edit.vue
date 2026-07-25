@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@statamic/cms/inertia';
 import {
+    Card,
     Header,
     Button,
     Badge,
@@ -372,7 +373,7 @@ async function runTest() {
             <!-- ───────── General ───────── -->
             <TabContent value="general">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Name')"
                             id="name"
@@ -422,14 +423,14 @@ async function runTest() {
                                 :text="form.enabled ? __('Enabled') : __('Disabled')"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Trigger ───────── -->
             <TabContent value="trigger">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Trigger type')"
                             id="trigger_type"
@@ -454,14 +455,14 @@ async function runTest() {
                                 :placeholder="triggerConfigPlaceholder"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Conditions ───────── -->
             <TabContent value="conditions">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-4">
+                    <Card inset class="p-6 space-y-4">
                         <div class="flex items-center justify-between">
                             <p class="text-sm text-gray-600 dark:text-gray-400">
                                 {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
@@ -496,14 +497,14 @@ async function runTest() {
                                 {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
                             </p>
                         </div>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Actions ───────── -->
             <TabContent value="actions">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-4">
+                    <Card inset class="p-6 space-y-4">
                         <Alert
                             variant="info"
                             :heading="__('JSON format')"
@@ -545,14 +546,14 @@ async function runTest() {
                                 </li>
                             </ul>
                         </div>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Settings ───────── -->
             <TabContent value="settings">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Stop on first failure')"
                             id="stop_on_failure"
@@ -566,7 +567,7 @@ async function runTest() {
                                 :text="__('Stop on first action failure')"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 

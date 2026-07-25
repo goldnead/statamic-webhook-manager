@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@statamic/cms/inertia';
 import {
+    Card,
     Header,
     Button,
     Badge,
@@ -290,7 +291,7 @@ async function runTest() {
             <!-- ── GENERAL ── -->
             <TabContent value="general">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Field inline :label="__('Name')" :error="form.errors.name" required>
                         <Input v-model="form.name" :placeholder="__('My Inbound Endpoint')" />
                     </Field>
@@ -313,14 +314,14 @@ async function runTest() {
                     <Field inline :label="__('Description')" :error="form.errors.description">
                         <Textarea v-model="form.description" :rows="3" />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── AUTHENTICATION ── -->
             <TabContent value="auth">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Field inline :label="__('Auth Type')" :error="form.errors.auth_type" required>
                         <Select v-model="form.auth_type" :options="authOptionsArray" />
                     </Field>
@@ -338,14 +339,14 @@ async function runTest() {
                             :min-lines="4"
                         />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── ALLOWED METHODS ── -->
             <TabContent value="methods">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Field inline
                         :label="__('Allowed HTTP Methods')"
                         :error="form.errors.allowed_methods"
@@ -356,14 +357,14 @@ async function runTest() {
                             :options="allowedMethodOptions"
                         />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── MAPPING ── -->
             <TabContent value="mapping">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Alert variant="info" class="mb-4">
                         {{ __('Define a JSON mapping to transform the incoming payload before it is passed to the action.') }}
                         <a
@@ -386,14 +387,14 @@ async function runTest() {
                             :min-lines="8"
                         />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── ACTION ── -->
             <TabContent value="action">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Field inline :label="__('Action Type')" :error="form.errors.action_type" required>
                         <Select v-model="form.action_type" :options="actionOptionsArray" />
                     </Field>
@@ -411,14 +412,14 @@ async function runTest() {
                             :min-lines="6"
                         />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── RESPONSE ── -->
             <TabContent value="response">
                 <Panel>
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                     <Field inline
                         :label="__('Response Config (JSON)')"
                         :error="form.errors.response_config_json || form.errors.response_config"
@@ -431,7 +432,7 @@ async function runTest() {
                             :min-lines="6"
                         />
                     </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
