@@ -21,6 +21,12 @@
         "issues": "https://github.com/goldnead/statamic-webhook-manager/issues",
         "source": "https://github.com/goldnead/statamic-webhook-manager"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/goldnead/statamic-brand-context.git"
+        }
+    ],
     "require": {
         "php": "^8.2",
         "goldnead/statamic-brand-context": "^1.0",
