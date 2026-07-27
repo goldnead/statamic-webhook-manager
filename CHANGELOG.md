@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 — 2026-07-27
+
+### Fixed — the 1.4.0 wiring only covered parameter-less commands
+
+All three commands imported the trait but never called it: their `handle()` methods take injected services, and the transformation that added the call only matched signatures without parameters. The result looked like a fix and was none — the commands still reported success while seeing nothing. Now wrapped properly, dependencies forwarded.
+
 ## 1.4.0 — 2026-07-27
 
 ### Fixed — scheduled commands did nothing under multi-brand and reported success

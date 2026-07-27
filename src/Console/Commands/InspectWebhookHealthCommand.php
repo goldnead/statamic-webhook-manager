@@ -17,7 +17,19 @@ class InspectWebhookHealthCommand extends Command
     public function handle(
         OutboundWebhookRepositoryInterface $hooks,
         DeliveryRepository $deliveries,
-    ): int {
+    ): int
+    {
+        // A scheduled run has no session and therefore no brand; without
+        // this the fail-closed scope hides every row and the command
+        // reports success while doing nothing at all.
+        return $this->forEachBrand(fn () => $this->handleForBrand($hooks, $deliveries));
+    }
+
+    protected function handleForBrand(
+        OutboundWebhookRepositoryInterface $hooks,
+        DeliveryRepository $deliveries,
+    ): int
+    {
         $counts = $deliveries->counts();
         $rate = $deliveries->successRate(24);
 

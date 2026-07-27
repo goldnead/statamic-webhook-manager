@@ -19,6 +19,14 @@ class ReplayFailedDeliveriesCommand extends Command
 
     public function handle(DeliveryReplayService $service): int
     {
+        // A scheduled run has no session and therefore no brand; without
+        // this the fail-closed scope hides every row and the command
+        // reports success while doing nothing at all.
+        return $this->forEachBrand(fn () => $this->handleForBrand($service));
+    }
+
+    protected function handleForBrand(DeliveryReplayService $service): int
+    {
         $hours = (int) $this->option('hours');
         $reRender = (bool) $this->option('re-render');
         $since = Carbon::now()->subHours($hours);

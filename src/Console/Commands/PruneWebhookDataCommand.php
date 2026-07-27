@@ -18,6 +18,14 @@ class PruneWebhookDataCommand extends Command
 
     public function handle(PruneDeliveriesAction $prune): int
     {
+        // A scheduled run has no session and therefore no brand; without
+        // this the fail-closed scope hides every row and the command
+        // reports success while doing nothing at all.
+        return $this->forEachBrand(fn () => $this->handleForBrand($prune));
+    }
+
+    protected function handleForBrand(PruneDeliveriesAction $prune): int
+    {
         $deliveryDays = (int) ($this->option('deliveries') ?? config('webhook-manager.pruning.deliveries_after_days', 30));
         $logDays = (int) ($this->option('logs') ?? config('webhook-manager.pruning.logs_after_days', 60));
 
