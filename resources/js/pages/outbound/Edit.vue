@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@statamic/cms/inertia';
 import {
+    Card,
     Header,
     Button,
     Badge,
@@ -299,7 +300,7 @@ const authInstructions = computed(() => {
             <!-- ───────── General ───────── -->
             <TabContent value="general">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Name')"
                             id="name"
@@ -341,14 +342,14 @@ const authInstructions = computed(() => {
                                 :text="form.enabled ? __('Enabled') : __('Disabled')"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Trigger ───────── -->
             <TabContent value="trigger">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Trigger type')"
                             id="trigger_type"
@@ -358,14 +359,14 @@ const authInstructions = computed(() => {
                         >
                             <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Request ───────── -->
             <TabContent value="request">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('URL')"
                             id="url"
@@ -406,14 +407,14 @@ const authInstructions = computed(() => {
                                 :text="__('Follow HTTP redirects')"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Authentication ───────── -->
             <TabContent value="auth">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Type')"
                             id="auth_type"
@@ -446,14 +447,14 @@ const authInstructions = computed(() => {
                                 :rows="4"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Payload ───────── -->
             <TabContent value="payload">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Type')"
                             id="payload_type"
@@ -508,14 +509,14 @@ const authInstructions = computed(() => {
                                 :rows="12"
                             />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ───────── Delivery ───────── -->
             <TabContent value="delivery">
                 <Panel class="mt-4">
-                    <div class="bg-white dark:bg-gray-850 rounded-xl ring ring-gray-200 dark:ring-gray-700/80 shadow-sm p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Queue')"
                             id="queue_enabled"
@@ -538,7 +539,7 @@ const authInstructions = computed(() => {
                         >
                             <Select id="log_body_mode" v-model="form.log_body_mode" :options="logBodyModeOptionsArray" />
                         </Field>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
         </Tabs>
