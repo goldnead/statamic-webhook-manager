@@ -144,7 +144,10 @@ class OutboundController extends CpController
             'availableTemplates' => $this->availableTemplates($templates),
             'isNew' => false,
             'canDelete' => (bool) $user?->can('manage outbound webhooks'),
-            'canTest' => (bool) ($user?->can('test outbound webhooks') ?? $user?->can('manage outbound webhooks')),
+            // `??` was the bug: `can()` returns a boolean, never null, so the
+            // fallback never fired and a `false` from the (unregistered)
+            // dedicated ability hid the Test button from everyone.
+            'canTest' => $this->canTest($user),
             'saveUrl' => cp_route('webhook-manager.outbound.update', $webhook),
             'deleteUrl' => cp_route('webhook-manager.outbound.destroy', $webhook),
             'toggleUrl' => cp_route('webhook-manager.outbound.toggle', $webhook),
@@ -233,7 +236,7 @@ class OutboundController extends CpController
             // declarative and don't leak ability strings into Vue).
             'can_edit' => $canManage,
             'can_toggle' => $canManage,
-            'can_test' => $canManage,
+            'can_test' => $this->canTest($user),
             'can_delete' => $canManage,
 
             'edit_url' => cp_route('webhook-manager.outbound.edit', $hook),
@@ -336,6 +339,25 @@ class OutboundController extends CpController
             $attributes['auth_config'] = $decoded;
         }
         return $attributes;
+    }
+
+    /**
+     * Firing a test request is allowed for holders of the dedicated
+     * `test outbound webhooks` ability, and for anyone who may manage
+     * outbound webhooks anyway — they can change the URL and save, so
+     * withholding the button would only be theatre.
+     *
+     * Kept in one place so the list row, the edit screen and
+     * TestOutboundController can never drift apart.
+     */
+    public static function canTest(mixed $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return (bool) $user->can('test outbound webhooks')
+            || (bool) $user->can('manage outbound webhooks');
     }
 
     private function authorizeOr403(Request $request, string $ability): void

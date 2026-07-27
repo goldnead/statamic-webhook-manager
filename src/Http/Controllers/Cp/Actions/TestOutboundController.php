@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp\Actions;
 
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\TestOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
 use Goldnead\WebhookManager\Http\Requests\TestWebhookRequest;
 use Illuminate\Routing\Controller;
 
@@ -14,7 +15,8 @@ class TestOutboundController extends Controller
         OutboundWebhook $webhook,
         TestOutboundWebhookAction $test,
     ) {
-        abort_unless($request->user()?->can('manage outbound webhooks'), 403);
+        // Same rule the UI uses to decide whether to show the button.
+        abort_unless(OutboundController::canTest($request->user()), 403);
 
         $delivery = ($test)($webhook, (array) $request->input('sample_payload', []));
 

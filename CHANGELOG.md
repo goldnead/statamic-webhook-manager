@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.5.0 — 2026-07-27
+
+### Fixed — the HMAC secret never reached the database (security)
+
+- **A secret entered in the CP was silently discarded.** `SaveOutboundWebhookRequest::rules()` did not list `auth_config_json`, and `store()`/`update()` persist `$request->validated()` — so the value was dropped between the browser and the model. The hook was saved with `auth_type = hmac` and an **empty** `auth_config`, `HmacSignatureVerifier::sign()` returned the request untouched, and the delivery went out **unsigned** while the CP displayed "HMAC signature". No error anywhere.
+- **Secret rotation was a no-op that reported success.** Same cause on the update path: "Webhook updated.", database unchanged, receiver kept verifying against the old secret.
+- The identical omission existed in `SaveInboundEndpointRequest` and is fixed with it. An inbound endpoint saved with a scheme but without credentials is rejected by its own verifier, so this was a lockout rather than a leak — but the same one-line cause.
+- An auth type other than `none` without any credentials is now a validation error instead of a silently unauthenticated request, and unparsable auth JSON is reported instead of thrown away. Switching a hook back to `none` clears the stored credentials rather than leaving them encrypted in the row.
+
+### Added — the secret audit trail is actually written
+
+`webhook_secret_audits` shipped with a migration, a table and an `AuditLogger` that had **zero call sites**: creating or rotating a secret left no trace at all. It is now wired into the outbound and inbound create/update actions (so presets and programmatic changes are covered too) and records `created` / `rotated` / `removed` with actor, timestamp, auth scheme and the config **key names**. The secret itself is never written — `AuditLogger` strips credential-looking context keys before the insert as a last line of defence. Rows carry the `brand_id` of the webhook they describe. A save that does not touch the credentials writes nothing.
+
+### Added — `test outbound webhooks` permission
+
+The ability was referenced by the CP but never registered, and an unregistered ability answers `false` for everyone, super users included. It is now registered and the "Test" button is visible to holders of either it or `manage outbound webhooks`. `TestOutboundController` enforces the same rule.
+
+### Fixed — Control Panel
+
+- **The Response panel crashed on successful deliveries.** `contentTypeMode()` called `.toLowerCase()` on `headers['content-type']`, which is PSR-7-shaped: an **array**. The TypeError blanked status code, duration, response headers and body — and only on successes, because failed deliveries have no response headers. The panel was missing exactly where one looks. Header lookup is now case-insensitive and flattens array values.
+- **The Replay button dropped the user on a 404.** The POST ran fine (200, attempt counter up), but the controller answered with bare JSON, which Inertia cannot consume — it fell back to a hard navigation to the same URL, a GET against a POST-only route. The success alert never appeared, which invites a duplicate replay of a delivery that already went out. The button now posts via axios and reports the real result; the endpoint answers a redirect to Inertia requests and JSON to everyone else.
+- **The "Test" entry in the outbound list was a link to a POST route** — a guaranteed 404 that never sent anything. It fires a real request now and reports HTTP status and duration inline.
+- **The list kept showing "Active" after "Disable".** `<Listing>` holds its own copy of the rows, so an Inertia prop reload never reached it; the row now follows the toggle immediately.
+- **The delivery detail view shows what it is for.** Trigger, correlation ID, attempt count and duration have their own fields instead of hiding in the raw request-header JSON or behind an error-only `v-if`, and the cURL command the controller had always computed is finally rendered, with a copy button.
+
+### Notes
+
+- Found in the hub QA run; each item is reproduced by a feature test against the real route → FormRequest → controller path, which is where the secret was lost — a model- or action-level test cannot see it at all. The signature fix is additionally proven on the wire: the header the HTTP client really sent is recomputed against the secret.
+- Every touched query or ability got a cross-brand test.
+- Suite: **153 passed (448 assertions)**.
+
 ## 1.4.1 — 2026-07-27
 
 ### Fixed — the 1.4.0 wiring only covered parameter-less commands

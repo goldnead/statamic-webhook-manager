@@ -32,6 +32,11 @@ class SaveInboundEndpointRequest extends FormRequest
             'allowed_methods.*' => [Rule::in(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])],
             'auth_type' => ['required', Rule::in(['none', 'static_header', 'bearer', 'basic', 'hmac', 'ip_allowlist'])],
             'auth_config' => ['nullable', 'array'],
+            // Same trap as on the outbound side: InboundController persists
+            // `$request->validated()`, so an unlisted `auth_config_json` is
+            // discarded and the endpoint ends up with an auth scheme but no
+            // credentials — which the verifiers answer with a blanket reject.
+            'auth_config_json' => ['nullable', 'string'],
             'expected_content_type' => ['nullable', 'string', 'max:120'],
             'max_payload_kb' => ['integer', 'min:1', 'max:65536'],
             'replay_protection_enabled' => ['boolean'],

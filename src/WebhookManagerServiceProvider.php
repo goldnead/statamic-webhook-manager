@@ -239,6 +239,13 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
                 ->label(__('webhook-manager::permissions.view_webhooks'));
             Permission::register('manage outbound webhooks')
                 ->label(__('webhook-manager::permissions.manage_outbound'));
+            // Fires a real request at a real third-party endpoint, so it is
+            // its own ability rather than a side effect of "manage". It was
+            // referenced by the CP long before it was registered — an
+            // unregistered ability answers `false` for everyone, super users
+            // included, which is why the Test button never appeared.
+            Permission::register('test outbound webhooks')
+                ->label(__('webhook-manager::permissions.test_outbound'));
             Permission::register('manage inbound endpoints')
                 ->label(__('webhook-manager::permissions.manage_inbound'));
             Permission::register('manage webhook rules')

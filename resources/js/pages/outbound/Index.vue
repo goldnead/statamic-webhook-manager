@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue';
+import axios from 'axios';
+import { ref, computed } from 'vue';
 import { Head, Link } from '@statamic/cms/inertia';
 import { router } from '@statamic/cms/inertia';
 import {
@@ -7,6 +8,7 @@ import {
     Button,
     Badge,
     Icon,
+    Alert,
     DropdownItem,
     EmptyStateMenu,
     EmptyStateItem,
@@ -55,9 +57,53 @@ const methodColor = (method) => {
     }
 };
 
+/**
+ * Enable / disable straight from the row.
+ *
+ * <Listing> owns its own copy of the rows (it re-fetches them over AJAX), so
+ * an Inertia prop reload left the Status badge showing the old value until a
+ * full page reload — the row said "Active" while the database already said 0.
+ * The row object is reactive, so it is flipped locally the moment the request
+ * succeeds, and the listing is asked to re-fetch as well.
+ */
 function toggle(hook) {
     if (!hook.toggle_url) return;
-    router.patch(hook.toggle_url, {}, { preserveScroll: true });
+    router.patch(hook.toggle_url, {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            hook.enabled = !hook.enabled;
+            reloadPage();
+        },
+    });
+}
+
+// ── Test ────────────────────────────────────────────────────────────────────
+
+const testResult = ref(null);
+const testingId = ref(null);
+
+/**
+ * The "Test" row action used to be a <DropdownItem :href>, i.e. a plain link —
+ * a GET against a POST-only route, so it reliably produced a 404 and never
+ * sent anything. It posts via axios now and reports the actual result.
+ */
+async function runTest(hook) {
+    if (!hook.test_url || testingId.value) return;
+    testingId.value = hook.id;
+    testResult.value = null;
+    try {
+        const res = await axios.post(hook.test_url, { sample_payload: {} });
+        testResult.value = { ...res.data, name: hook.name };
+    } catch (e) {
+        testResult.value = {
+            ok: false,
+            name: hook.name,
+            error_message: e?.response?.data?.message ?? e.message,
+        };
+    } finally {
+        testingId.value = null;
+    }
 }
 </script>
 
@@ -112,6 +158,15 @@ function toggle(hook) {
             </CommandPaletteItem>
         </Header>
 
+        <Alert
+            v-if="testResult"
+            :variant="testResult.ok ? 'success' : 'error'"
+            :heading="testResult.ok ? __('Test request succeeded') : __('Test request failed')"
+            :text="`${testResult.name} — HTTP ${testResult.response_status ?? '—'} — ${testResult.duration_ms ?? '?'}ms${testResult.error_message ? ' — ' + testResult.error_message : ''}`"
+            class="mb-4"
+            data-testid="outbound-test-result"
+        />
+
         <Listing
             :url="listingUrl"
             :columns="initialColumns"
@@ -157,7 +212,7 @@ function toggle(hook) {
                     v-if="hook.can_test && hook.test_url"
                     icon="arrow-up-right"
                     :text="__('Test')"
-                    :href="hook.test_url"
+                    @click="runTest(hook)"
                 />
                 <DropdownItem
                     v-if="hook.can_toggle"

@@ -4,6 +4,7 @@ return [
     'group' => 'Webhook Manager',
     'view_webhooks' => 'View webhooks',
     'manage_outbound' => 'Manage outbound webhooks',
+    'test_outbound' => 'Send test requests for outbound webhooks',
     'manage_inbound' => 'Manage inbound endpoints',
     'manage_rules' => 'Manage rules',
     'view_deliveries' => 'View deliveries',

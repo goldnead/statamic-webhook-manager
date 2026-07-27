@@ -74,8 +74,12 @@ class DeliveryController extends CpController
      * Show a single delivery's full debug view. Bodies are masked when
      * the user lacks the `view sensitive payloads` ability.
      */
-    public function show(Request $request, Delivery $delivery, DeliveryMaskingService $masker)
-    {
+    public function show(
+        Request $request,
+        Delivery $delivery,
+        DeliveryMaskingService $masker,
+        TriggerRegistry $triggers,
+    ) {
         abort_unless($request->user()?->can('view webhook deliveries'), 403);
 
         $canViewSensitive = $request->user()?->can('view sensitive payloads') === true;
@@ -85,7 +89,7 @@ class DeliveryController extends CpController
             && $masked->isReplayable();
 
         return Inertia::render('webhook-manager::Deliveries/Show', [
-            'delivery' => $this->showPayload($masked),
+            'delivery' => $this->showPayload($masked, $triggers->options()),
             'canReplay' => $canReplay,
             'canViewSensitive' => $canViewSensitive,
             'replayUrl' => $canReplay
@@ -182,7 +186,7 @@ class DeliveryController extends CpController
      *
      * @return array<string,mixed>
      */
-    protected function showPayload(Delivery $delivery): array
+    protected function showPayload(Delivery $delivery, array $triggerLabels = []): array
     {
         return [
             'id' => $delivery->id,
@@ -193,6 +197,7 @@ class DeliveryController extends CpController
             'status_color' => $this->statusColor($delivery->status),
 
             'trigger_type' => $delivery->trigger_type,
+            'trigger_label' => $triggerLabels[$delivery->trigger_type] ?? $delivery->trigger_type,
             'trigger_reference' => $delivery->trigger_reference,
             'correlation_id' => $delivery->correlation_id,
 

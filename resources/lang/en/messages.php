@@ -3,6 +3,14 @@
 return [
     'created' => 'Webhook created.',
     'integration_created' => ':name integration created — review and save.',
+
+    // Auth config validation (Outbound / Inbound edit screens)
+    'auth_config_invalid_json' => 'The auth config must be a valid JSON object.',
+    'auth_config_required' => 'This auth type needs credentials. Enter the auth config as JSON, otherwise the request would go out unauthenticated.',
+    'auth_config_hmac_secret_required' => 'HMAC signing needs a "secret" key in the auth config.',
+
+    // Delivery detail / replay
+    'test_sent' => 'Test request sent.',
     'send_webhook' => 'Send webhook',
     'send_webhook_button' => '{1} Send webhook|[2,*] Send webhook',
     'send_webhook_missing' => 'The selected webhook no longer exists.',

@@ -4,17 +4,35 @@ namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Actions;
 
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Services\Logging\AuditLogger;
 use Illuminate\Support\Str;
 
 class CreateOutboundWebhookAction
 {
-    public function __construct(protected OutboundWebhookRepositoryInterface $repository)
-    {
+    public function __construct(
+        protected OutboundWebhookRepositoryInterface $repository,
+        protected AuditLogger $audit,
+    ) {
     }
 
     public function __invoke(array $attributes): OutboundWebhook
     {
-        return $this->repository->create($this->normalize($attributes));
+        $hook = $this->repository->create($this->normalize($attributes));
+
+        // A webhook that is born with credentials is the first entry in its
+        // own secret trail. Audited here rather than in the controller so
+        // presets and programmatic creation are covered too.
+        $this->audit->recordSecretChange(
+            AuditLogger::TARGET_OUTBOUND,
+            (int) $hook->id,
+            [],
+            (array) ($hook->auth_config ?? []),
+            $hook->auth_type,
+            $hook->handle,
+            (int) $hook->brand_id,
+        );
+
+        return $hook;
     }
 
     protected function normalize(array $attributes): array

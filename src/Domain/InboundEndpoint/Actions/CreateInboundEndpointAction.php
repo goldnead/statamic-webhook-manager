@@ -4,17 +4,32 @@ namespace Goldnead\WebhookManager\Domain\InboundEndpoint\Actions;
 
 use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
+use Goldnead\WebhookManager\Services\Logging\AuditLogger;
 use Illuminate\Support\Str;
 
 class CreateInboundEndpointAction
 {
-    public function __construct(protected InboundEndpointRepositoryInterface $repository)
-    {
+    public function __construct(
+        protected InboundEndpointRepositoryInterface $repository,
+        protected AuditLogger $audit,
+    ) {
     }
 
     public function __invoke(array $attributes): InboundEndpoint
     {
-        return $this->repository->create($this->normalize($attributes));
+        $endpoint = $this->repository->create($this->normalize($attributes));
+
+        $this->audit->recordSecretChange(
+            AuditLogger::TARGET_INBOUND,
+            (int) $endpoint->id,
+            [],
+            (array) ($endpoint->auth_config ?? []),
+            $endpoint->auth_type,
+            $endpoint->handle,
+            (int) $endpoint->brand_id,
+        );
+
+        return $endpoint;
     }
 
     protected function normalize(array $attributes): array
