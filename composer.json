@@ -29,7 +29,7 @@
     ],
     "require": {
         "php": "^8.2",
-        "goldnead/statamic-brand-context": "^1.0",
+        "goldnead/statamic-brand-context": "^1.3",
         "illuminate/database": "^11.0|^12.0|^13.0",
         "illuminate/http": "^11.0|^12.0|^13.0",
         "illuminate/queue": "^11.0|^12.0|^13.0",

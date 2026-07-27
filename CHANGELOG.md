@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0 — 2026-07-27
+
+### Fixed — scheduled commands did nothing under multi-brand and reported success
+
+- **`replay-failed` never replayed anything.** A scheduled run has no session and therefore no brand; the fail-closed scope hid every row, so the command reported "Replayed 0" while eight failed deliveries sat waiting. The cron-based retry was effectively dead. `health` reported zeroes for the same reason, and `prune` deleted nothing.
+- All three now iterate the brands via `RunsForEachBrand` from `goldnead/statamic-brand-context` ^1.3, and each accepts `--brand=<handle|id>`. Single-brand installs are unaffected.
+
+### Notes
+
+- Found in the hub QA run, where the CP showed deliveries the commands insisted did not exist.
+- Suite: **123 passed (337 assertions)**.
+
 All notable changes to `goldnead/statamic-webhook-manager` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
