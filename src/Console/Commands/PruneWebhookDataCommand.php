@@ -3,13 +3,16 @@
 namespace Goldnead\WebhookManager\Console\Commands;
 
 use Goldnead\WebhookManager\Domain\Delivery\Actions\PruneDeliveriesAction;
+use Goldnead\BrandContext\Concerns\RunsForEachBrand;
 use Illuminate\Console\Command;
 
 class PruneWebhookDataCommand extends Command
 {
+    use RunsForEachBrand;
+
     protected $signature = 'webhook-manager:prune
         {--deliveries= : Override delivery prune age in days}
-        {--logs= : Override log prune age in days}';
+        {--logs= : Override log prune age in days} {--brand= : Restrict to one brand handle or id}';
 
     protected $description = 'Prune old webhook deliveries and logs.';
 
