@@ -73,6 +73,11 @@ function switchStorage() {
     });
 }
 
+// The driver switch is the one thing this page sends. It is also the one thing
+// that can be refused, and the page is otherwise read-only, so a rejection had
+// no field and no banner to appear in: the modal closed and nothing happened.
+const switchErrors = computed(() => switchForm.errors ?? {});
+
 function copyPath() {
     navigator.clipboard.writeText(props.configFilePath).then(() => {
         copied.value = true;
@@ -102,6 +107,18 @@ const statusCodesToString = (val) => {
 
         <!-- ── Page header ──────────────────────────────────────────── -->
         <Header :title="__('Webhook Manager Settings')" icon="sliders-horizontal" />
+
+        <!-- ── What the server said when the driver switch was refused ─ -->
+        <Alert
+            v-if="Object.keys(switchErrors).length"
+            variant="error"
+            class="mb-6"
+            data-webhook-form-errors
+        >
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in switchErrors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
         <!-- ── Config-file notice ───────────────────────────────────── -->
         <Alert variant="info" class="mb-6">

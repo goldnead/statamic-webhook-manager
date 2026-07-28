@@ -211,6 +211,16 @@ watch(() => form.hasErrors, hasErrors => {
     if (firstTabWithError) activeTab.value = firstTabWithError;
 });
 
+// Rejections that reach this page outside `form.submit()` — a refused delete.
+// useForm's bag only carries what the form itself sent, so without this the
+// response comes back, nothing is removed, and the screen does not change.
+const actionErrors = ref({});
+
+// Everything the server said, from either source. The banner below shows all of
+// it: the fields on this page live inside tabs, so a message that only sat at
+// its field would be behind a tab the user is not looking at.
+const allErrors = computed(() => ({ ...form.errors, ...actionErrors.value }));
+
 // ─── save / submit ────────────────────────────────────────────────────────────
 
 function syncFormFields() {
@@ -273,7 +283,8 @@ function destroy() {
     }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
+        onError: (errors) => { actionErrors.value = errors || {}; showDelete.value = false; },
+        onSuccess: () => { actionErrors.value = {}; showDelete.value = false; },
     });
 }
 
@@ -338,6 +349,18 @@ async function runTest() {
                 :action="() => (showDelete = true)"
             />
         </Header>
+
+        <!-- Everything the server rejected, above the mask, before the tabs. -->
+        <Alert
+            v-if="Object.keys(allErrors).length"
+            variant="error"
+            class="mt-4"
+            data-webhook-form-errors
+        >
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in allErrors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
         <Alert variant="info" class="mt-4">
             {{ __('webhook-manager::messages.rules_edit_hint') }}
@@ -479,24 +502,32 @@ async function runTest() {
                             class="mb-2"
                         />
 
-                        <!-- Visual builder (ConditionGroup) — default mode -->
-                        <ConditionGroup
-                            v-if="!showConditionJson"
-                            v-model="conditionTree"
-                        />
-
-                        <!-- JSON editor — debug/power-user mode (read/write) -->
-                        <div v-else>
-                            <CodeEditor
-                                v-model="conditionsJson"
-                                mode="json"
-                                :rows="16"
-                                :placeholder="conditionsPlaceholder"
+                        <!-- `conditions` is validated by SaveRuleRequest but was
+                             the one key on this page bound to no field: the local
+                             `conditionsError` above is the client-side JSON parse
+                             error, never the server's. Wrapping both editing modes
+                             in one Field puts the server's message at the control
+                             regardless of which mode is showing. -->
+                        <Field inline :error="form.errors.conditions">
+                            <!-- Visual builder (ConditionGroup) — default mode -->
+                            <ConditionGroup
+                                v-if="!showConditionJson"
+                                v-model="conditionTree"
                             />
-                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
-                            </p>
-                        </div>
+
+                            <!-- JSON editor — debug/power-user mode (read/write) -->
+                            <div v-else>
+                                <CodeEditor
+                                    v-model="conditionsJson"
+                                    mode="json"
+                                    :rows="16"
+                                    :placeholder="conditionsPlaceholder"
+                                />
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
+                                </p>
+                            </div>
+                        </Field>
                     </Card>
                 </Panel>
             </TabContent>

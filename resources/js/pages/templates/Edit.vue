@@ -119,6 +119,12 @@ watch(() => form.hasErrors, hasErrors => {
     if (first) activeTab.value = first;
 });
 
+// Rejections that reach this page outside `form.submit()` — a refused delete.
+// useForm's bag only carries what the form itself sent.
+const actionErrors = ref({});
+
+const allErrors = computed(() => ({ ...form.errors, ...actionErrors.value }));
+
 // ── Actions ───────────────────────────────────────────────────────────
 function save() {
     if (!props.saveUrl) {
@@ -162,7 +168,8 @@ function destroy() {
     }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
+        onError: (errors) => { actionErrors.value = errors || {}; showDelete.value = false; },
+        onSuccess: () => { actionErrors.value = {}; showDelete.value = false; },
     });
 }
 
@@ -199,14 +206,17 @@ function copyToClipboard(text) {
             {{ __('webhook-manager::messages.templates_edit_hint') }}
         </Alert>
 
-        <!-- ── Global error banner ────────────────────────────────── -->
+        <!-- ── Global error banner ─────────────────────────────────
+             `type="error"` is not a prop of Alert; it landed in $attrs and the
+             banner rendered in the neutral style. The prop is `variant`. -->
         <Alert
-            v-if="form.hasErrors && Object.keys(form.errors).length"
-            type="error"
+            v-if="Object.keys(allErrors).length"
+            variant="error"
             class="mb-6"
+            data-webhook-form-errors
         >
             <ul class="list-disc list-inside">
-                <li v-for="err in Object.values(form.errors)" :key="err">{{ err }}</li>
+                <li v-for="(err, key) in allErrors" :key="key">{{ err }}</li>
             </ul>
         </Alert>
 

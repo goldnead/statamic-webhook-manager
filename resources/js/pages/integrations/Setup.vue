@@ -11,6 +11,7 @@ import {
     Header,
     Button,
     Panel,
+    Alert,
     Field,
     Input,
     Textarea,
@@ -61,6 +62,21 @@ function submit() {
                 @click="submit"
             />
         </Header>
+
+        <!-- The preset's rules are built from `$instance->fields()`, so a rule
+             can name a key this page has no input for the moment a preset
+             declares one it does not render. Without this banner that rejection
+             was shown nowhere. -->
+        <Alert
+            v-if="form.hasErrors"
+            variant="error"
+            class="mt-4"
+            data-webhook-form-errors
+        >
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
         <Panel class="mt-4">
             <Card inset class="p-6 space-y-6">

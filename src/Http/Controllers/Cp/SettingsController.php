@@ -5,6 +5,7 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Statamic\Http\Controllers\CP\CpController;
@@ -42,8 +43,14 @@ class SettingsController extends CpController
     {
         abort_unless($request->user()?->can('manage webhook settings'), 403);
 
-        $target = (string) $request->input('driver');
-        abort_unless(in_array($target, StorageMigrator::DRIVERS, true), 422);
+        // A bare `abort(422)` carries no error bag, so Inertia had nothing to
+        // hand the page and the refusal arrived as a blank stop. Validating
+        // instead produces `errors.driver`, which the settings page renders.
+        $validated = $request->validate([
+            'driver' => ['required', Rule::in(StorageMigrator::DRIVERS)],
+        ]);
+
+        $target = (string) $validated['driver'];
 
         $current = $driver->current();
         if ($target === $current) {

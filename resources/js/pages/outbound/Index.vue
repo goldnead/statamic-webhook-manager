@@ -71,8 +71,10 @@ function toggle(hook) {
     router.patch(hook.toggle_url, {}, {
         preserveScroll: true,
         preserveState: true,
+        onError: (errors) => { actionErrors.value = errors || {}; },
         onSuccess: () => {
             hook.enabled = !hook.enabled;
+            actionErrors.value = {};
             reloadPage();
         },
     });
@@ -105,6 +107,10 @@ async function runTest(hook) {
         testingId.value = null;
     }
 }
+
+// Rejections from the actions on this listing. Nothing here is a field, so
+// whatever comes back is shown in the banner above the rows.
+const actionErrors = ref({});
 </script>
 
 <template>
@@ -166,6 +172,23 @@ async function runTest(hook) {
             class="mb-4"
             data-testid="outbound-test-result"
         />
+
+        <!-- What the server said when an action from this listing was refused.
+             There is no field here to hang a message on, so everything that comes
+             back is shown above the listing. Structural today: the endpoints these
+             buttons reach can only refuse with a 403, which Inertia does not route
+             through `onError`. It is the net for the day one of them refuses with a
+             reason, the way LeadHub 1.7.0 refuses a delete that still has children. -->
+        <Alert
+            v-if="Object.keys(actionErrors).length"
+            variant="error"
+            class="mb-4"
+            data-webhook-form-errors
+        >
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in actionErrors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
         <Listing
             :url="listingUrl"

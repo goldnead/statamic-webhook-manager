@@ -114,6 +114,13 @@ watch(() => form.hasErrors, hasErrors => {
     if (first) activeTab.value = first;
 });
 
+// Rejections that reach this page outside `form.submit()` — a refused delete.
+// useForm's bag only carries what the form itself sent, so the banner below
+// would stay empty for one.
+const actionErrors = ref({});
+
+const allErrors = computed(() => ({ ...form.errors, ...actionErrors.value }));
+
 // Dynamic placeholder for the auth_config JSON editor
 const authPlaceholder = computed(() => {
     switch (form.auth_type) {
@@ -199,7 +206,8 @@ function destroy() {
     }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
+        onError: (errors) => { actionErrors.value = errors || {}; showDelete.value = false; },
+        onSuccess: () => { actionErrors.value = {}; showDelete.value = false; },
     });
 }
 
@@ -256,10 +264,18 @@ async function runTest() {
             </template>
         </Header>
 
-        <!-- Global validation error banner -->
-        <Alert v-if="form.hasErrors" variant="danger" class="mb-4">
+        <!-- Global validation error banner.
+             `variant="danger"` was wrong: Alert knows default/warning/error/
+             success only, so the banner appeared in the neutral style — an
+             error that did not look like one. -->
+        <Alert
+            v-if="Object.keys(allErrors).length"
+            variant="error"
+            class="mb-4"
+            data-webhook-form-errors
+        >
             <ul class="list-disc list-inside space-y-0.5">
-                <li v-for="(err, key) in form.errors" :key="key">{{ err }}</li>
+                <li v-for="(err, key) in allErrors" :key="key">{{ err }}</li>
             </ul>
         </Alert>
 

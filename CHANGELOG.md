@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.7.2 — 2026-07-28
+
+### Fixed — what the server rejected is now visible on every CP form
+
+This is the webhook-manager half of the cross-addon sweep marketing 1.5.3 started: for every mask in this control panel, does a rejected input actually reach the screen? Unlike marketing, most of it already did — the Edit masks bind `Field`'s `error` prop for the keys they render, and `tabsWithErrors` even moves the user to the tab the error is on. What was missing sat in the gaps between those masks.
+
+**Errors the server sends that no page could show.** `SaveOutboundWebhookRequest` validates 25 keys; `outbound/Edit.vue` binds 17 of them to a field and had no collected output, so `headers`, `conditions`, `trigger_config`, `retry_strategy`, `retry_strategy.strategy`, `retry_strategy.max_attempts`, `idempotency_enabled` and `success_matcher` were rejected into nothing at all — save pressed, nothing written, nothing said. `rules/Edit.vue` had the same hole for exactly one key, `conditions`, and that one is worth naming: the Conditions tab does show an error, but `conditionsError` is the *client-side* JSON parse failure. The server's verdict on the same field went nowhere. It is now bound through a `Field` wrapping both editing modes, so it appears whether the builder or the JSON editor is open.
+
+**Two banners that were not styled as errors.** `Alert` knows `default`, `warning`, `error` and `success`. `inbound/Edit.vue` passed `variant="danger"` and `templates/Edit.vue` passed `type="error"` — the first is not a value it honours, the second is not a prop at all, so both landed in `$attrs` and both banners rendered in the neutral style. The message was there; it did not look like an error. Same family as the `confirm-text` defect fixed in 1.7.1, and found the same way: by checking the component's declared props instead of assuming.
+
+**A refusal that arrived as a blank stop.** `SettingsController::switchStorage()` refused an unknown driver with `abort(422)`. A bare status carries no error bag, so Inertia had nothing to hand the page, and the settings page — which has no fields, only this one submission — showed nothing whatsoever. It now validates `driver` against the known list, which produces `errors.driver`, and the page renders it.
+
+**Rejections that reach a page outside its own form.** `useForm`'s bag only carries what `form.submit()` sent. A refused delete comes back through `router.delete`'s `onError` with a bag of its own, and all four Edit pages discarded it: the dialog closed, the record stayed, nothing said why. Each page now keeps that bag and shows it in the same banner.
+
+**Two submissions with nowhere to put an error branch.** `templates/Index.vue` deleted and `deliveries/Index.vue` replayed straight from a `@click` in the markup. An inline handler cannot grow an `onError` without becoming a function first, so those two never had one. Both are functions now.
+
+**Where this is a net rather than a repair, said plainly.** The listing pages (`inbound`, `rules`, `outbound`, `templates`, `deliveries`) get the same collected output and the same error branch on toggle, delete and replay — but the endpoints those buttons reach can currently only refuse with a 403, which Inertia does not route through `onError`. Nothing there can fill today. It is deliberate: LeadHub 1.7.0 already refuses a delete that still has children, with a reason, and the day one of these does the same the message will have somewhere to go instead of costing another release.
+
+**The two test layers, and what only the second one could see.**
+
+`tests/Feature/CpValidationVisibilityTest.php` is the structural guard, the same shape as marketing's, extended for the two submission styles this addon uses (`router.*` and `useForm().submit()`) and for the inline-handler case. It reads sources, so it also had to learn to strip comments first: `deliveries/Show.vue` explains in prose why it does *not* use `router.post()`, and a naive scan counted the explanation as the thing. Five of its six tests fail against 1.7.1.
+
+`tests/js/cp-validation-visibility.test.js` mounts each of the six form pages once per validated key and requires the message to be somewhere in the rendered DOM — at its own field or in the collected banner. This is the layer that catches what a source scan cannot: in marketing the same sweep declared `handle` as handled at the field while the field only existed when creating, so editing rendered the message nowhere. Here it caught something the structural test is blind to by construction — the two banners with the wrong variant. A scan sees `<Alert>` and a message inside it and calls the page covered; only a mount can be handed a rejection and asked what the component was actually given. 30 of its 70 assertions fail against 1.7.1.
+
+`tests/js/setup.js` grew what those tests need: `useForm()` now seeds its bag from `globalThis.__TEST_FORM_ERRORS__` and derives `hasErrors` from it. The stub previously omitted `hasErrors` entirely, which means every `v-if="form.hasErrors"` banner in this addon was dead in a test process — they could not have failed no matter how broken they were. `router.patch` and `router.delete` were missing too.
+
 ## 1.7.1 — 2026-07-28
 
 ### Fixed — two delete dialogs that could not open

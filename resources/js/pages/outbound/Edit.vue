@@ -155,6 +155,16 @@ watch(() => form.hasErrors, hasErrors => {
     if (firstTabWithError) activeTab.value = firstTabWithError;
 });
 
+// Rejections that reach this page outside `form.submit()` — a refused delete.
+// useForm's bag only carries what the form itself sent.
+const actionErrors = ref({});
+
+// Everything the server said, from either source. SaveOutboundWebhookRequest
+// validates eight keys this page has no input for (`headers`, `conditions`,
+// `retry_strategy.*`, `success_matcher`, `idempotency_enabled`, …); without
+// this banner their rejection had nowhere to go and was shown nowhere.
+const allErrors = computed(() => ({ ...form.errors, ...actionErrors.value }));
+
 function save() {
     // Defensive: never call form.post(undefined). Inertia's visit() crashes
     // with "Cannot read properties of undefined (reading 'url')" inside the
@@ -196,7 +206,8 @@ function destroy() {
     }
     router.delete(props.deleteUrl, {
         preserveScroll: true,
-        onSuccess: () => { showDelete.value = false; },
+        onError: (errors) => { actionErrors.value = errors || {}; showDelete.value = false; },
+        onSuccess: () => { actionErrors.value = {}; showDelete.value = false; },
     });
 }
 
@@ -260,6 +271,18 @@ const authInstructions = computed(() => {
                 :action="() => (showDelete = true)"
             />
         </Header>
+
+        <!-- Everything the server rejected, above the mask, before the tabs. -->
+        <Alert
+            v-if="Object.keys(allErrors).length"
+            variant="error"
+            class="mb-4"
+            data-webhook-form-errors
+        >
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(err, key) in allErrors" :key="key">{{ err }}</li>
+            </ul>
+        </Alert>
 
         <Alert
             v-if="testResult"

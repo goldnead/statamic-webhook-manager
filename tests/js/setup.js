@@ -72,6 +72,17 @@ const componentBag = () => new Proxy({}, {
     get: (_target, prop) => (typeof prop === 'string' ? stubComponent(prop) : undefined),
 });
 
+/**
+ * Errors a test wants the next `useForm()` to come back with, as the server
+ * would have sent them. Set it before mounting, clear it after:
+ *
+ *     globalThis.__TEST_FORM_ERRORS__ = { conditions: 'The conditions …' };
+ *
+ * There is no other way in: `useForm` is created inside `<script setup>`, and
+ * a page's error state is not a prop.
+ */
+globalThis.__TEST_FORM_ERRORS__ = {};
+
 /** `inertia` mixes components (Head, Link) with plain helpers (router). */
 const inertiaHelpers = {
     router: {
@@ -79,8 +90,27 @@ const inertiaHelpers = {
         visit: () => {},
         get: () => {},
         post: () => {},
+        patch: () => {},
+        delete: () => {},
     },
-    useForm: (data) => reactive({ ...data, processing: false, errors: {} }),
+    useForm: (data) => {
+        const errors = { ...(globalThis.__TEST_FORM_ERRORS__ ?? {}) };
+
+        return reactive({
+            ...data,
+            processing: false,
+            errors,
+            // Inertia derives this from the bag; the stub used to omit it, so
+            // every `v-if="form.hasErrors"` banner was dead in a test process
+            // and could not have failed no matter how broken it was.
+            get hasErrors() {
+                return Object.keys(this.errors).length > 0;
+            },
+            submit: () => {},
+            post: () => {},
+            patch: () => {},
+        });
+    },
     usePoll: () => {},
     toggleArchitecturalBackground: () => {},
     useArchitecturalBackground: () => ({}),

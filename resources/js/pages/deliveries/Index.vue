@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { router } from '@statamic/cms/inertia';
 import {
     Header,
     Badge,
+    Alert,
     DropdownItem,
     EmptyStateMenu,
     EmptyStateItem,
@@ -80,6 +81,21 @@ const errorTypeLabel = (type) => ({
     configuration: 'Config',
     internal:      'Internal',
 }[type] ?? type);
+
+// Rejections from the actions on this listing. Nothing here is a field, so
+// whatever comes back is shown in the banner above the rows.
+const actionErrors = ref({});
+
+// Was an inline `router.post(row.replay_url, …)` in the template with no error
+// branch: a refused replay looked exactly like a successful one.
+function replay(row) {
+    if (!row.replay_url) return;
+    router.post(row.replay_url, {}, {
+        preserveScroll: true,
+        onError: (errors) => { actionErrors.value = errors || {}; },
+        onSuccess: () => { actionErrors.value = {}; },
+    });
+}
 </script>
 
 <template>
@@ -107,6 +123,23 @@ const errorTypeLabel = (type) => ({
         <!-- ── Populated state ─────────────────────────────────────────── -->
         <div v-else class="max-w-page mx-auto">
             <Header :title="__('Deliveries')" icon="arrow-up-right" />
+
+            <!-- What the server said when an action from this listing was refused.
+                 There is no field here to hang a message on, so everything that comes
+                 back is shown above the listing. Structural today: the endpoints these
+                 buttons reach can only refuse with a 403, which Inertia does not route
+                 through `onError`. It is the net for the day one of them refuses with a
+                 reason, the way LeadHub 1.7.0 refuses a delete that still has children. -->
+            <Alert
+                v-if="Object.keys(actionErrors).length"
+                variant="error"
+                class="mb-4"
+                data-webhook-form-errors
+            >
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li v-for="(err, key) in actionErrors" :key="key">{{ err }}</li>
+                </ul>
+            </Alert>
 
             <Listing
                 :url="listingUrl"
@@ -188,7 +221,7 @@ const errorTypeLabel = (type) => ({
                         v-if="row.can_replay"
                         icon="sync"
                         :text="__('Replay')"
-                        @click="row.replay_url && router.post(row.replay_url, {}, { preserveScroll: true })"
+                        @click="replay(row)"
                     />
                 </template>
             </Listing>
