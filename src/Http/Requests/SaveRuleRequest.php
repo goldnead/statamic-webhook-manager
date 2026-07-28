@@ -20,11 +20,17 @@ class SaveRuleRequest extends FormRequest
     {
         $ruleId = $this->route('rule')?->id ?? null;
 
+        // Per-brand, matching `webhook_rules_brand_id_handle_unique`. See
+        // SaveOutboundWebhookRequest for why the brand cannot be left implicit.
+        $brandId = app('brand-context')->currentId();
+
         return [
             'name' => ['required', 'string', 'max:120'],
             'handle' => [
                 'required', 'string', 'max:120', 'regex:/^[a-z0-9_-]+$/',
-                Rule::unique('webhook_rules', 'handle')->ignore($ruleId),
+                Rule::unique('webhook_rules', 'handle')
+                    ->where('brand_id', $brandId)
+                    ->ignore($ruleId),
             ],
             'enabled' => ['boolean'],
             'trigger_type' => ['required', 'string', 'max:80'],

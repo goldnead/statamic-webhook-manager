@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The same suite, against a real MySQL server.
+
+        vendor/bin/phpunit -c phpunit.mysql.xml
+
+    Needed because the default SQLite run cannot see the class of defect that
+    took statamic-notifications v1.0.3 down on production: InnoDB's 3072-byte
+    index limit, utf8mb4's four bytes per character, and fixed column widths do
+    not exist in SQLite. Point DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/
+    DB_PASSWORD at a throwaway database; the suite migrates it from scratch on
+    every run.
+
+    IndexKeyLengthTest measures the same arithmetic without a server, so CI does
+    not depend on this file. It exists for the run that proves the compiled DDL
+    and the real engine agree.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="DB_CONNECTION" value="testing"/>
+        <env name="DB_DRIVER" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_DATABASE" value="webhook_manager_test"/>
+        <env name="DB_USERNAME" value="root"/>
+        <env name="DB_PASSWORD" value=""/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+    </php>
+</phpunit>

@@ -17,6 +17,13 @@ class SaveOutboundWebhookRequest extends FormRequest
     {
         $hookId = $this->route('webhook')?->id ?? null;
 
+        // The database makes a handle unique per brand, not globally. These
+        // rules run on the raw query builder, which no Eloquent scope reaches,
+        // so the brand has to be stated here or the check silently applies a
+        // stricter scope than the constraint it is supposed to mirror — and
+        // answers brand B with the existence of brand A's rows.
+        $brandId = app('brand-context')->currentId();
+
         return [
             'name' => ['required', 'string', 'max:120'],
             'handle' => [
@@ -24,7 +31,9 @@ class SaveOutboundWebhookRequest extends FormRequest
                 'string',
                 'max:120',
                 'regex:/^[a-z0-9_-]+$/',
-                Rule::unique('webhook_outbounds', 'handle')->ignore($hookId),
+                Rule::unique('webhook_outbounds', 'handle')
+                    ->where('brand_id', $brandId)
+                    ->ignore($hookId),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'enabled' => ['boolean'],
@@ -50,7 +59,10 @@ class SaveOutboundWebhookRequest extends FormRequest
             // over the inline payload_template (see HttpRequestFactory::buildBody).
             'payload_template_handle' => [
                 'nullable', 'string', 'max:120',
-                Rule::exists('webhook_templates', 'handle'),
+                // Scoped for the opposite reason: unscoped, a hook could point
+                // at another brand's template and pass validation, then find
+                // nothing at render time because the model is brand-scoped.
+                Rule::exists('webhook_templates', 'handle')->where('brand_id', $brandId),
             ],
             'conditions' => ['nullable', 'array'],
             'retry_strategy' => ['nullable', 'array'],

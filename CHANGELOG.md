@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.6.1 — 2026-07-28
+
+### Added — the suite can finally see MySQL's index rules
+
+The schema in this package was never measured against the engine it runs on. It turns out to be sound, and that is the finding — but it was sound by luck, not by check, and the check is what was missing.
+
+**Why a green suite proves nothing here.** The suite runs on in-memory SQLite. SQLite has no InnoDB key-length limit, no per-character byte cost, and no fixed column widths — it accepts `varchar(255)` and ignores the 255. Every mechanism that rejects an oversized index is a MySQL mechanism, so a migration that MySQL refuses outright passes the suite without a murmur. `statamic-notifications` v1.0.3 shipped exactly that way: a 3212-byte unique that had run hundreds of times locally and died on the production hub with *SQLSTATE 1071*, leaving two tables that never existed there at all. Demonstrated rather than asserted: with a deliberately unbuildable 4080-byte unique added to `webhook_outbounds`, the other **161 tests stayed green** and only the new test failed.
+
+`tests/Unit/IndexKeyLengthTest.php` closes the gap without needing a server. It compiles this package's own migration files through Laravel's MySQL grammar in pretend mode and measures the DDL MySQL would have received. Because this schema is built across eleven migrations — columns arriving by `alter table … add`, nullability changed by `modify`, indexes dropped and rebuilt — the test replays all four statement shapes and measures the schema at the *end* of the run, not the one the create-migrations described. `brand_id`, the whole tenant boundary, arrives that way.
+
+It asserts three things: no index over InnoDB's 3072 bytes; no index over **half** of it, because an index that is under the limit by accident breaks on the next column added to it; and no unique covering a column that may be NULL.
+
+**What the measurement says.** The widest index is **1028 bytes** — 33% of the limit — shared by the four `(brand_id, handle)` uniques and three `(varchar, timestamp)` lookup indexes. Nothing is close to the wall, and every unique covers NOT NULL columns only: `uuid` is `char(36)` and not null, `handle` and `brand_id` are not null since 1.5.0. So the NULL hole that made notifications' contact preferences unconstrained does not exist here.
+
+`phpunit.mysql.xml` runs the identical suite against a real MySQL server (`vendor/bin/phpunit -c phpunit.mysql.xml`, `DB_DRIVER=mysql`), for the run that proves the compiled DDL and the engine agree.
+
+### Fixed — the handle uniqueness check was still global, three releases after the schema stopped being
+
+Found by asking, for every unique in the package, whether it enforces what its name claims — and hitting the answer from the unexpected side. `webhook_*_brand_id_handle_unique` has scoped handles per brand since 1.5.0. The four CP form requests still asked `Rule::unique('webhook_outbounds', 'handle')`, which runs on the raw query builder that no Eloquent scope ever reaches, and is therefore global.
+
+Two consequences, both silent. A brand could not use a handle another brand had taken, although the database would have allowed it and the whole point of 1.5.0 was that it should. And the refusal named the reason: *"The handle has already been taken"* is a statement about rows the asking tenant is not permitted to see.
+
+`Rule::exists('webhook_templates', 'handle')` had the mirror-image problem: unscoped, a webhook could reference another brand's template and pass validation, then resolve to nothing at render time because the model *is* brand-scoped — a reference that validates and never works.
+
+All five rules now carry `->where('brand_id', …)`. Uniqueness inside a brand is unchanged, which is asserted rather than assumed: the same handle is still refused twice within one brand.
+
+### Notes
+
+- No new dependency. The measurement uses Laravel's own schema grammar.
+- Suite: **165 passed (720 assertions)**, baseline 157. Vitest unchanged at **8 passed**.
+
 ## 1.6.0 — 2026-07-28
 
 ### Added — a test level for the Control Panel's Vue code (Vitest)

@@ -20,11 +20,17 @@ class SaveInboundEndpointRequest extends FormRequest
     {
         $endpointId = $this->route('endpoint')?->id ?? null;
 
+        // Per-brand, matching `webhook_inbounds_brand_id_handle_unique`. See
+        // SaveOutboundWebhookRequest for why the brand cannot be left implicit.
+        $brandId = app('brand-context')->currentId();
+
         return [
             'name' => ['required', 'string', 'max:120'],
             'handle' => [
                 'required', 'string', 'max:120', 'regex:/^[a-z0-9_-]+$/',
-                Rule::unique('webhook_inbounds', 'handle')->ignore($endpointId),
+                Rule::unique('webhook_inbounds', 'handle')
+                    ->where('brand_id', $brandId)
+                    ->ignore($endpointId),
             ],
             'enabled' => ['boolean'],
             'path' => ['required', 'string', 'max:255'],
