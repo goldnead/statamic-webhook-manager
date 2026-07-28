@@ -397,12 +397,13 @@ function copyToClipboard(text) {
 
     <!-- ── Delete confirmation ────────────────────────────────────── -->
     <ConfirmationModal
-        v-if="showDelete"
+        v-if="canDelete && deleteUrl"
+        :open="showDelete"
         :title="__('Delete Template')"
         :body-text="__('Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.')"
-        :confirm-text="__('Delete')"
-        danger
+        :button-text="__('Delete')"
+        :danger="true"
         @confirm="destroy"
-        @cancel="showDelete = false"
+        @update:open="showDelete = $event"
     />
 </template>

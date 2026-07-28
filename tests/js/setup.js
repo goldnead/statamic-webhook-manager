@@ -103,9 +103,15 @@ globalThis.__STATAMIC__ = {
 
 // The CP exposes the translator as a global template helper. Templates call
 // `__('Delivery')`; returning the key keeps assertions readable.
-config.global.mocks = {
-    __: (key) => (Array.isArray(key) ? key.filter(Boolean).join(' ') : String(key ?? '')),
-};
+const translate = (key) => (Array.isArray(key) ? key.filter(Boolean).join(' ') : String(key ?? ''));
+
+config.global.mocks = { __: translate };
+
+// It is a real global too, not only a template helper: a `<script setup>`
+// block calls `__('Entry')` directly when it builds an option list or a page
+// title, and Vue Test Utils' `mocks` only reach templates. Without this the
+// component throws at setup, before it can render anything.
+globalThis.__ = translate;
 
 // Statamic's remaining Vue 2-era global components are not registered here.
 config.global.stubs = {

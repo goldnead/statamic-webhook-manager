@@ -504,13 +504,14 @@ async function runTest() {
 
         <!-- Delete confirmation -->
         <ConfirmationModal
-            v-if="showDelete"
+            v-if="!isNew && deleteUrl"
+            :open="showDelete"
             :title="__('Delete endpoint?')"
             :body-text="__('This action cannot be undone.')"
-            :confirm-text="__('Delete')"
-            confirm-variant="danger"
+            :button-text="__('Delete')"
+            :danger="true"
             @confirm="destroy"
-            @cancel="showDelete = false"
+            @update:open="showDelete = $event"
         />
     </div>
 </template>

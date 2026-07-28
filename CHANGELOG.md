@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.7.1 — 2026-07-28
+
+### Fixed — two delete dialogs that could not open
+
+`Inbound/Edit.vue` and `Templates/Edit.vue` mounted their delete confirmation as
+
+```
+<ConfirmationModal v-if="showDelete" :confirm-text="__('Delete')" confirm-variant="danger" @cancel="showDelete = false" />
+```
+
+None of that is `ConfirmationModal`'s API. `open` is the only prop that opens it; it defaults to `false`, so a modal rendered behind `v-if` exists as a component whose inner dialog stays shut, portals nothing into the DOM and logs nothing. `confirmText` and `confirmVariant` are not props at all — the real names are `buttonText` and the boolean `danger` — so both landed in `$attrs` and were dropped, and the confirm button would have read "Confirm" if it had ever been visible. `@cancel` was the one part that was genuine: the component does emit it. It just cannot close what never opened.
+
+The effect on an install: pressing **Delete** on an inbound endpoint or a template did nothing and said nothing. The two pages that were written the other way, `Outbound/Edit.vue` and `Rules/Edit.vue`, use `:open` / `:button-text` / `@update:open` and always worked. This was pre-existing and was found while renaming the route parameters in 1.7.0; the same silent shape as that defect, one layer up.
+
+Both pages now match the working two exactly: the `v-if` becomes the same guard the Delete button already carries (`!isNew && deleteUrl`, `canDelete && deleteUrl`), `:open="showDelete"` drives the dialog, `:button-text` labels the button and `@update:open` closes it.
+
+**The test that had to fail first.** `tests/js/delete-confirmation.test.js` runs the identical three assertions against all four Edit pages: the confirmation is present and closed before anything is pressed, it opens when `showDelete` flips, and its confirm button is labelled through the prop the component actually reads. Outbound and Rules are the control — the expectations are the same for all four, so what fails is a page drifting from the working shape, not a page-specific expectation. Against the code before this release, 6 of the 12 fail and the 6 that pass are the two correct pages.
+
+`ConfirmationModal` is one of the stubbed CP components in `tests/js/setup.js`, so the test cannot assert that a dialog is visible; it asserts what the page hands the component, which is exactly where the defect is. Under the broken version the stub is absent from the DOM while `showDelete` is false, and appears without `open` once it is true.
+
+**A gap in the JS bed, closed on the way.** `tests/js/setup.js` mocked `__()` only as a template helper. A `<script setup>` block that calls `__('Entry')` while building an option list threw at setup, before rendering — so three of the five Edit pages could not be mounted in a test at all, which is part of why this was never caught. It is now installed as a real global, the way the marketing and automations beds already do it.
+
+**The sweep this came from.** `<ConfirmationModal>` is used 17 times across `statamic-webhook-manager`, `statamic-marketing`, `statamic-leadhub` and the hub's own pages. These two were the only broken ones; the other 15 all pass `:open` and `button-text` correctly. No sibling release was needed.
+
 ## 1.7.0 — 2026-07-28
 
 ### Changed — the rule: an addon may only bind route parameter names that belong to it
