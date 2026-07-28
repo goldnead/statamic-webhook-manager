@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.6.0 — 2026-07-28
+
+### Added — a test level for the Control Panel's Vue code (Vitest)
+
+The package had two test levels and a gap between them. PHPUnit reaches the
+route, the FormRequest, the controller and the props it hands over. The hub QA
+harness clicks through the finished screen. Neither could execute a line of
+the component logic in between — and that is exactly where 1.5.0's two most
+embarrassing defects lived:
+
+- **`contentTypeMode()` in `deliveries/Show.vue`** called `.toLowerCase()` on
+  `headers['content-type']`, which is PSR-7-shaped: an **array**. The TypeError
+  fires during render, so it did not blank one badge — it took the whole
+  Response panel with it: status code, duration, headers, body. And only on
+  **successful** deliveries, because a failed one carries no response headers
+  at all. The panel was missing precisely where one goes looking for it. A
+  controller test cannot see this; the props were correct the entire time.
+- **`can('test outbound webhooks') ?? can('manage outbound webhooks')`** never
+  reached its fallback. `??` fires on `null`, `can()` returns a boolean, so the
+  right-hand side was dead code from the day it was written. `??` where `||`
+  was meant survives review because the fallback *looks* present.
+
+Both were fixed in 1.5.0 and were until now held only by structural guards —
+a regex over the source that catches the shape of the mistake, not the logic.
+`vitest` + `@vue/test-utils` + `jsdom` are added as dev dependencies, the
+config lives in the existing `vite.config.js` (no second build chain), and
+`npm test` runs the suite. Under `VITEST` the Statamic Vite plugin is swapped
+for the plain Vue plugin, because the former rewrites `vue` to `window.Vue` —
+right for the CP bundle, fatal in a test process. `tests/js/setup.js` installs
+the `__STATAMIC__` global the `@statamic/cms/*` shims destructure at import
+time, so a test fails on its subject rather than on an import.
+
+The tests mount the real `Show.vue` and assert against the rendered Response
+panel, which makes the assertion the thing that actually broke: not "the
+helper returns a string" but "the panel is still there". Coverage is
+deliberately narrow — component logic, not operating flows. Flows stay with
+the QA harness.
+
+The structural guards are **kept**, not replaced. They catch a newly added
+component that reintroduces a known-bad pattern, which a component test — able
+to test only components that exist — cannot. `OutboundController::canTest()`
+additionally gets a unit test that drives the decision with a user answering a
+hard `false`, since a test passing `null` would pass against the broken
+version too.
+
+Both defects were re-verified by removing the fix and watching the new tests
+go red: the header tests fail with
+`TypeError: ((intermediate value) ?? "").toLowerCase is not a function`, the
+permission test with `Failed asserting that false is true`.
+
+### Notes
+
+- The rest of the addon's Vue sources were reviewed for the same two patterns,
+  each candidate traced back to the controller and the model casts that feed
+  it. **No further instance.** Every other string-method call is either guarded
+  (`(method || '').toUpperCase()`, `Array.isArray(v) ? … : …`) or reads a
+  plain `string` column with no `array` cast. Every other `??` sits on a value
+  that is `null`, not `''`, when the fallback is wanted — and a good number of
+  them (`enabled ?? true`, `stop_on_failure ?? false`, `attempts ?? '—'`)
+  are `??` on purpose: a stored `false` or a `0` attempt count must survive,
+  and `||` would swallow it. Same operator, opposite intent, which is why this
+  needs deciding per site rather than by search-and-replace.
+- This addon is the reference implementation; the other addons in the family
+  can copy the `test` block, `tests/js/setup.js` and the `test` script as they
+  stand.
+- Suite: **157 PHPUnit tests (453 assertions)** and **8 Vitest tests**.
+
 ## 1.5.0 — 2026-07-27
 
 ### Fixed — the HMAC secret never reached the database (security)

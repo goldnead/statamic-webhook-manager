@@ -256,6 +256,50 @@ inbound dispatch & signature verification, rule execution, template CRUD and
 permission masking; unit tests cover the renderer, mapper, condition/rule
 engines, retry planner and HMAC verifier.
 
+### Component tests (Vitest)
+
+```bash
+npm install
+npm test               # or: npx vitest run   /   npx vitest  (watch)
+```
+
+The Control Panel is a Vue SPA, and until 1.6.0 nothing in this package could
+execute a line of it. PHPUnit reaches the controller and the props it hands
+over; the QA harness clicks through the finished screen. Between the two sat
+the component logic — and that is where a Content-Type header that arrives as
+a PSR-7 **array** instead of a string took down an entire panel without
+anything reporting an error.
+
+Vitest closes that gap. It is deliberately narrow:
+
+- **What belongs here:** logic inside a component — header parsing, mode
+  detection, computed fallbacks, the shape of what a component is handed.
+- **What does not:** navigation, saving, permissions end to end, anything
+  crossing into PHP. Those are feature tests or the QA harness.
+
+Setup notes, in case something fails at an import rather than at an assertion:
+
+- Vitest reads the same `vite.config.js`. Under `VITEST` the Statamic Vite
+  plugin is swapped for the plain Vue plugin, because the former rewrites
+  `vue` to `window.Vue` — correct for the CP bundle, fatal in a test process.
+- `@statamic/cms/ui` and `@statamic/cms/inertia` are re-export shims that
+  destructure a `__STATAMIC__` global the CP installs at runtime.
+  `tests/js/setup.js` installs it first and answers every requested name with
+  a stub component that mirrors its attributes into the DOM
+  (`<div data-stub="CodeEditor" data-attr-mode="json">`), so a test can assert
+  what a component was handed without pinning down Statamic's own markup.
+- Tests live in `tests/js/**/*.test.js`. PHPUnit's test suites are
+  `tests/Unit` and `tests/Feature`, so the two never collide.
+
+Structural guards in PHPUnit (e.g. `DeliveryShowHandlesArrayHeadersTest`) stay
+alongside these: they catch a **newly added** component that reintroduces a
+known-bad pattern, which a component test — testing only components that exist
+— cannot. The Vitest test catches the logic being wrong.
+
+This addon is the reference implementation for the other addons in this
+family. When rolling the layer out, copy `vite.config.js`'s `test` block,
+`tests/js/setup.js` and the `test` script verbatim, then port the tests.
+
 ### Local playground
 
 Spin up a full Statamic 6 site with the addon wired in as a path repository
