@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.6.2 — 2026-07-28
+
+### Added — the four application-wide route bindings this addon owns are now written down and checked
+
+No defect in this addon, and no route changed. What is added is a record of an exposure this package creates for everything installed next to it, and a check against the reverse.
+
+`bootRouteBindings()` registers `Route::bind()` for `webhook`, `endpoint`, `rule` and `template`, so the CP routes resolve through the repository layer under both storage drivers. That was and remains the right call for this addon. What was never written down is that those bindings are registered on the router, not on this package: they apply to every route with one of those four parameter names in every addon installed alongside, and the losing route does not fail loudly — it resolves an id against a repository here that has never heard of it and returns 404.
+
+`goldnead/statamic-leadhub` 1.8.0 shipped `/scoring/{rule}`. On the production hub, which has both addons, its scoring rule edit and delete were resolved against `RuleRepository` here and 404'd. A button that did nothing and said nothing, through a release. LeadHub renamed its parameter in 1.8.1; nothing in this package had to change, and nothing in this package had told it.
+
+**Why a green suite on either side would not have found it.** Two things have to hold before the failure is observable in an addon's own bed: the other addon has to be installed there, which it never is, and the bed has to mount the CP routes with `SubstituteBindings`, the middleware that applies a binding at all. LeadHub's bed had neither. `tests/CpTestCase.php` here has always had the middleware — it has to, the binders are this addon's own — but nothing named it. Removing it fails 16 of the 168 tests, which sounds like enough of a tripwire until one reads what those sixteen say: they are about secrets, replay and audit trails, and each would report a broken *feature*. None of them would have said "the CP bed no longer applies route bindings", which is the sentence somebody needed. The new `tests/Feature/RouteParameterCollisionTest.php` says exactly that, and it is the case that fails first.
+
+The rest of that file reads this addon's parameter names out of `routes/cp.php` and `routes/inbound.php` — string literals only, so the `/cp/webhook-manager/{slug}/{id}/{action}` example in the comments is not mistaken for three routes — and checks them two ways. The first is exact, against the names *other* packages bind application-wide: `automation` from statamic-automations and the ten CMS entity names from statamic/cms. The second records the generic ones: the four bound here plus `preset` and `handle`, each with its reason, so that a fifth generic name has to be a decision somebody made rather than a default nobody looked at.
+
+**What was deliberately not done.** The four bound names were not renamed to something addon-specific. The URLs would be byte-identical either way, no sibling uses them any more, and the binding names would still have to be claimed under *some* name. The exposure that remains is real and is now stated: any future addon that reaches for `{rule}` or `{template}` loses here, silently. The counterpart of this test file, in that addon, is what catches it — which is why the same file now exists in the siblings.
+
 ## 1.6.1 — 2026-07-28
 
 ### Added — the suite can finally see MySQL's index rules
