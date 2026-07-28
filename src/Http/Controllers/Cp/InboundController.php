@@ -117,7 +117,7 @@ class InboundController extends CpController
 
     public function edit(
         Request $request,
-        InboundEndpoint $endpoint,
+        InboundEndpoint $webhookInbound,
         AuthSchemeRegistry $auth,
         InboundActionHandlerRegistry $actions,
     ) {
@@ -126,15 +126,15 @@ class InboundController extends CpController
         $user = $request->user();
 
         return Inertia::render('webhook-manager::Inbound/Edit', [
-            'endpoint'      => $this->editPayload($endpoint),
+            'endpoint'      => $this->editPayload($webhookInbound),
             'authOptions'   => $auth->options(),
             'actionOptions' => $actions->options(),
             'isNew'         => false,
             'canDelete'     => (bool) $user?->can('manage inbound endpoints'),
-            'saveUrl'       => cp_route('webhook-manager.inbound.update', $endpoint),
-            'deleteUrl'     => cp_route('webhook-manager.inbound.destroy', $endpoint),
-            'toggleUrl'     => cp_route('webhook-manager.inbound.toggle', $endpoint),
-            'testUrl'       => cp_route('webhook-manager.actions.test-inbound', $endpoint),
+            'saveUrl'       => cp_route('webhook-manager.inbound.update', $webhookInbound),
+            'deleteUrl'     => cp_route('webhook-manager.inbound.destroy', $webhookInbound),
+            'toggleUrl'     => cp_route('webhook-manager.inbound.toggle', $webhookInbound),
+            'testUrl'       => cp_route('webhook-manager.actions.test-inbound', $webhookInbound),
             'indexUrl'      => cp_route('webhook-manager.inbound.index'),
             'routePrefix'   => trim((string) config('webhook-manager.inbound.route_prefix', 'webhooks/inbound'), '/'),
         ]);
@@ -142,7 +142,7 @@ class InboundController extends CpController
 
     public function update(
         SaveInboundEndpointRequest $request,
-        InboundEndpoint $endpoint,
+        InboundEndpoint $webhookInbound,
         UpdateInboundEndpointAction $update,
     ) {
         $this->authorizeOr403($request, 'manage inbound endpoints');
@@ -152,19 +152,19 @@ class InboundController extends CpController
         $attributes = $this->normalizeJsonConfig($attributes, ['action_config_json'   => 'action_config']);
         $attributes = $this->normalizeJsonConfig($attributes, ['response_config_json' => 'response_config']);
 
-        ($update)($endpoint, $attributes);
+        ($update)($webhookInbound, $attributes);
 
         return back()->with('success', __('webhook-manager::messages.endpoint_updated'));
     }
 
     public function destroy(
         Request $request,
-        InboundEndpoint $endpoint,
+        InboundEndpoint $webhookInbound,
         DeleteInboundEndpointAction $delete,
     ) {
         $this->authorizeOr403($request, 'manage inbound endpoints');
 
-        ($delete)($endpoint);
+        ($delete)($webhookInbound);
 
         return redirect(cp_route('webhook-manager.inbound.index'))
             ->with('success', __('webhook-manager::messages.endpoint_deleted'));
@@ -172,14 +172,14 @@ class InboundController extends CpController
 
     public function toggle(
         Request $request,
-        InboundEndpoint $endpoint,
+        InboundEndpoint $webhookInbound,
         ToggleInboundEndpointAction $toggle,
     ) {
         $this->authorizeOr403($request, 'manage inbound endpoints');
 
-        $endpoint = ($toggle)($endpoint);
+        $webhookInbound = ($toggle)($webhookInbound);
 
-        return back()->with('success', $endpoint->enabled
+        return back()->with('success', $webhookInbound->enabled
             ? __('webhook-manager::messages.endpoint_enabled')
             : __('webhook-manager::messages.endpoint_disabled'));
     }

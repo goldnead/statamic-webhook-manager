@@ -21,7 +21,7 @@ class TestRuleController extends Controller
 {
     public function __invoke(
         Request $request,
-        Rule $rule,
+        Rule $webhookRule,
         TestRuleAction $test,
     ) {
         abort_unless($request->user()?->can('manage webhook rules'), 403);
@@ -29,7 +29,7 @@ class TestRuleController extends Controller
         $payload = (array) $request->input('sample_payload', []);
         $site = $request->input('site');
 
-        $result = ($test)($rule, $payload, is_string($site) ? $site : null);
+        $result = ($test)($webhookRule, $payload, is_string($site) ? $site : null);
 
         return response()->json([
             'ok' => $result->ok,

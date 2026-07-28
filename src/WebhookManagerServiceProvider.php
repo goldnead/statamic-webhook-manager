@@ -116,6 +116,45 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     }
 
     /**
+     * The route parameters this addon resolves through `Route::bind()`, mapped
+     * to the repository contract that resolves them.
+     *
+     * A `Route::bind()` is registered on the router, not on the package: it
+     * applies to every route with that parameter name in every addon installed
+     * alongside. Binding a generic name therefore reaches into other people's
+     * routes, and the route that loses does not fail loudly — it resolves a
+     * foreign id against a repository here that has never heard of it and
+     * answers 404. That is how leadhub 1.8.0's `/scoring/{rule}` lost its edit
+     * and delete on the hub, through a release, without an error anywhere.
+     *
+     * Hence the rule this addon follows, and the reason these names look the
+     * way they do:
+     *
+     *   A bound parameter name must be owned by the addon that binds it —
+     *   specific enough that no sibling would reach for it by accident.
+     *
+     * Here that means the `webhook` prefix plus a capital: `webhookOutbound`,
+     * `webhookInbound`, `webhookRule`, `webhookTemplate`. Nothing generic is
+     * bound, so nothing generic is taken away from anyone.
+     *
+     * The names are only ever the URL *placeholders*. The URLs themselves are
+     * unchanged, and so are the payload keys the Vue pages read.
+     *
+     * `RouteParameterCollisionTest` enforces the rule against this array.
+     *
+     * @return array<string, class-string> route parameter => repository contract
+     */
+    public static function routeModelBindings(): array
+    {
+        return [
+            'webhookOutbound' => \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class,
+            'webhookInbound' => \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class,
+            'webhookRule' => \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class,
+            'webhookTemplate' => \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class,
+        ];
+    }
+
+    /**
      * Resolve the config-entity route parameters through the repository
      * layer instead of Eloquent implicit binding, so CP routes work under
      * both the database and the flat-file storage driver. Delivery/log
@@ -123,14 +162,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      */
     protected function bootRouteBindings(): void
     {
-        $bindings = [
-            'webhook' => \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class,
-            'endpoint' => \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class,
-            'rule' => \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class,
-            'template' => \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class,
-        ];
-
-        foreach ($bindings as $param => $contract) {
+        foreach (static::routeModelBindings() as $param => $contract) {
             \Illuminate\Support\Facades\Route::bind($param, function ($value) use ($contract) {
                 $model = $this->app->make($contract)->find($value);
                 abort_if($model === null, 404);

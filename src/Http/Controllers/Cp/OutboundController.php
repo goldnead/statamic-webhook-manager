@@ -125,7 +125,7 @@ class OutboundController extends CpController
 
     public function edit(
         Request $request,
-        OutboundWebhook $webhook,
+        OutboundWebhook $webhookOutbound,
         TriggerRegistry $triggers,
         AuthSchemeRegistry $auth,
         TemplateRepositoryInterface $templates,
@@ -135,7 +135,7 @@ class OutboundController extends CpController
         $user = $request->user();
 
         return Inertia::render('webhook-manager::Outbound/Edit', [
-            'webhook' => $this->editPayload($webhook),
+            'webhook' => $this->editPayload($webhookOutbound),
             'triggerOptions' => $triggers->options(),
             'authOptions' => $auth->options(),
             'methodOptions' => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
@@ -148,44 +148,44 @@ class OutboundController extends CpController
             // fallback never fired and a `false` from the (unregistered)
             // dedicated ability hid the Test button from everyone.
             'canTest' => $this->canTest($user),
-            'saveUrl' => cp_route('webhook-manager.outbound.update', $webhook),
-            'deleteUrl' => cp_route('webhook-manager.outbound.destroy', $webhook),
-            'toggleUrl' => cp_route('webhook-manager.outbound.toggle', $webhook),
-            'testUrl' => cp_route('webhook-manager.actions.test-outbound', $webhook),
+            'saveUrl' => cp_route('webhook-manager.outbound.update', $webhookOutbound),
+            'deleteUrl' => cp_route('webhook-manager.outbound.destroy', $webhookOutbound),
+            'toggleUrl' => cp_route('webhook-manager.outbound.toggle', $webhookOutbound),
+            'testUrl' => cp_route('webhook-manager.actions.test-outbound', $webhookOutbound),
             'indexUrl' => cp_route('webhook-manager.outbound.index'),
         ]);
     }
 
     public function update(
         SaveOutboundWebhookRequest $request,
-        OutboundWebhook $webhook,
+        OutboundWebhook $webhookOutbound,
         UpdateOutboundWebhookAction $update,
     ) {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
         $attributes = $this->normalizeAuthConfig($request->validated());
-        ($update)($webhook, $attributes);
+        ($update)($webhookOutbound, $attributes);
 
         return back()->with('success', __('webhook-manager::messages.updated'));
     }
 
-    public function destroy(Request $request, OutboundWebhook $webhook, DeleteOutboundWebhookAction $delete)
+    public function destroy(Request $request, OutboundWebhook $webhookOutbound, DeleteOutboundWebhookAction $delete)
     {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
-        ($delete)($webhook);
+        ($delete)($webhookOutbound);
 
         return redirect(cp_route('webhook-manager.outbound.index'))
             ->with('success', __('webhook-manager::messages.deleted'));
     }
 
-    public function toggle(Request $request, OutboundWebhook $webhook, ToggleOutboundWebhookAction $toggle)
+    public function toggle(Request $request, OutboundWebhook $webhookOutbound, ToggleOutboundWebhookAction $toggle)
     {
         $this->authorizeOr403($request, 'manage outbound webhooks');
 
-        $webhook = ($toggle)($webhook);
+        $webhookOutbound = ($toggle)($webhookOutbound);
 
-        return back()->with('success', $webhook->enabled
+        return back()->with('success', $webhookOutbound->enabled
             ? __('webhook-manager::messages.enabled')
             : __('webhook-manager::messages.disabled'));
     }

@@ -107,29 +107,29 @@ class TemplateController extends CpController
 
     public function edit(
         Request $request,
-        Template $template,
+        Template $webhookTemplate,
         VariableResolverRegistry $vars,
     ) {
         $this->authorizeOr403($request, 'manage webhook templates');
 
         return Inertia::render('webhook-manager::Templates/Edit', [
-            'template'    => $this->editPayload($template),
+            'template'    => $this->editPayload($webhookTemplate),
             'typeOptions' => $this->typeOptions(),
             'namespaces'  => array_keys($vars->all()),
             'isNew'       => false,
             'canDelete'   => (bool) $request->user()?->can('manage webhook templates'),
-            'saveUrl'     => cp_route('webhook-manager.templates.update', $template),
-            'deleteUrl'   => cp_route('webhook-manager.templates.destroy', $template),
+            'saveUrl'     => cp_route('webhook-manager.templates.update', $webhookTemplate),
+            'deleteUrl'   => cp_route('webhook-manager.templates.destroy', $webhookTemplate),
             'previewUrl'  => cp_route('webhook-manager.actions.preview-template'),
             'indexUrl'    => cp_route('webhook-manager.templates.index'),
         ]);
     }
 
-    public function update(SaveTemplateRequest $request, Template $template, UpdateTemplateAction $update)
+    public function update(SaveTemplateRequest $request, Template $webhookTemplate, UpdateTemplateAction $update)
     {
         $this->authorizeOr403($request, 'manage webhook templates');
 
-        ($update)($template, $request->validated());
+        ($update)($webhookTemplate, $request->validated());
 
         return back()->with('success', __('webhook-manager::messages.template_updated'));
     }
@@ -138,11 +138,11 @@ class TemplateController extends CpController
     // Destroy
     // ──────────────────────────────────────────────────────────────────
 
-    public function destroy(Request $request, Template $template, DeleteTemplateAction $delete)
+    public function destroy(Request $request, Template $webhookTemplate, DeleteTemplateAction $delete)
     {
         $this->authorizeOr403($request, 'manage webhook templates');
 
-        $result = ($delete)($template);
+        $result = ($delete)($webhookTemplate);
 
         $message = $result['detached_outbounds'] > 0
             ? __('webhook-manager::messages.template_deleted_with_detach', ['count' => $result['detached_outbounds']])

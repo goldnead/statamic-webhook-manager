@@ -15,7 +15,7 @@ class SaveOutboundWebhookRequest extends FormRequest
 
     public function rules(): array
     {
-        $hookId = $this->route('webhook')?->id ?? null;
+        $hookId = $this->route('webhookOutbound')?->id ?? null;
 
         // The database makes a handle unique per brand, not globally. These
         // rules run on the raw query builder, which no Eloquent scope reaches,
@@ -147,7 +147,7 @@ class SaveOutboundWebhookRequest extends FormRequest
         if (is_array($this->input('auth_config')) && $this->input('auth_config') !== []) {
             return;
         }
-        if (! empty($this->route('webhook')?->auth_config)) {
+        if (! empty($this->route('webhookOutbound')?->auth_config)) {
             return;
         }
 

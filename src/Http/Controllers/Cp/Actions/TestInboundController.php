@@ -19,13 +19,13 @@ class TestInboundController extends Controller
 {
     public function __invoke(
         Request $request,
-        InboundEndpoint $endpoint,
+        InboundEndpoint $webhookInbound,
         TestInboundEndpointAction $test,
     ) {
         abort_unless($request->user()?->can('manage inbound endpoints'), 403);
 
         $payload = (array) $request->input('sample_payload', []);
-        $result = ($test)($endpoint, $payload);
+        $result = ($test)($webhookInbound, $payload);
 
         return response()->json($result);
     }

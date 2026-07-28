@@ -14,7 +14,7 @@ class SaveTemplateRequest extends FormRequest
 
     public function rules(): array
     {
-        $templateId = $this->route('template')?->id ?? null;
+        $templateId = $this->route('webhookTemplate')?->id ?? null;
 
         // Per-brand, matching `webhook_templates_brand_id_handle_unique`. See
         // SaveOutboundWebhookRequest for why the brand cannot be left implicit.

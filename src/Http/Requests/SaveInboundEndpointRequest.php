@@ -18,7 +18,7 @@ class SaveInboundEndpointRequest extends FormRequest
 
     public function rules(): array
     {
-        $endpointId = $this->route('endpoint')?->id ?? null;
+        $endpointId = $this->route('webhookInbound')?->id ?? null;
 
         // Per-brand, matching `webhook_inbounds_brand_id_handle_unique`. See
         // SaveOutboundWebhookRequest for why the brand cannot be left implicit.

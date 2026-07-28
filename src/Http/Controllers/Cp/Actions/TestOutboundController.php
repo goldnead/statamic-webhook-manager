@@ -12,13 +12,13 @@ class TestOutboundController extends Controller
 {
     public function __invoke(
         TestWebhookRequest $request,
-        OutboundWebhook $webhook,
+        OutboundWebhook $webhookOutbound,
         TestOutboundWebhookAction $test,
     ) {
         // Same rule the UI uses to decide whether to show the button.
         abort_unless(OutboundController::canTest($request->user()), 403);
 
-        $delivery = ($test)($webhook, (array) $request->input('sample_payload', []));
+        $delivery = ($test)($webhookOutbound, (array) $request->input('sample_payload', []));
 
         return response()->json([
             'ok' => $delivery->status === \Goldnead\WebhookManager\Domain\Delivery\Models\Delivery::STATUS_SUCCESS,

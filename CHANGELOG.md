@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.7.0 — 2026-07-28
+
+### Changed — the rule: an addon may only bind route parameter names that belong to it
+
+1.6.2 wrote down that this package claims `webhook`, `endpoint`, `rule` and `template` application-wide, and argued that renaming them would change nothing because no sibling uses those words today. That argument was about the four names. It was not about the class of failure, and the class is what keeps costing releases. This version states the rule and enforces it.
+
+> **A `Route::bind()` is registered on the router, not on the package that calls it. Bind only names that unambiguously belong to your addon — specific enough that no sibling would reach for one by accident. Names you do *not* bind may stay as generic as they like: nothing resolves them, so nothing can be taken from anyone.**
+
+The four bound parameters are renamed accordingly. `{webhook}` → `{webhookOutbound}`, `{endpoint}` → `{webhookInbound}`, `{rule}` → `{webhookRule}`, `{template}` → `{webhookTemplate}`; the shape is the addon's own prefix plus a capital, and it is what the guard test checks for, not a list of approved words.
+
+**No URL changes.** `/cp/webhook-manager/rules/17` is the same string before and after — a route parameter name is the placeholder, never the path. What changed with it, across 13 files: the 4 `Route::bind()` registrations, the 18 route definitions, the 5 `$this->route(…)` lookups in `SaveOutboundWebhookRequest` (twice — once in the unique rule, once in the auth-config guard), `SaveInboundEndpointRequest`, `SaveRuleRequest` and `SaveTemplateRequest`, and the bound argument in 18 controller methods across `OutboundController`, `InboundController`, `RuleController`, `TemplateController` and the three test-action controllers, 56 variable occurrences in all. The Inertia payload keys the Vue pages read (`webhook`, `endpoint`, `rule`, `template`) are untouched — they are not route parameters, and renaming them would have broken the CP for no reason.
+
+That `$this->route('webhook')` is the reason this was worth doing carefully rather than quickly: it is a null-safe read feeding a `unique` rule's ignore-id. Miss one and it silently reads null, the ignore falls away, and editing a record without changing its handle starts failing validation against itself — no error at the point of the mistake, one at the far end.
+
+**Why the guard test changed shape.** It used to compare this addon's parameter names against a hand-written list of what other installed packages bind. That list can only ever describe the siblings as they are today; it says nothing about the addon that starts binding `{handle}` next month, which is the case that hurts. The check now runs against the rule instead — every name in `WebhookManagerServiceProvider::routeModelBindings()` must be this addon's own. That is a property of this package, so this package's suite can enforce it without knowing anything about its neighbours, and a fifth binding cannot arrive by default.
+
+Two tests were added and both fail if the rename is reverted. `test_a_sibling_addons_generic_parameter_is_not_swallowed_by_this_addon` registers stand-in routes named `{rule}`, `{template}`, `{webhook}`, `{endpoint}`, `{handle}`, `{id}`, `{slug}` and `{record}` that do nothing but echo their own value, mounts them with `SubstituteBindings`, and asserts each one answers with what it was given. Before the rename four of them answered 404 instead — the LeadHub defect, reproduced from the losing side inside this package's own suite for the first time. `test_every_parameter_this_addon_binds_is_owned_by_this_addon` is the rule itself.
+
+**What deliberately did not change: `{handle}` and `{preset}`.** They are generic, they are shared with marketing and automations, and they are staying. Renaming them would move text without removing any exposure, because they are not bound — nothing resolves them, so nothing can collide. The rule above is what protects them, and the connection is written into the test file so it does not have to be derived again: a package that binds must bind a name of its own, and `handle` is nobody's own. The same argument covers `{id}` in statamic-activity and statamic-notifications. `{delivery}` is likewise unbound; it resolves through Laravel's *implicit* binding, which matches a route parameter to a typed controller argument and is therefore scoped to that single route. Only `Route::bind()` is application-wide, which is why only that array is the subject of the rule.
+
+**Still true, and still not fixable from here:** a collision exists only once two packages are installed together, and a package cannot see its siblings from inside its own suite. The rule turns that from something each addon must know into something each addon can check alone. What the hub still lacks is a check across all installed addons at once; the QA area `route-bindings` exercises the renamed routes there by hand in the meantime.
+
+**Note for the siblings.** `statamic-marketing`, `statamic-automations`, `statamic-activity` and `statamic-notifications` each carry a copy of this guard whose `$boundElsewhere` map names `webhook`, `endpoint`, `rule` and `template` as claimed by this package. Those entries are now false — the names are free — and the maps should be replaced by the rule check above rather than corrected.
+
 ## 1.6.2 — 2026-07-28
 
 ### Added — the four application-wide route bindings this addon owns are now written down and checked

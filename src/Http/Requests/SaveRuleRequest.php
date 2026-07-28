@@ -18,7 +18,7 @@ class SaveRuleRequest extends FormRequest
 
     public function rules(): array
     {
-        $ruleId = $this->route('rule')?->id ?? null;
+        $ruleId = $this->route('webhookRule')?->id ?? null;
 
         // Per-brand, matching `webhook_rules_brand_id_handle_unique`. See
         // SaveOutboundWebhookRequest for why the brand cannot be left implicit.

@@ -102,7 +102,7 @@ class RuleController extends CpController
 
     public function edit(
         Request $request,
-        Rule $rule,
+        Rule $webhookRule,
         TriggerRegistry $triggers,
     ) {
         $this->authorizeOr403($request, 'manage webhook rules');
@@ -110,46 +110,46 @@ class RuleController extends CpController
         $user = $request->user();
 
         return Inertia::render('webhook-manager::Rules/Edit', [
-            'rule'           => $this->editPayload($rule),
+            'rule'           => $this->editPayload($webhookRule),
             'triggerOptions' => $triggers->options(),
             'actionOptions'  => [],
             'isNew'          => false,
             'canDelete'      => (bool) $user?->can('manage webhook rules'),
             'canTest'        => (bool) $user?->can('manage webhook rules'),
-            'saveUrl'        => cp_route('webhook-manager.rules.update', $rule),
-            'deleteUrl'      => cp_route('webhook-manager.rules.destroy', $rule),
-            'toggleUrl'      => cp_route('webhook-manager.rules.toggle', $rule),
-            'testUrl'        => cp_route('webhook-manager.actions.test-rule', $rule),
+            'saveUrl'        => cp_route('webhook-manager.rules.update', $webhookRule),
+            'deleteUrl'      => cp_route('webhook-manager.rules.destroy', $webhookRule),
+            'toggleUrl'      => cp_route('webhook-manager.rules.toggle', $webhookRule),
+            'testUrl'        => cp_route('webhook-manager.actions.test-rule', $webhookRule),
             'indexUrl'       => cp_route('webhook-manager.rules.index'),
         ]);
     }
 
-    public function update(SaveRuleRequest $request, Rule $rule, UpdateRuleAction $update)
+    public function update(SaveRuleRequest $request, Rule $webhookRule, UpdateRuleAction $update)
     {
         $this->authorizeOr403($request, 'manage webhook rules');
 
-        ($update)($rule, $request->validated());
+        ($update)($webhookRule, $request->validated());
 
         return back()->with('success', __('webhook-manager::messages.rule_updated'));
     }
 
-    public function destroy(Request $request, Rule $rule, DeleteRuleAction $delete)
+    public function destroy(Request $request, Rule $webhookRule, DeleteRuleAction $delete)
     {
         $this->authorizeOr403($request, 'manage webhook rules');
 
-        ($delete)($rule);
+        ($delete)($webhookRule);
 
         return redirect(cp_route('webhook-manager.rules.index'))
             ->with('success', __('webhook-manager::messages.rule_deleted'));
     }
 
-    public function toggle(Request $request, Rule $rule, ToggleRuleAction $toggle)
+    public function toggle(Request $request, Rule $webhookRule, ToggleRuleAction $toggle)
     {
         $this->authorizeOr403($request, 'manage webhook rules');
 
-        $rule = ($toggle)($rule);
+        $webhookRule = ($toggle)($webhookRule);
 
-        return back()->with('success', $rule->enabled
+        return back()->with('success', $webhookRule->enabled
             ? __('webhook-manager::messages.rule_enabled')
             : __('webhook-manager::messages.rule_disabled'));
     }

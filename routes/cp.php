@@ -32,30 +32,30 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::get('/', [OutboundController::class, 'index'])->name('index');
         Route::get('/create', [OutboundController::class, 'create'])->name('create');
         Route::post('/', [OutboundController::class, 'store'])->name('store');
-        Route::get('/{webhook}', [OutboundController::class, 'edit'])->name('edit');
-        Route::patch('/{webhook}', [OutboundController::class, 'update'])->name('update');
-        Route::delete('/{webhook}', [OutboundController::class, 'destroy'])->name('destroy');
-        Route::patch('/{webhook}/toggle', [OutboundController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookOutbound}', [OutboundController::class, 'edit'])->name('edit');
+        Route::patch('/{webhookOutbound}', [OutboundController::class, 'update'])->name('update');
+        Route::delete('/{webhookOutbound}', [OutboundController::class, 'destroy'])->name('destroy');
+        Route::patch('/{webhookOutbound}/toggle', [OutboundController::class, 'toggle'])->name('toggle');
     });
 
     Route::prefix('inbound')->name('inbound.')->group(function () {
         Route::get('/', [InboundController::class, 'index'])->name('index');
         Route::get('/create', [InboundController::class, 'create'])->name('create');
         Route::post('/', [InboundController::class, 'store'])->name('store');
-        Route::get('/{endpoint}', [InboundController::class, 'edit'])->name('edit');
-        Route::patch('/{endpoint}', [InboundController::class, 'update'])->name('update');
-        Route::delete('/{endpoint}', [InboundController::class, 'destroy'])->name('destroy');
-        Route::patch('/{endpoint}/toggle', [InboundController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookInbound}', [InboundController::class, 'edit'])->name('edit');
+        Route::patch('/{webhookInbound}', [InboundController::class, 'update'])->name('update');
+        Route::delete('/{webhookInbound}', [InboundController::class, 'destroy'])->name('destroy');
+        Route::patch('/{webhookInbound}/toggle', [InboundController::class, 'toggle'])->name('toggle');
     });
 
     Route::prefix('rules')->name('rules.')->group(function () {
         Route::get('/', [RuleController::class, 'index'])->name('index');
         Route::get('/create', [RuleController::class, 'create'])->name('create');
         Route::post('/', [RuleController::class, 'store'])->name('store');
-        Route::get('/{rule}', [RuleController::class, 'edit'])->name('edit');
-        Route::patch('/{rule}', [RuleController::class, 'update'])->name('update');
-        Route::delete('/{rule}', [RuleController::class, 'destroy'])->name('destroy');
-        Route::patch('/{rule}/toggle', [RuleController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookRule}', [RuleController::class, 'edit'])->name('edit');
+        Route::patch('/{webhookRule}', [RuleController::class, 'update'])->name('update');
+        Route::delete('/{webhookRule}', [RuleController::class, 'destroy'])->name('destroy');
+        Route::patch('/{webhookRule}/toggle', [RuleController::class, 'toggle'])->name('toggle');
     });
 
     Route::get('/insights', [InsightsController::class, 'index'])->name('insights');
@@ -73,9 +73,9 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::get('/', [TemplateController::class, 'index'])->name('index');
         Route::get('/create', [TemplateController::class, 'create'])->name('create');
         Route::post('/', [TemplateController::class, 'store'])->name('store');
-        Route::get('/{template}', [TemplateController::class, 'edit'])->name('edit');
-        Route::patch('/{template}', [TemplateController::class, 'update'])->name('update');
-        Route::delete('/{template}', [TemplateController::class, 'destroy'])->name('destroy');
+        Route::get('/{webhookTemplate}', [TemplateController::class, 'edit'])->name('edit');
+        Route::patch('/{webhookTemplate}', [TemplateController::class, 'update'])->name('update');
+        Route::delete('/{webhookTemplate}', [TemplateController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
@@ -103,9 +103,9 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
      * route name with `statamic.cp.`, breaking every cp_route() lookup.
      */
     Route::name('actions.')->group(function () {
-        Route::post('outbound/{webhook}/test', TestOutboundController::class)->name('test-outbound');
-        Route::post('inbound/{endpoint}/test', TestInboundController::class)->name('test-inbound');
-        Route::post('rules/{rule}/test', TestRuleController::class)->name('test-rule');
+        Route::post('outbound/{webhookOutbound}/test', TestOutboundController::class)->name('test-outbound');
+        Route::post('inbound/{webhookInbound}/test', TestInboundController::class)->name('test-inbound');
+        Route::post('rules/{webhookRule}/test', TestRuleController::class)->name('test-rule');
         Route::post('deliveries/{delivery}/replay', ReplayDeliveryController::class)->name('replay-delivery');
         Route::post('templates/preview', PreviewTemplateController::class)->name('preview-template');
         Route::post('triggers/simulate', SimulateTriggerController::class)->name('simulate-trigger');
