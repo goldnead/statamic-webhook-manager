@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.7.3 — 2026-07-28
+
+### Fixed — the brand-scoping migration guessed which brand your data belongs to
+
+`2026_07_24_100003_add_brand_id_to_webhook_manager_tables` resolved the default brand as `DB::table('brands')->where('is_default', true)->value('id') ?? 1` and stamped every outbound, inbound, rule, template, delivery, log and secret audit with the result, then froze the column NOT NULL three steps later.
+
+The fallback is reachable. `goldnead/statamic-brand-context` inserts its default brand with `insertOrIgnore`, so an install whose `brands.handle` was already taken ends up with no `is_default` row at all; nothing in that schema constrains `is_default` to one row, and nothing reserves id 1. On such an install every webhook in the database was assigned to brand 1 — a brand that may belong to somebody else or may not exist, since there is no foreign key here to refuse it — and then the column was made NOT NULL, which makes a wrong answer indistinguishable from a right one from that point on. A webhook is a credential and a destination. Pointing a tenant's entire webhook surface at the wrong brand is not a cosmetic error, and nothing about it is visible from outside the database.
+
+**Affected: nobody we can identify, and that is the point.** The fallback only fires where `is_default` returns nothing, which no install produced by a normal `composer require` does. It was reachable, silent, and unbounded in consequence, which is enough. The lookup now tries `is_default`, then the lowest brand id that actually exists, and stops with a named `RuntimeException` if neither answers or if the `brands` table is not there — resolved before the first `alter table`, so a refusal leaves the schema exactly as it found it. Stopping costs an operator one command. Guessing costs data whose wrongness nobody can see. A migration may refuse to run; it may not invent an owner.
+
+**How to check an install that has already migrated:** `select distinct brand_id from webhook_outbounds` against `select id from brands`. Any `brand_id` with no matching brand was invented by that fallback.
+
+### Fixed — an interrupted migration could not be repaired by running it again
+
+Nothing in the published migration was guarded. It added `brand_id` to seven tables unconditionally, dropped four `handle` uniques, added a composite index and froze a column — all of it unconditional. No engine rolls DDL back and a migration that throws is not recorded as run, so an interruption anywhere after the first `alter table` left a half-converted schema with the migration still pending. The only move available then is `php artisan migrate` again, and that died at the very first statement on `duplicate column name: brand_id` — an error about step 1 that says nothing about the step that actually failed, and points whoever reads it at the wrong end of the file. Meanwhile the four `handle` uniques may already have been dropped and not yet replaced. This is the fingerprint `statamic-marketing` documented in its 1.6.4.
+
+Every step now asks the schema what state it is in: `hasColumn` per table before adding the column, `getIndexes` before each unique or index step, `{$table}_handle_unique` dropped only where it is still there, `(brand_id, handle)` built only where it is not, `(brand_id, idempotency_key)` added only if missing. Running the migration twice is a no-op; running it on a half-converted install finishes the conversion.
+
+### Fixed — the backfill overwrote brand ids that had already been assigned
+
+The backfills were unconditional `update()` calls with no `where`. On a second run — or on an install that had already become multi-brand — every row of every table was rewritten to the default brand in one statement: outbounds deliberately moved to another brand, and the deliveries and logs that had inherited from them, silently and with no way to tell afterwards which rows had been placed on purpose. Every backfill is now restricted to `whereNull('brand_id')`. A row that already carries a brand is never touched.
+
+### Added — the migrations are finally tested against a database with data in it
+
+This is the finding underneath all three. A sweep across all eight addons in this family, prompted by `statamic-marketing` 1.6.4, looked for a check that runs a migration against tables that already hold rows and found none, anywhere. Every migration in this addon had only ever met an empty schema that testbench built moments earlier and migrated to head in one uninterrupted run — with the default brand sitting at id 1 because brand-context had just created it, which is precisely the one state in which an unguarded `alter table`, a backfill with no `where` and a fallback of `1` all behave correctly.
+
+`tests/Migrations/` names no migration file. It walks `database/migrations/`, seeds a fresh generation of data into every table that already exists before each file runs, and applies them one at a time — so a migration added years from now is covered the day it lands. `tests/Fixtures/released-migrations/` holds the sets as published in 1.2.0, the last release before brand scoping, and in 1.7.2; the suite installs each, fills all seven tables with rows whose children point at real parents, and upgrades forward. It is in `phpunit.xml`, `phpunit.xml.dist` and `phpunit.mysql.xml`.
+
+Every check is behavioural. "The migration ran" and "the constraint is there" are not the same statement. So nothing here asserts an exit code or an index name; it writes the row the constraint is supposed to refuse and requires the database to refuse it — and the counterpart that catches a unique rebuilt over `handle` alone: the same handle in a *different* brand must still be accepted.
+
+`tests/Feature/BrandIdMigrationHardeningTest.php` covers the three defects above directly, each from a populated 1.2.0 install. Reverted against the published migration, all four of its cases fail: two with `duplicate column name: brand_id`, one because the rows were stamped with a brand id no brand in the database has, and one because the migration invented a brand for an install that has none.
+
+### Notes
+
+- Suite: **183 passed (859 assertions)**, baseline 176. Vitest unchanged at 90.
+- **Known and pre-existing on MySQL, not introduced here:** ten tests error under `phpunit.mysql.xml`, and the same ten error with this release's changes stashed. One cause, in `down()`: testbench rolls migrations back after every test, `down()` restores the global `unique('handle')`, and `BrandIsolationTest` has by then deliberately written one handle into two brands, so the rollback dies on `1062 Duplicate entry`. SQLite never sees it because it drops the file instead. The right fix is a decision about what un-brand-scoping should do to multi-brand data, which is not this release's to make. The seven tests added here were run against MySQL 8.0 on their own and are green.
+
 ## 1.7.2 — 2026-07-28
 
 ### Fixed — what the server rejected is now visible on every CP form

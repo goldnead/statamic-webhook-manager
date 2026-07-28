@@ -13,6 +13,17 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!--
+            The migration path itself, against tables that already hold rows.
+            Every other suite meets a database testbench has migrated to head;
+            these install an earlier release, put data in and migrate forward.
+            Present in both configurations on purpose — an aborted brand-scoping
+            run leaves `duplicate column name: brand_id` on SQLite and ERROR
+            1060 on MySQL, and neither engine rolls the half state back.
+        -->
+        <testsuite name="Migrations">
+            <directory>tests/Migrations</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

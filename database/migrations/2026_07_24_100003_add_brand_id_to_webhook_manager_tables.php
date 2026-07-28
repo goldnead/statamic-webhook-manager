@@ -22,6 +22,55 @@ use Illuminate\Support\Facades\Schema;
  * (ReplayProtectionService), keyed by endpoint id — never a global DB unique.
  * So there is no global-unique idempotency constraint to brand-scope; we only
  * add a composite (brand_id, idempotency_key) index for query-time isolation.
+ *
+ * ---------------------------------------------------------------------------
+ * Every step below is state-driven, and the default brand is looked up rather
+ * than assumed. Both of those were added after the fact, for two failures this
+ * file used to be able to produce.
+ *
+ * **Nothing was guarded.** The published shape added `brand_id` to seven tables
+ * unconditionally, then dropped four `handle` uniques, added a composite index
+ * and froze the column NOT NULL — all of it unconditional. No engine rolls DDL
+ * back and a migration that throws is not recorded as run, so an install that
+ * aborted anywhere after the first `alter table` was left half-converted and
+ * with the migration still pending. The retry then died on `duplicate column
+ * name: brand_id`, an error about step 1 that says nothing whatsoever about the
+ * step that actually failed, and sends whoever reads it looking in the wrong
+ * place — while the four `handle` uniques may already be gone and not yet
+ * replaced. So this migration now asks the schema what state it is in before
+ * each step: `hasColumn` per table before adding the column, `getIndexes` before
+ * reworking a unique or adding the composite index, and it drops
+ * `{$table}_handle_unique` only where that index is still present. Running it
+ * twice is a no-op.
+ *
+ * The backfills carry the same requirement, for a different reason. They used
+ * to be unconditional `update()` calls with no `where`, which is not merely
+ * wasteful on a second run: it is destructive. On a multi-brand install every
+ * row of every table — outbounds that were deliberately moved to brand 3,
+ * deliveries that inherited from them — would be rewritten to the default
+ * brand, silently and in one statement. Every backfill is therefore restricted
+ * to `whereNull('brand_id')`. A row that already carries a brand is never
+ * touched; only rows the conversion has not reached yet are stamped.
+ *
+ * **The default brand was guessed.** The lookup read `is_default = true` and
+ * fell back to the literal `1`. brand-context creates the default brand with
+ * `insertOrIgnore`, so an install whose `brands.handle` was already taken ends
+ * up with no `is_default` row at all, and nothing in that schema constrains
+ * `is_default` to a single row or reserves id 1. On such an install the literal
+ * fallback stamped every webhook, delivery and log with a brand id that may
+ * belong to somebody else's brand — or to no brand at all, since there is no
+ * foreign key here to refuse it — and three steps later the column was frozen
+ * NOT NULL, which makes the wrong answer look exactly like the right one. A
+ * webhook is a credential and a destination; pointing a brand's entire webhook
+ * surface at the wrong tenant is not a cosmetic error, and it is silent.
+ *
+ * So the lookup now tries `is_default` first, then the lowest existing brand id,
+ * and if neither answers — or if `brands` does not exist at all — it throws and
+ * names what is missing. Stopping costs an operator one command
+ * (`php artisan migrate` after installing goldnead/statamic-brand-context);
+ * guessing costs data whose wrongness nobody can see from the outside. A
+ * migration may refuse to run. It may not invent an owner.
+ * ---------------------------------------------------------------------------
  */
 return new class extends Migration
 {
@@ -33,32 +82,86 @@ return new class extends Migration
         'webhook_templates',
     ];
 
+    /** Child/log tables: brand_id denormalised, inherited from the parent. */
+    private array $childTables = [
+        'webhook_deliveries',
+        'webhook_logs',
+        'webhook_secret_audits',
+    ];
+
     public function up(): void
     {
-        $defaultId = (int) (DB::table('brands')->where('is_default', true)->value('id') ?? 1);
+        // Resolved before the first `alter table`, so an install with no brand
+        // to assign its existing rows to stops while the schema is still whole.
+        $defaultId = $this->canProbeSchema() ? $this->defaultBrandId() : null;
 
         // 1. Add nullable brand_id + index everywhere.
-        foreach ([...$this->rootTables, 'webhook_deliveries', 'webhook_logs', 'webhook_secret_audits'] as $t) {
-            Schema::table($t, function (Blueprint $table) use ($t) {
+        //    Per table, and only where it is missing: after an interrupted run
+        //    some tables have the column and some do not.
+        foreach ($this->allTables() as $t) {
+            if ($this->canProbeSchema() && Schema::hasColumn($t, 'brand_id')) {
+                continue;
+            }
+
+            Schema::table($t, function (Blueprint $table) {
                 $table->unsignedBigInteger('brand_id')->nullable()->after('id')->index();
             });
         }
 
-        // 2. Backfill root tables → default brand.
-        foreach ($this->rootTables as $t) {
-            DB::table($t)->update(['brand_id' => $defaultId]);
+        // 2./3. Backfill, root tables first so the children can inherit.
+        if ($defaultId !== null) {
+            $this->backfill($defaultId);
         }
 
-        // 3. Backfill child tables — inherit from parent, else default.
+        // 4. Enforce NOT NULL now that every row is backfilled.
+        //
+        //    Unconditional, unlike everything around it. Restating a column
+        //    that is already NOT NULL is accepted by both engines and changes
+        //    nothing, so there is no state worth probing for.
+        foreach ($this->allTables() as $t) {
+            Schema::table($t, function (Blueprint $table) {
+                $table->unsignedBigInteger('brand_id')->nullable(false)->change();
+            });
+        }
+
+        // 5. Unique-rework: handle is unique per brand, not globally.
+        foreach ($this->rootTables as $t) {
+            $this->scopeHandleUniqueToBrand($t);
+        }
+
+        // 6. Query-time isolation index for outbound delivery idempotency keys.
+        if (! $this->canProbeSchema() || ! $this->hasIndexOver('webhook_deliveries', ['brand_id', 'idempotency_key'])) {
+            Schema::table('webhook_deliveries', function (Blueprint $table) {
+                $table->index(['brand_id', 'idempotency_key']);
+            });
+        }
+    }
+
+    /**
+     * Stamp every row that has no brand yet, and only those.
+     *
+     * The `whereNull` is the whole point. Without it a second run — or a run on
+     * an install that was already multi-brand — rewrites every outbound,
+     * delivery and log to the default brand in one statement, with no way to
+     * tell afterwards which rows had been placed deliberately.
+     */
+    private function backfill(int $defaultId): void
+    {
+        // Root tables → default brand.
+        foreach ($this->rootTables as $t) {
+            DB::table($t)->whereNull('brand_id')->update(['brand_id' => $defaultId]);
+        }
+
+        // Child tables — inherit from parent, else default.
         // Deliveries inherit from their outbound webhook.
-        DB::table('webhook_deliveries')->update([
+        DB::table('webhook_deliveries')->whereNull('brand_id')->update([
             'brand_id' => DB::raw(
                 '(SELECT o.brand_id FROM webhook_outbounds o WHERE o.id = webhook_deliveries.outbound_webhook_id)'
             ),
         ]);
 
         // Logs inherit from the related outbound webhook, else the related inbound endpoint.
-        DB::table('webhook_logs')->update([
+        DB::table('webhook_logs')->whereNull('brand_id')->update([
             'brand_id' => DB::raw(
                 'COALESCE('.
                 '(SELECT o.brand_id FROM webhook_outbounds o WHERE o.id = webhook_logs.related_webhook_id),'.
@@ -68,59 +171,166 @@ return new class extends Migration
         ]);
 
         // Secret audits inherit from their polymorphic target.
-        DB::table('webhook_secret_audits')->update([
+        DB::table('webhook_secret_audits')->whereNull('brand_id')->update([
             'brand_id' => DB::raw(
-                "CASE target_type ".
+                'CASE target_type '.
                 "WHEN 'outbound' THEN (SELECT o.brand_id FROM webhook_outbounds o WHERE o.id = webhook_secret_audits.target_id) ".
                 "WHEN 'inbound' THEN (SELECT i.brand_id FROM webhook_inbounds i WHERE i.id = webhook_secret_audits.target_id) ".
-                "ELSE NULL END"
+                'ELSE NULL END'
             ),
         ]);
 
         // Any child row whose parent was missing → default brand (never leave null).
-        foreach (['webhook_deliveries', 'webhook_logs', 'webhook_secret_audits'] as $t) {
+        foreach ($this->childTables as $t) {
             DB::table($t)->whereNull('brand_id')->update(['brand_id' => $defaultId]);
         }
-
-        // 4. Enforce NOT NULL now that every row is backfilled.
-        foreach ([...$this->rootTables, 'webhook_deliveries', 'webhook_logs', 'webhook_secret_audits'] as $t) {
-            Schema::table($t, function (Blueprint $table) {
-                $table->unsignedBigInteger('brand_id')->nullable(false)->change();
-            });
-        }
-
-        // 5. Unique-rework: handle is unique per brand, not globally.
-        foreach ($this->rootTables as $t) {
-            Schema::table($t, function (Blueprint $table) use ($t) {
-                $table->dropUnique($t.'_handle_unique');
-                $table->unique(['brand_id', 'handle']);
-            });
-        }
-
-        // 6. Query-time isolation index for outbound delivery idempotency keys.
-        Schema::table('webhook_deliveries', function (Blueprint $table) {
-            $table->index(['brand_id', 'idempotency_key']);
-        });
     }
 
     public function down(): void
     {
-        Schema::table('webhook_deliveries', function (Blueprint $table) {
-            $table->dropIndex(['brand_id', 'idempotency_key']);
-        });
-
-        foreach ($this->rootTables as $t) {
-            Schema::table($t, function (Blueprint $table) use ($t) {
-                $table->dropUnique(['brand_id', 'handle']);
-                $table->unique('handle');
+        if ($this->hasIndexOver('webhook_deliveries', ['brand_id', 'idempotency_key'])) {
+            Schema::table('webhook_deliveries', function (Blueprint $table) {
+                $table->dropIndex(['brand_id', 'idempotency_key']);
             });
         }
 
-        foreach ([...$this->rootTables, 'webhook_deliveries', 'webhook_logs', 'webhook_secret_audits'] as $t) {
+        foreach ($this->rootTables as $t) {
+            $indexes = $this->indexesOn($t);
+
+            if ($indexes->has($t.'_brand_id_handle_unique')) {
+                Schema::table($t, function (Blueprint $table) use ($t) {
+                    $table->dropUnique($t.'_brand_id_handle_unique');
+                });
+            }
+
+            if (! $indexes->has($t.'_handle_unique')) {
+                Schema::table($t, function (Blueprint $table) {
+                    $table->unique('handle');
+                });
+            }
+        }
+
+        foreach ($this->allTables() as $t) {
+            if (! Schema::hasColumn($t, 'brand_id')) {
+                continue;
+            }
+
             Schema::table($t, function (Blueprint $table) use ($t) {
                 $table->dropIndex($t.'_brand_id_index');
                 $table->dropColumn('brand_id');
             });
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allTables(): array
+    {
+        return [...$this->rootTables, ...$this->childTables];
+    }
+
+    /**
+     * The brand every pre-brand row belongs to, or a stop.
+     *
+     * `is_default` first, then the lowest id that exists, and nothing else. The
+     * literal `1` this used to fall back to is not a default brand, it is a
+     * guess about somebody else's database — see the note at the top of the
+     * file.
+     */
+    private function defaultBrandId(): int
+    {
+        if (! Schema::hasTable('brands')) {
+            throw new RuntimeException(
+                'Cannot brand-scope the Webhook Manager tables: the `brands` table does not exist. '
+                .'Webhook Manager requires goldnead/statamic-brand-context; install it and run its '
+                .'migrations first, then run `php artisan migrate` again. Nothing was changed.'
+            );
+        }
+
+        $id = DB::table('brands')->where('is_default', true)->min('id')
+            ?? DB::table('brands')->min('id');
+
+        if ($id === null) {
+            throw new RuntimeException(
+                'Cannot brand-scope the Webhook Manager tables: the `brands` table holds no rows, so '
+                .'there is no brand to assign the existing webhooks, deliveries and logs to. '
+                .'goldnead/statamic-brand-context creates the default brand with insertOrIgnore, which '
+                .'does nothing when the handle is already taken — check `brand-context.default_handle` '
+                .'and create a brand (`is_default = true`), then run `php artisan migrate` again. '
+                .'Nothing was changed, and no brand id was invented.'
+            );
+        }
+
+        return (int) $id;
+    }
+
+    /**
+     * Move a table's global `handle` unique onto (brand_id, handle).
+     *
+     * Reads the indexes that are actually there rather than assuming the
+     * published starting state: the global unique is dropped only where it
+     * still exists, and the brand-scoped one is built only where it does not.
+     * An install that already carries the scoped unique — a completed run, or
+     * an interrupted one that got this far — comes out of here untouched.
+     */
+    private function scopeHandleUniqueToBrand(string $t): void
+    {
+        $probe = $this->canProbeSchema();
+
+        if (! $probe || $this->indexesOn($t)->has($t.'_handle_unique')) {
+            Schema::table($t, function (Blueprint $table) use ($t) {
+                $table->dropUnique($t.'_handle_unique');
+            });
+        }
+
+        if ($probe && $this->hasIndexOver($t, ['brand_id', 'handle'], unique: true)) {
+            return;
+        }
+
+        Schema::table($t, function (Blueprint $table) {
+            $table->unique(['brand_id', 'handle']);
+        });
+    }
+
+    /**
+     * Whether the connection can be asked what state it is in.
+     *
+     * Under `migrate --pretend` — and under IndexKeyLengthTest, which compiles
+     * these files through the MySQL grammar without a server — nothing is
+     * executed and every read answers empty. Every guard above would then
+     * conclude "not there yet": no `drop index`, no state to skip, and a
+     * compiled DDL that no longer describes what this migration does to a real
+     * install. So when the connection cannot answer, the guards fall back to
+     * the published pre-migration schema — no brand_id, global handle uniques
+     * in place, nothing brand-scoped — which is the state this file was written
+     * for and the one worth compiling. The backfill is skipped outright: it
+     * reads a brand id, and a pretend run has no rows to read and none to write.
+     */
+    private function canProbeSchema(): bool
+    {
+        return ! DB::connection()->pretending();
+    }
+
+    /**
+     * Whether the table already carries an index over exactly these columns,
+     * whatever it happens to be called. Names are an implementation detail of
+     * whichever release built the index; the columns are the guarantee.
+     *
+     * @param  list<string>  $columns
+     */
+    private function hasIndexOver(string $table, array $columns, bool $unique = false): bool
+    {
+        return $this->indexesOn($table)->contains(
+            fn (array $index) => $index['columns'] === $columns && (! $unique || ($index['unique'] ?? false))
+        );
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<string, array>
+     */
+    private function indexesOn(string $table): \Illuminate\Support\Collection
+    {
+        return collect(Schema::getIndexes($table))->keyBy('name');
     }
 };
