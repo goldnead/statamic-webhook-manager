@@ -21,6 +21,16 @@ class BasicAuthVerifier implements AuthVerifierInterface
     {
         $expectedUser = (string) ($config['username'] ?? '');
         $expectedPass = (string) ($config['password'] ?? '');
+
+        // Fail closed on an unconfigured endpoint. Without this guard an
+        // endpoint saved as `basic` with an empty auth_config authenticated
+        // *everyone*: hash_equals('', '') is true, and an anonymous request
+        // has an empty user and an empty password — so both comparisons
+        // passed and the request reached the action dispatcher.
+        if ($expectedUser === '' || $expectedPass === '') {
+            return false;
+        }
+
         $user = (string) $request->getUser();
         $pass = (string) $request->getPassword();
 
