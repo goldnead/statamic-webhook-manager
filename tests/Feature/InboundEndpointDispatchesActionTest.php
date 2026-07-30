@@ -46,7 +46,7 @@ class InboundEndpointDispatchesActionTest extends TestCase
         ]);
 
         $response = $this->postJson(
-            "/!/webhooks/inbound/{$endpoint->handle}",
+            "/webhooks/inbound/{$endpoint->handle}",
             ['contact' => ['email' => 'a@example.com', 'name' => 'Anna']],
             ['X-API-Key' => 'super-secret-key'],
         );
@@ -63,7 +63,7 @@ class InboundEndpointDispatchesActionTest extends TestCase
 
     public function test_inbound_request_rejects_unknown_handle_with_404(): void
     {
-        $response = $this->postJson('/!/webhooks/inbound/does-not-exist', []);
+        $response = $this->postJson('/webhooks/inbound/does-not-exist', []);
 
         $response->assertStatus(404)
             ->assertJson(['ok' => false]);
@@ -82,7 +82,7 @@ class InboundEndpointDispatchesActionTest extends TestCase
             'action_type' => 'noop',
         ]);
 
-        $response = $this->postJson('/!/webhooks/inbound/disabled', []);
+        $response = $this->postJson('/webhooks/inbound/disabled', []);
 
         $response->assertStatus(404);
     }
@@ -100,7 +100,7 @@ class InboundEndpointDispatchesActionTest extends TestCase
             'action_type' => 'noop',
         ]);
 
-        $response = $this->getJson('/!/webhooks/inbound/post-only');
+        $response = $this->getJson('/webhooks/inbound/post-only');
 
         $response->assertStatus(405);
     }
@@ -121,7 +121,7 @@ class InboundEndpointDispatchesActionTest extends TestCase
             'action_type' => 'noop',
         ]);
 
-        $response = $this->postJson('/!/webhooks/inbound/strict-mapping', ['name' => 'No email here']);
+        $response = $this->postJson('/webhooks/inbound/strict-mapping', ['name' => 'No email here']);
 
         $response->assertStatus(422)
             ->assertJson(['ok' => false]);

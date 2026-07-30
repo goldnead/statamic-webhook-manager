@@ -39,6 +39,33 @@ use Statamic\Providers\AddonServiceProvider;
 class WebhookManagerServiceProvider extends AddonServiceProvider
 {
     /**
+     * Canonical public prefix of the inbound endpoint.
+     *
+     * Up to and including v1.7.3 this was Statamic's `!/` utility prefix. No
+     * inbound delivery was ever recorded on any environment under that URL:
+     * `!` is not a character anyone types into a provider's webhook field, and
+     * every human-facing default in this addon already spelled it without one.
+     */
+    public const DEFAULT_INBOUND_PREFIX = 'webhooks/inbound';
+
+    /** The pre-v1.8.0 prefix, kept routable so nothing silently breaks. */
+    public const LEGACY_INBOUND_PREFIX = '!/webhooks/inbound';
+
+    /**
+     * Everything the inbound endpoint needs and nothing else.
+     *
+     * SubstituteBindings is present so that a future bound route parameter
+     * resolves; it touches neither session nor cookies. Explicitly absent:
+     * the whole `web` group.
+     */
+    public const DEFAULT_INBOUND_MIDDLEWARE = [
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+    ];
+
+    /** Guards against bootAddon() running twice on the same instance. */
+    protected bool $inboundRoutesBooted = false;
+
+    /**
      * Vite configuration for the addon's CP bundle. Statamic 6 uses this
      * to load the addon's compiled JS/CSS into the Inertia SPA.
      */
@@ -82,9 +109,17 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         ],
     ];
 
+    /**
+     * Only CP routes go through Statamic's route hook.
+     *
+     * `routes/inbound.php` deliberately does NOT appear here. Statamic drops
+     * every route registered under the `web` key into the application's `web`
+     * middleware group, which is the wrong stack for a machine-to-machine
+     * endpoint — see the header comment in routes/inbound.php. It is loaded by
+     * bootInboundRoutes() with an explicit middleware stack instead.
+     */
     protected $routes = [
         'cp' => __DIR__.'/../routes/cp.php',
-        'web' => __DIR__.'/../routes/inbound.php',
     ];
 
     protected $commands = [
@@ -115,6 +150,73 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->bootNavigation();
         $this->bootRegistries();
         $this->bootRouteBindings();
+        $this->bootInboundRoutes();
+    }
+
+    /**
+     * The canonical, config-resolved prefix the inbound endpoint is served
+     * under. The CP renders endpoint URLs from this same value, so the URL an
+     * operator copies out of the CP is the URL that is actually routed.
+     */
+    public static function inboundRoutePrefix(): string
+    {
+        return trim((string) config('webhook-manager.inbound.route_prefix', self::DEFAULT_INBOUND_PREFIX), '/');
+    }
+
+    /**
+     * Prefixes kept routable for senders configured against an older release.
+     */
+    public static function inboundLegacyRoutePrefixes(): array
+    {
+        return array_values(array_filter(array_map(
+            fn ($p) => trim((string) $p, '/'),
+            (array) config('webhook-manager.inbound.legacy_route_prefixes', [self::LEGACY_INBOUND_PREFIX]),
+        )));
+    }
+
+    /**
+     * The complete middleware stack the inbound endpoint runs.
+     *
+     * Deliberately not the `web` group. A webhook sender has no session and no
+     * CSRF token, so `web` answers every real delivery with 419 before auth is
+     * ever consulted — and even with CSRF excluded it would still start a
+     * session, encrypt cookies and run the host app's Inertia/redirect
+     * middleware on a machine endpoint.
+     *
+     * The endpoint is not left unprotected by this: authentication is the
+     * endpoint's own configured verifier, enforced in InboundRequestProcessor
+     * before parsing, mapping or action dispatch.
+     */
+    public static function inboundMiddleware(): array
+    {
+        return array_values((array) config(
+            'webhook-manager.inbound.middleware',
+            self::DEFAULT_INBOUND_MIDDLEWARE,
+        ));
+    }
+
+    /**
+     * Register the inbound endpoint outside Statamic's `web` route hook.
+     *
+     * Timing matters: bootAddon() runs from `Statamic::booted()`, which
+     * Statamic fires from its `$app->booted()` callback *before* it loads its
+     * own route files. These routes are therefore matched ahead of Statamic's
+     * front-end catch-all `Route::any('/{segments?}')`, exactly as they were
+     * when Statamic registered them via `additionalWebRoutes()`.
+     */
+    protected function bootInboundRoutes(): void
+    {
+        if ($this->inboundRoutesBooted) {
+            return;
+        }
+
+        $this->inboundRoutesBooted = true;
+
+        $prefix = static::inboundRoutePrefix();
+        $middleware = static::inboundMiddleware();
+        $legacyPrefixes = static::inboundLegacyRoutePrefixes();
+
+        require __DIR__.'/../routes/inbound.php';
     }
 
     /**

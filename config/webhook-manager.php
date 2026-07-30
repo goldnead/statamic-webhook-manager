@@ -156,8 +156,28 @@ return [
     |--------------------------------------------------------------------------
     */
     'inbound' => [
-        'route_prefix' => '!/webhooks/inbound',
-        'middleware' => ['web'],
+        /*
+         * Public prefix of the inbound endpoint. The CP renders endpoint URLs
+         * from this value, so what an operator copies out of the CP is what is
+         * actually routed.
+         */
+        'route_prefix' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::DEFAULT_INBOUND_PREFIX,
+
+        /*
+         * Prefixes that stay routable for senders configured against an older
+         * release. Set to [] once no sender uses the old URL any more.
+         */
+        'legacy_route_prefixes' => [
+            \Goldnead\WebhookManager\WebhookManagerServiceProvider::LEGACY_INBOUND_PREFIX,
+        ],
+
+        /*
+         * The COMPLETE middleware stack of the inbound endpoint — not a list
+         * appended to `web`. Adding 'web' here re-introduces CSRF validation
+         * and every external delivery starts failing with 419 again.
+         */
+        'middleware' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE,
+
         'max_payload_kb' => 512,
         'rate_limit_per_minute' => 60,
         'replay_protection_ttl_seconds' => 600,

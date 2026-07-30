@@ -93,15 +93,4 @@ abstract class TestCase extends BaseTestCase
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 
-    /**
-     * Statamic registers the addon's web routes via Statamic::pushWebRoutes()
-     * during its own boot phase, which doesn't fire in a stripped-down
-     * orchestra/testbench environment. Load the inbound endpoint routes
-     * directly so feature tests that POST to /!/webhooks/inbound/{handle}
-     * can hit the real controller instead of getting 404.
-     */
-    protected function defineRoutes($router): void
-    {
-        require __DIR__.'/../routes/inbound.php';
-    }
 }

@@ -184,7 +184,7 @@ class SettingsController extends CpController
 
         return [
             // Inbound route
-            'inbound_route_prefix'                  => $inbound['route_prefix']             ?? '/webhooks/inbound',
+            'inbound_route_prefix'                  => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
             'inbound_max_payload_kb'                => (int) ($inbound['max_payload_kb']            ?? 512),
             'inbound_rate_limit_per_minute'         => (int) ($inbound['rate_limit_per_minute']     ?? 60),
             'inbound_replay_protection_ttl_seconds' => (int) ($inbound['replay_protection_ttl_seconds'] ?? 600),

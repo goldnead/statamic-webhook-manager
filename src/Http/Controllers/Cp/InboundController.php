@@ -64,7 +64,7 @@ class InboundController extends CpController
             'canCreate'      => (bool) $request->user()?->can('manage inbound endpoints'),
             'searchTerm'     => $search,
             'actionOptions'  => $actions->options(),
-            'routePrefix'    => trim((string) config('webhook-manager.inbound.route_prefix', 'webhooks/inbound'), '/'),
+            'routePrefix'    => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 
@@ -94,7 +94,7 @@ class InboundController extends CpController
             'canDelete'   => false,
             'saveUrl'     => cp_route('webhook-manager.inbound.store'),
             'indexUrl'    => cp_route('webhook-manager.inbound.index'),
-            'routePrefix' => trim((string) config('webhook-manager.inbound.route_prefix', 'webhooks/inbound'), '/'),
+            'routePrefix' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 
@@ -136,7 +136,7 @@ class InboundController extends CpController
             'toggleUrl'     => cp_route('webhook-manager.inbound.toggle', $webhookInbound),
             'testUrl'       => cp_route('webhook-manager.actions.test-inbound', $webhookInbound),
             'indexUrl'      => cp_route('webhook-manager.inbound.index'),
-            'routePrefix'   => trim((string) config('webhook-manager.inbound.route_prefix', 'webhooks/inbound'), '/'),
+            'routePrefix'   => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 

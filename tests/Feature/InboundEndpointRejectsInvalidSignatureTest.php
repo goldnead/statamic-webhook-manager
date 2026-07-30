@@ -41,7 +41,7 @@ class InboundEndpointRejectsInvalidSignatureTest extends TestCase
 
         $response = $this->call(
             'POST',
-            "/!/webhooks/inbound/{$endpoint->handle}",
+            "/webhooks/inbound/{$endpoint->handle}",
             [],
             [],
             [],
@@ -63,7 +63,7 @@ class InboundEndpointRejectsInvalidSignatureTest extends TestCase
 
         $response = $this->call(
             'POST',
-            "/!/webhooks/inbound/{$endpoint->handle}",
+            "/webhooks/inbound/{$endpoint->handle}",
             [],
             [],
             [],
@@ -83,7 +83,7 @@ class InboundEndpointRejectsInvalidSignatureTest extends TestCase
         $endpoint = $this->makeHmacEndpoint('hmac-none', 'shared-secret');
 
         $response = $this->postJson(
-            "/!/webhooks/inbound/{$endpoint->handle}",
+            "/webhooks/inbound/{$endpoint->handle}",
             ['hello' => 'world'],
         );
 
@@ -107,7 +107,7 @@ class InboundEndpointRejectsInvalidSignatureTest extends TestCase
             'action_type' => 'noop',
         ]);
 
-        $response = $this->postJson('/!/webhooks/inbound/static', ['x' => 1], [
+        $response = $this->postJson('/webhooks/inbound/static', ['x' => 1], [
             'X-API-Key' => 'wrong-key',
         ]);
 
