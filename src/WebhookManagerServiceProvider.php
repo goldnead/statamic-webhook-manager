@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Console\Commands\InspectWebhookHealthCommand;
 use Goldnead\WebhookManager\Console\Commands\PruneWebhookDataCommand;
 use Goldnead\WebhookManager\Console\Commands\ReplayFailedDeliveriesCommand;
 use Goldnead\WebhookManager\Console\Commands\SeedWebhookExamplesCommand;
+use Goldnead\WebhookManager\Console\Commands\MigrateFlatBrandsCommand;
 use Goldnead\WebhookManager\Console\Commands\StorageMigrateCommand;
 use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Listeners\DispatchTriggerListener;
@@ -92,6 +93,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         InspectWebhookHealthCommand::class,
         SeedWebhookExamplesCommand::class,
         StorageMigrateCommand::class,
+        MigrateFlatBrandsCommand::class,
     ];
 
     /**
@@ -224,9 +226,13 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      */
     protected function bindStorageRepositories(): void
     {
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\FileStore::class, function () {
+        // One memo, one flush point, shared by everything that resolves a path.
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\BrandSegments::class);
+
+        $this->app->singleton(\Goldnead\WebhookManager\Storage\FileStore::class, function ($app) {
             return new \Goldnead\WebhookManager\Storage\FileStore(
                 (string) config('webhook-manager.storage.flat.path', base_path('content/webhooks')),
+                $app->make(\Goldnead\WebhookManager\Storage\BrandSegments::class),
             );
         });
 
