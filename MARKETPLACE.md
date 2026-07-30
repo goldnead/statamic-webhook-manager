@@ -64,6 +64,20 @@ Integrations · Automation · Workflow · Developer Tools · Utility
 - Statamic 6.0+ (Laravel 11/12/13)
 - A queue driver other than `sync` recommended for production
 
+## Screenshots
+
+| File | Caption |
+| --- | --- |
+| `screenshots/outbound.png` | Outbound webhooks — which events fire which requests, and whether they are healthy |
+| `screenshots/deliveries.png` | Delivery log with status, error classification and attempt count |
+| `screenshots/delivery-detail.png` | Delivery snapshot — full request and response, replayable with one click |
+| `screenshots/insights.png` | Insights — delivery volume, success rate and failures over time |
+
+## Art
+
+- `art/logo.svg` / `art/logo.png` — addon icon (256×256)
+- `art/cover.png` — marketplace cover, source: `art/cover.svg`
+
 ## Suggested Pricing Tiers
 
 | Tier | Price | Includes |
