@@ -38,7 +38,7 @@
   <text x="78" y="372" class="t" font-size="86" font-weight="800" fill="#FFFFFF">Manager</text>
 
   <text x="80" y="442" class="t" font-size="29" font-weight="400" fill="#FFFFFF" fill-opacity="0.85">Outbound &amp; inbound webhooks, deliveries, retries,</text>
-  <text x="80" y="481" class="t" font-size="29" font-weight="400" fill="#FFFFFF" fill-opacity="0.85">rules and insights — native to the Control Panel.</text>
+  <text x="80" y="481" class="t" font-size="29" font-weight="400" fill="#FFFFFF" fill-opacity="0.85">rules and insights. Native to the Control Panel.</text>
 
   <!-- Feature chips -->
   <g class="t" font-size="20" font-weight="600" fill="#FFFFFF">
