@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 1.10.0 — 2026-08-01
 ### Fixed — automatic retries were planned and never executed
 
 The most serious of the three. `RetryPlanner` computed the next attempt, `DeliveryEngine` wrote it to `next_retry_at`, the delivery detail screen rendered "next retry in 30 seconds", and `DeliveryRepository::readyForRetry()` — the query written specifically to find those rows — **had no caller anywhere in the package**. `ProcessOutboundDeliveryJob` sets `$tries = 1` and states in its own docblock that "a scheduled job dispatcher (or the replay command) picks it up". No such dispatcher existed, and `webhook-manager:replay-failed` is a manual bulk tool that nothing schedules either.
