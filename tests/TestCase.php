@@ -5,6 +5,8 @@ namespace Goldnead\WebhookManager\Tests;
 use Goldnead\BrandContext\ServiceProvider as BrandContextServiceProvider;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -22,6 +24,48 @@ abstract class TestCase extends BaseTestCase
         if ($provider) {
             $provider->bootAddon();
             $this->bootConsoleSurface($provider);
+        }
+    }
+
+    /**
+     * testbench rolls this addon's migrations back when the application is torn
+     * down, and the brand-scoping migration's `down()` restores the global
+     * `handle` unique that existed before brands. A test that exercises the
+     * feature — two brands, one handle — therefore leaves the test bed holding
+     * rows that the rollback cannot keep, and it refuses (see the migration and
+     * Migrations\RollbackWithExistingDataTest). That refusal is correct; an
+     * operator gets it too, and resolves it by removing one side of every
+     * collision before rolling back. The bed does the same thing here, after the
+     * test's assertions have run.
+     *
+     * Only visible under MySQL. The default SQLite run is in-memory and its
+     * database is gone before the rollback ever reads a row, which is why the
+     * rollback path had no coverage at all until the MySQL leg was added.
+     */
+    protected function tearDown(): void
+    {
+        $this->removeCrossBrandHandleCollisions();
+
+        parent::tearDown();
+    }
+
+    /**
+     * Keep the lowest id per handle in each root table, drop the rest.
+     */
+    protected function removeCrossBrandHandleCollisions(): void
+    {
+        $tables = ['webhook_outbounds', 'webhook_inbounds', 'webhook_rules', 'webhook_templates'];
+
+        foreach ($tables as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'brand_id')) {
+                continue;
+            }
+
+            $keep = DB::table($table)->selectRaw('min(id) as id')->groupBy('handle')->pluck('id')->all();
+
+            if ($keep !== []) {
+                DB::table($table)->whereNotIn('id', $keep)->delete();
+            }
         }
     }
 
