@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Fixed — automatic retries were planned and never executed
+
+The most serious of the three. `RetryPlanner` computed the next attempt, `DeliveryEngine` wrote it to `next_retry_at`, the delivery detail screen rendered "next retry in 30 seconds", and `DeliveryRepository::readyForRetry()` — the query written specifically to find those rows — **had no caller anywhere in the package**. `ProcessOutboundDeliveryJob` sets `$tries = 1` and states in its own docblock that "a scheduled job dispatcher (or the replay command) picks it up". No such dispatcher existed, and `webhook-manager:replay-failed` is a manual bulk tool that nothing schedules either.
+
+So a transient 503 produced a delivery that displayed as waiting for an attempt that would never come. The payload was lost and nothing said so, on an addon whose one-line description reads "deliveries, retries".
+
+- New `webhook-manager:dispatch-retries`, registered on the scheduler by the addon itself (every minute), so a stock Laravel install with the usual `schedule:run` cron needs no setup. `webhook-manager.retry.schedule = false` takes it off again.
+- Each due delivery is **claimed** — `next_retry_at` is cleared in a conditional update — before the attempt is handed off, so two overlapping scheduler runs cannot turn one planned attempt into two. If the attempt fails again the engine writes a fresh `next_retry_at` and the row returns on its own terms.
+- Queued hooks go back through `ProcessOutboundDeliveryJob`; sync hooks go straight through `DeliveryEngine`. Per brand, like the other scheduled commands.
+- `ScheduledRetriesActuallyRunTest` covers the whole path, including that a delivery out of attempts stops being scheduled and that the command is on the scheduler at all.
+
+**If you are upgrading:** confirm your site runs `php artisan schedule:run` from cron. Without it, retries still do not happen.
+
 ### Fixed — the Overview hid its own "Add a Rule" button from everyone
 
 `OverviewController` asked `can('manage rules')`. The registered ability is `manage webhook rules`. An ability nobody registered answers `false` for every user, super users included, so the CTA never rendered — on the very first screen a new install shows. No exception, no log line, no failing test; the same shape of defect as `test outbound webhooks` before 1.6.

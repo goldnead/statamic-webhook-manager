@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Tests;
 
 use Goldnead\BrandContext\ServiceProvider as BrandContextServiceProvider;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -20,7 +21,30 @@ abstract class TestCase extends BaseTestCase
         $provider = $this->app->getProvider(WebhookManagerServiceProvider::class);
         if ($provider) {
             $provider->bootAddon();
+            $this->bootConsoleSurface($provider);
         }
+    }
+
+    /**
+     * Console commands and the schedule entry are registered by
+     * AddonServiceProvider::boot(), but only from inside the Statamic::booted()
+     * callback that testbench never fires — the same reason bootAddon() is
+     * called by hand above.
+     *
+     * The parent's bootCommands() cannot be reused here: it resolves the addon
+     * out of Statamic's manifest, which needs a real installed package. The
+     * declared $commands array is read directly instead.
+     *
+     * Without this, `webhook-manager:*` does not exist in the suite and the
+     * scheduler is empty, so any test asserting on either would pass or fail
+     * for the wrong reason.
+     */
+    protected function bootConsoleSurface(WebhookManagerServiceProvider $provider): void
+    {
+        $commands = new \ReflectionProperty($provider, 'commands');
+        $provider->commands($commands->getValue($provider));
+
+        $provider->schedule($this->app->make(Schedule::class));
     }
 
     protected function getPackageProviders($app): array

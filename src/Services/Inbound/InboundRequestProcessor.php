@@ -220,8 +220,10 @@ class InboundRequestProcessor
      * Replay key: prefer an explicit idempotency header, then the HMAC
      * signature header (also unique per request), otherwise hash the body.
      *
-     * TODO: REVIEW — making the header configurable per endpoint is a
-     * v2 candidate; the body hash fallback covers the no-config case.
+     * The header names are fixed on purpose. Making them configurable per
+     * endpoint would be a new public config key, i.e. semver-locked for the
+     * whole major, and the body-hash fallback already covers every sender that
+     * uses neither header.
      */
     protected function replayKey(Request $request, array $payload, InboundEndpoint $endpoint): string
     {

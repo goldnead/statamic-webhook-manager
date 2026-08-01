@@ -30,7 +30,7 @@ Stop hand-rolling webhook glue code. Webhook Manager gives Statamic a configurab
 - Conditional execution, payload templates, custom headers and auth control
 - Auth schemes: none, bearer token, basic auth, custom header, HMAC SHA256 signature, IP allowlist (single addresses and CIDR ranges)
 - Per-endpoint inbound rate limiting, enforced ahead of authentication, with 429 + `Retry-After` and `X-RateLimit-*` headers
-- Queue-first delivery with configurable retry policy (linear / exponential / none)
+- Queue-first delivery with a configurable retry policy (linear / exponential / none), executed by a scheduled command the addon registers itself
 - Delivery snapshots with full request/response, error classification and attempts
 - Replay failed deliveries individually or in batches, optionally re-rendered against current data
 - Inbound endpoints: authenticated URLs that validate, map and dispatch external requests
@@ -64,6 +64,7 @@ Integrations · Automation · Workflow · Developer Tools · Utility
 - PHP 8.2+
 - Statamic 6.0+ (Laravel 12/13)
 - A queue driver other than `sync` recommended for production
+- The standard Laravel scheduler cron (`php artisan schedule:run`), which is what runs due retries
 
 ## Screenshots
 

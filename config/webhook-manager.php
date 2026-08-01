@@ -103,6 +103,17 @@ return [
     |--------------------------------------------------------------------------
     */
     'retry' => [
+        /*
+         * Put `webhook-manager:dispatch-retries` on the scheduler (every
+         * minute). This is what actually RUNS the retries the RetryPlanner
+         * schedules — without it a failed delivery gets a `next_retry_at`,
+         * the CP shows "next retry in 30 seconds", and nothing ever happens.
+         *
+         * Set to false only if you drive the command yourself. The host app
+         * still needs the usual `schedule:run` cron.
+         */
+        'schedule' => true,
+
         'strategy' => 'exponential', // none | linear | exponential
         'max_attempts' => 3,
         'base_delay_seconds' => 30,

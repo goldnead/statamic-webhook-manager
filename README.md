@@ -81,6 +81,20 @@ php artisan webhook-manager:storage:migrate --from=eloquent --to=flat --dry-run
 php artisan webhook-manager:storage:migrate --from=eloquent --to=flat
 ```
 
+### Retries
+
+A delivery that fails on a retryable status (or a network error) gets a `next_retry_at` from the retry policy — `none`, `linear` or `exponential`, capped at `max_delay_seconds`, up to `max_attempts`.
+
+Those retries are executed by `webhook-manager:dispatch-retries`, which the addon puts on the scheduler itself, once a minute. **Your site needs the standard Laravel scheduler cron** — the one every Laravel install already has:
+
+```
+* * * * * cd /path/to/site && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Without that cron, deliveries will sit at "next retry in …" forever. If you would rather drive the command yourself, set `webhook-manager.retry.schedule` to `false`.
+
+A retry is claimed before it runs, so two overlapping scheduler runs cannot turn one planned attempt into two. Once a delivery is out of attempts it stops being scheduled, the circuit breaker records the failure and the failure alert goes out.
+
 ### Inbound rate limiting
 
 An inbound endpoint accepts a fixed number of requests per minute. The limit is checked first, before the method allowlist and before authentication, so a flood cannot be used to make the site do work.
@@ -270,6 +284,7 @@ Forward-looking design questions that may evolve in future releases:
 
 ## Console commands
 
+- `php please webhook-manager:dispatch-retries` — run the deliveries whose scheduled retry is due. Registered on the scheduler automatically (every minute); you only need the standard Laravel `schedule:run` cron.
 - `php please webhook-manager:prune` — purge old deliveries/logs.
 - `php please webhook-manager:replay-failed` — bulk replay failures from the last N hours.
 - `php please webhook-manager:health` — show counts and recent failures.

@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager;
 
 use Goldnead\WebhookManager\Actions\Cp\SendWebhook;
 use Goldnead\WebhookManager\Auth\Support\ReplayProtectionService;
+use Goldnead\WebhookManager\Console\Commands\DispatchDueRetriesCommand;
 use Goldnead\WebhookManager\Console\Commands\InspectWebhookHealthCommand;
 use Goldnead\WebhookManager\Console\Commands\MigrateFlatBrandsCommand;
 use Goldnead\WebhookManager\Console\Commands\PruneWebhookDataCommand;
@@ -46,6 +47,7 @@ use Goldnead\WebhookManager\Storage\FileStore;
 use Goldnead\WebhookManager\Storage\ModelHydrator;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 use Statamic\Facades\CP\Nav;
@@ -147,6 +149,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     ];
 
     protected $commands = [
+        DispatchDueRetriesCommand::class,
         PruneWebhookDataCommand::class,
         ReplayFailedDeliveriesCommand::class,
         InspectWebhookHealthCommand::class,
@@ -175,6 +178,36 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->bootRegistries();
         $this->bootRouteBindings();
         $this->bootInboundRoutes();
+    }
+
+    /**
+     * Put the retry dispatcher on the scheduler.
+     *
+     * Retries were planned and never run: `DeliveryEngine` wrote
+     * `next_retry_at`, the CP showed "next retry in 30 seconds" and
+     * `DeliveryRepository::readyForRetry()` — the query written to find those
+     * rows — had no caller anywhere in the package. A scheduled command is the
+     * mechanism `ProcessOutboundDeliveryJob`'s own docblock already assumed
+     * existed.
+     *
+     * Registered here rather than left to the host app's `routes/console.php`,
+     * because a retry that only happens when the site owner remembers to wire
+     * it up is not a retry. `withoutOverlapping()` bounds a slow run; the
+     * command additionally claims each row before working on it, so even an
+     * overlapping run cannot double-send.
+     *
+     * Set `webhook-manager.retry.schedule` to false to take it off the
+     * scheduler and drive `webhook-manager:dispatch-retries` yourself.
+     */
+    public function schedule(Schedule $schedule): void
+    {
+        if (! config('webhook-manager.retry.schedule', true)) {
+            return;
+        }
+
+        $schedule->command(DispatchDueRetriesCommand::class)
+            ->everyMinute()
+            ->withoutOverlapping();
     }
 
     /**
