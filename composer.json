@@ -30,10 +30,10 @@
     "require": {
         "php": "^8.2",
         "goldnead/statamic-brand-context": "^1.3",
-        "illuminate/database": "^11.0|^12.0|^13.0",
-        "illuminate/http": "^11.0|^12.0|^13.0",
-        "illuminate/queue": "^11.0|^12.0|^13.0",
-        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/http": "^12.0|^13.0",
+        "illuminate/queue": "^12.0|^13.0",
+        "illuminate/support": "^12.0|^13.0",
         "inertiajs/inertia-laravel": "^1.0|^2.0",
         "statamic/cms": "^6.0"
     },
@@ -45,7 +45,7 @@
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "orchestra/testbench": "^10.0|^11.0",
         "phpunit/phpunit": "^10.5|^11.0|^12.0"
     },
     "autoload": {
@@ -91,7 +91,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "composer/installers": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "pixelfear/composer-dist-plugin": true
         }
     },
     "minimum-stability": "stable",

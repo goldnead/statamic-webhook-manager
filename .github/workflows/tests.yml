@@ -1,5 +1,23 @@
 name: tests
 
+# What this verifies, and why each axis is here:
+#
+#   php × laravel     composer.json promises PHP 8.2+ and Laravel 12|13. A
+#                     single-cell run makes those constraints a claim nobody
+#                     checked. Laravel 11 is deliberately absent: every 11.x
+#                     release up to v11.55 is covered by security advisories
+#                     and Composer refuses the line, so declaring it was never
+#                     an untested promise, it was an impossible one.
+#   stability         prefer-lowest catches the "works on my freshly updated
+#                     machine" class of bug — a call into an API that only
+#                     exists above our own declared floor.
+#   mysql             the default suite runs on SQLite, which has no InnoDB
+#                     index-length limit, no utf8mb4 byte arithmetic and no
+#                     fixed column widths. phpunit.mysql.xml has been in this
+#                     repo the whole time and no workflow ever ran it.
+#   pint / phpstan    style and static analysis as a check, never an
+#                     auto-commit onto someone's branch.
+
 on:
   push:
     branches: [main]
@@ -7,22 +25,29 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   test:
-    name: PHP ${{ matrix.php }} · Statamic ${{ matrix.statamic }}
+    name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }} · ${{ matrix.stability }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         php: ['8.2', '8.3', '8.4']
-        # The CP layer uses Inertia + Vue 3 + native @ui components which
-        # only exist in Statamic 6+. Statamic 6 ships Laravel 12/13.
-        statamic: ['6.*']
+        laravel: ['^12.0', '^13.0']
+        stability: [prefer-lowest, prefer-stable]
+        exclude:
+          # laravel/framework 13 requires PHP ^8.3 — the cell cannot resolve.
+          - php: '8.2'
+            laravel: '^13.0'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -40,21 +65,101 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php }}-${{ matrix.statamic }}-${{ hashFiles('composer.json') }}
+          key: composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.stability }}-${{ hashFiles('composer.json') }}
           restore-keys: |
-            composer-${{ matrix.php }}-${{ matrix.statamic }}-
+            composer-${{ matrix.php }}-${{ matrix.laravel }}-
             composer-${{ matrix.php }}-
 
-      - name: Pin Statamic version for this matrix cell
-        run: composer require "statamic/cms:${{ matrix.statamic }}" --no-update --no-interaction
+      - name: Pin Laravel for this matrix cell
+        run: composer require "laravel/framework:${{ matrix.laravel }}" --dev --no-update --no-interaction
 
       - name: Install dependencies
-        run: composer update --prefer-dist --no-progress --no-interaction
+        run: composer update --${{ matrix.stability }} --prefer-dist --no-progress --no-interaction
 
-      - name: Show installed Statamic / Laravel versions
-        run: |
-          composer show statamic/cms | grep -E '^(name|versions)'
-          composer show laravel/framework | grep -E '^(name|versions)' || true
+      - name: Show resolved versions
+        run: composer show laravel/framework statamic/cms --format=summary || true
 
       - name: Run PHPUnit test suite
         run: vendor/bin/phpunit --colors=always
+
+  mysql:
+    name: MySQL (phpunit.mysql.xml)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: webhook_manager_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, dom, fileinfo, pdo_mysql, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # The one run that proves the compiled DDL and a real InnoDB engine
+      # agree. See the header comment in phpunit.mysql.xml.
+      - name: Run PHPUnit against MySQL
+        run: vendor/bin/phpunit -c phpunit.mysql.xml --colors=always
+
+  style:
+    name: Code style (pint --test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --prefer-dist --no-progress --no-interaction
+
+      # Check, never fix: auto-committing style onto a contributor's branch
+      # rewrites their work without asking.
+      - run: vendor/bin/pint --test
+
+  static-analysis:
+    name: Static analysis (phpstan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --prefer-dist --no-progress --no-interaction
+
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G

@@ -6,7 +6,7 @@
 
 A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)**. Manage **outbound webhooks**, **inbound endpoints**, **deliveries**, **retries**, **replays**, **rules** and **templates** — all from one place inside the Control Panel.
 
-> **Status:** Stable on Statamic 6 (Laravel 11/12/13). Outbound webhooks, the delivery engine with retries & replay, inbound endpoints, the rule engine, payload templates and the full Vue + Inertia Control Panel are implemented and covered by the test suite.
+> **Status:** Stable on Statamic 6 (Laravel 12/13). Outbound webhooks, the delivery engine with retries & replay, inbound endpoints, the rule engine, payload templates and the full Vue + Inertia Control Panel are implemented and covered by the test suite.
 
 ---
 
@@ -30,7 +30,7 @@ A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)
 
 - PHP **8.2+**
 - Statamic **6.0+**
-- Laravel **11, 12 or 13**
+- Laravel **12 or 13**
 - Node **18+** (only needed if you rebuild the CP bundle from source)
 - A queue driver other than `sync` is strongly recommended.
 

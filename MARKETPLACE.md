@@ -62,7 +62,7 @@ Integrations · Automation · Workflow · Developer Tools · Utility
 ## Requirements
 
 - PHP 8.2+
-- Statamic 6.0+ (Laravel 11/12/13)
+- Statamic 6.0+ (Laravel 12/13)
 - A queue driver other than `sync` recommended for production
 
 ## Screenshots

@@ -1,8 +1,12 @@
 name: build-check
 
-# Fails the build if the committed resources/dist bundle is stale.
-# resources/dist is shipped via Composer (no npm at install time), so it must
-# always match current source. See scripts/check-dist-fresh.sh.
+# Two things about the CP bundle:
+#
+#   1. resources/dist is committed and shipped via Composer (no npm at install
+#      time), so it must always match current source. See
+#      scripts/check-dist-fresh.sh.
+#   2. The Vitest suite exists and, until now, never ran anywhere but on a
+#      developer's machine. Node is already set up in this job.
 
 on:
   push:
@@ -11,12 +15,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   dist-fresh:
     runs-on: ubuntu-latest
-    name: Committed dist is fresh (npm ci + build diff)
+    name: Committed dist is fresh, JS suite is green
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -36,8 +44,13 @@ jobs:
           node-version: '20'
           cache: npm
 
+      # --ignore-scripts: nothing in this dependency tree needs a postinstall,
+      # and a lifecycle script is the cheapest supply-chain foothold there is.
       - name: Install Node dependencies (reproducible)
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: Run the Vitest suite
+        run: npm test
 
       - name: Verify committed resources/dist is fresh
         run: npm run build:check
