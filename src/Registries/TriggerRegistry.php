@@ -56,17 +56,18 @@ class TriggerRegistry
             $opts[$t->handle()] = $t->label();
         }
         ksort($opts);
+
         return $opts;
     }
 
     public function registerDefaults(): void
     {
-        $this->register(new EntrySavedTrigger());
-        $this->register(new EntryPublishedTrigger());
-        $this->register(new EntryUnpublishedTrigger());
-        $this->register(new EntryDeletedTrigger());
-        $this->register(new FormSubmittedTrigger());
-        $this->register(new UserSavedTrigger());
-        $this->register(new AssetSavedTrigger());
+        $this->register(new EntrySavedTrigger);
+        $this->register(new EntryPublishedTrigger);
+        $this->register(new EntryUnpublishedTrigger);
+        $this->register(new EntryDeletedTrigger);
+        $this->register(new FormSubmittedTrigger);
+        $this->register(new UserSavedTrigger);
+        $this->register(new AssetSavedTrigger);
     }
 }

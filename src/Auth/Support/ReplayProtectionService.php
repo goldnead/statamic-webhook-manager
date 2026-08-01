@@ -10,9 +10,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
  */
 class ReplayProtectionService
 {
-    public function __construct(protected Cache $cache, protected int $ttlSeconds)
-    {
-    }
+    public function __construct(protected Cache $cache, protected int $ttlSeconds) {}
 
     public function seen(string $key): bool
     {
@@ -34,6 +32,7 @@ class ReplayProtectionService
             return false;
         }
         $this->remember($key);
+
         return true;
     }
 

@@ -14,10 +14,10 @@ class MappingEngineTest extends TestCase
     protected function engine(): MappingEngine
     {
         return new MappingEngine(
-            new PathResolver(),
-            new ValueTransformer(),
-            new TypeCoercer(),
-            new DefaultValueResolver(),
+            new PathResolver,
+            new ValueTransformer,
+            new TypeCoercer,
+            new DefaultValueResolver,
         );
     }
 

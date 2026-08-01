@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -327,9 +328,9 @@ return new class extends Migration
     }
 
     /**
-     * @return \Illuminate\Support\Collection<string, array>
+     * @return Collection<string, array>
      */
-    private function indexesOn(string $table): \Illuminate\Support\Collection
+    private function indexesOn(string $table): Collection
     {
         return collect(Schema::getIndexes($table))->keyBy('name');
     }

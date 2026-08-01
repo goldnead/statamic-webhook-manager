@@ -20,8 +20,7 @@ class FakeCpUser implements Authenticatable
     public function __construct(
         protected array $abilities = [],
         public string $id = 'qa-user',
-    ) {
-    }
+    ) {}
 
     public function can(string $ability, mixed $arguments = []): bool
     {
@@ -58,9 +57,7 @@ class FakeCpUser implements Authenticatable
         return null;
     }
 
-    public function setRememberToken($value)
-    {
-    }
+    public function setRememberToken($value) {}
 
     public function getRememberTokenName()
     {

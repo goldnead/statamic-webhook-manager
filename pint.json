@@ -1,0 +1,16 @@
+{
+    "preset": "laravel",
+    "exclude": [
+        "resources/dist",
+        "tests/Fixtures/released-migrations"
+    ],
+    "rules": {
+        "declare_strict_types": false,
+        "ordered_imports": {
+            "sort_algorithm": "alpha"
+        },
+        "no_unused_imports": true,
+        "not_operator_with_successor_space": true,
+        "php_unit_method_casing": false
+    }
+}

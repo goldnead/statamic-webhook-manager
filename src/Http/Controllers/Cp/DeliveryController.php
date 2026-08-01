@@ -298,10 +298,19 @@ class DeliveryController extends CpController
     protected function responseCodeColor(int|string|null $code): string
     {
         $code = (int) $code;
-        if ($code >= 500) return 'red';
-        if ($code >= 400) return 'amber';
-        if ($code >= 300) return 'blue';
-        if ($code >= 200) return 'green';
+        if ($code >= 500) {
+            return 'red';
+        }
+        if ($code >= 400) {
+            return 'amber';
+        }
+        if ($code >= 300) {
+            return 'blue';
+        }
+        if ($code >= 200) {
+            return 'green';
+        }
+
         return 'gray';
     }
 
@@ -327,6 +336,7 @@ class DeliveryController extends CpController
         }
         $key = 'webhook-manager::messages.failure_types.'.$type;
         $translated = __($key);
+
         return $translated === $key ? $type : $translated;
     }
 }

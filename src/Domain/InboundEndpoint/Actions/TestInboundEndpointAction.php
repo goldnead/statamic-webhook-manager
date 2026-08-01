@@ -20,8 +20,7 @@ class TestInboundEndpointAction
     public function __construct(
         protected InboundMappingService $mapping,
         protected InboundActionDispatcher $dispatcher,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{ok:bool, message:string, mapped:array, data:array, errors?:array<int,string>}

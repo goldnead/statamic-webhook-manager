@@ -2,12 +2,19 @@
 
 namespace Goldnead\WebhookManager;
 
+use Goldnead\WebhookManager\Actions\Cp\SendWebhook;
+use Goldnead\WebhookManager\Auth\Support\ReplayProtectionService;
 use Goldnead\WebhookManager\Console\Commands\InspectWebhookHealthCommand;
+use Goldnead\WebhookManager\Console\Commands\MigrateFlatBrandsCommand;
 use Goldnead\WebhookManager\Console\Commands\PruneWebhookDataCommand;
 use Goldnead\WebhookManager\Console\Commands\ReplayFailedDeliveriesCommand;
 use Goldnead\WebhookManager\Console\Commands\SeedWebhookExamplesCommand;
-use Goldnead\WebhookManager\Console\Commands\MigrateFlatBrandsCommand;
 use Goldnead\WebhookManager\Console\Commands\StorageMigrateCommand;
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
+use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Listeners\DispatchTriggerListener;
 use Goldnead\WebhookManager\Listeners\HandleAssetSavedListener;
@@ -17,13 +24,30 @@ use Goldnead\WebhookManager\Listeners\HandleEntrySavedListener;
 use Goldnead\WebhookManager\Listeners\HandleEntryUnpublishedListener;
 use Goldnead\WebhookManager\Listeners\HandleFormSubmittedListener;
 use Goldnead\WebhookManager\Listeners\HandleUserSavedListener;
+use Goldnead\WebhookManager\Listeners\SendFailureAlertListener;
 use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\ConditionRegistry;
 use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
+use Goldnead\WebhookManager\Registries\PresetRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
+use Goldnead\WebhookManager\Repositories\Eloquent\EloquentInboundEndpointRepository;
+use Goldnead\WebhookManager\Repositories\Eloquent\EloquentOutboundWebhookRepository;
+use Goldnead\WebhookManager\Repositories\Eloquent\EloquentRuleRepository;
+use Goldnead\WebhookManager\Repositories\Eloquent\EloquentTemplateRepository;
+use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileInboundEndpointRepository;
+use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileOutboundWebhookRepository;
+use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileRuleRepository;
+use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository;
+use Goldnead\WebhookManager\Storage\BrandSegments;
+use Goldnead\WebhookManager\Storage\FileStore;
+use Goldnead\WebhookManager\Storage\ModelHydrator;
+use Goldnead\WebhookManager\Storage\StorageDriverManager;
+use Goldnead\WebhookManager\Storage\StorageMigrator;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Route;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
@@ -59,7 +83,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      * the whole `web` group.
      */
     public const DEFAULT_INBOUND_MIDDLEWARE = [
-        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        SubstituteBindings::class,
     ];
 
     /** Guards against bootAddon() running twice on the same instance. */
@@ -104,8 +128,8 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         TriggerDetected::class => [
             DispatchTriggerListener::class,
         ],
-        \Goldnead\WebhookManager\Events\DeliveryFailedTerminally::class => [
-            \Goldnead\WebhookManager\Listeners\SendFailureAlertListener::class,
+        DeliveryFailedTerminally::class => [
+            SendFailureAlertListener::class,
         ],
     ];
 
@@ -137,7 +161,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      * action under Actions/Cp/ is registered explicitly here.
      */
     protected $actions = [
-        \Goldnead\WebhookManager\Actions\Cp\SendWebhook::class,
+        SendWebhook::class,
     ];
 
     public function bootAddon(): void
@@ -251,10 +275,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     public static function routeModelBindings(): array
     {
         return [
-            'webhookOutbound' => \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class,
-            'webhookInbound' => \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class,
-            'webhookRule' => \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class,
-            'webhookTemplate' => \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class,
+            'webhookOutbound' => OutboundWebhookRepositoryInterface::class,
+            'webhookInbound' => InboundEndpointRepositoryInterface::class,
+            'webhookRule' => RuleRepositoryInterface::class,
+            'webhookTemplate' => TemplateRepositoryInterface::class,
         ];
     }
 
@@ -267,7 +291,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     protected function bootRouteBindings(): void
     {
         foreach (static::routeModelBindings() as $param => $contract) {
-            \Illuminate\Support\Facades\Route::bind($param, function ($value) use ($contract) {
+            Route::bind($param, function ($value) use ($contract) {
                 $model = $this->app->make($contract)->find($value);
                 abort_if($model === null, 404);
 
@@ -303,10 +327,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->app->singleton(VariableResolverRegistry::class);
         $this->app->singleton(SuccessEvaluatorRegistry::class);
         $this->app->singleton(InboundActionHandlerRegistry::class);
-        $this->app->singleton(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
+        $this->app->singleton(PresetRegistry::class);
 
-        $this->app->singleton(\Goldnead\WebhookManager\Auth\Support\ReplayProtectionService::class, function ($app) {
-            return new \Goldnead\WebhookManager\Auth\Support\ReplayProtectionService(
+        $this->app->singleton(ReplayProtectionService::class, function ($app) {
+            return new ReplayProtectionService(
                 $app['cache.store'],
                 (int) config('webhook-manager.inbound.replay_protection_ttl_seconds', 600),
             );
@@ -329,35 +353,35 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     protected function bindStorageRepositories(): void
     {
         // One memo, one flush point, shared by everything that resolves a path.
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\BrandSegments::class);
+        $this->app->singleton(BrandSegments::class);
 
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\FileStore::class, function ($app) {
-            return new \Goldnead\WebhookManager\Storage\FileStore(
+        $this->app->singleton(FileStore::class, function ($app) {
+            return new FileStore(
                 (string) config('webhook-manager.storage.flat.path', base_path('content/webhooks')),
-                $app->make(\Goldnead\WebhookManager\Storage\BrandSegments::class),
+                $app->make(BrandSegments::class),
             );
         });
 
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\ModelHydrator::class);
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\StorageDriverManager::class);
-        $this->app->singleton(\Goldnead\WebhookManager\Storage\StorageMigrator::class);
+        $this->app->singleton(ModelHydrator::class);
+        $this->app->singleton(StorageDriverManager::class);
+        $this->app->singleton(StorageMigrator::class);
 
         $map = [
-            \Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class => [
-                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentOutboundWebhookRepository::class,
-                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileOutboundWebhookRepository::class,
+            OutboundWebhookRepositoryInterface::class => [
+                EloquentOutboundWebhookRepository::class,
+                FlatFileOutboundWebhookRepository::class,
             ],
-            \Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface::class => [
-                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentInboundEndpointRepository::class,
-                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileInboundEndpointRepository::class,
+            InboundEndpointRepositoryInterface::class => [
+                EloquentInboundEndpointRepository::class,
+                FlatFileInboundEndpointRepository::class,
             ],
-            \Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface::class => [
-                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentRuleRepository::class,
-                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileRuleRepository::class,
+            RuleRepositoryInterface::class => [
+                EloquentRuleRepository::class,
+                FlatFileRuleRepository::class,
             ],
-            \Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface::class => [
-                \Goldnead\WebhookManager\Repositories\Eloquent\EloquentTemplateRepository::class,
-                \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository::class,
+            TemplateRepositoryInterface::class => [
+                EloquentTemplateRepository::class,
+                FlatFileTemplateRepository::class,
             ],
         ];
 
@@ -365,7 +389,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
             $this->app->bind($contract, function ($app) use ($eloquent, $flat) {
                 // The active driver comes from the StorageDriverManager, which
                 // prefers a Control-Panel-persisted choice over config/env.
-                return $app->make(\Goldnead\WebhookManager\Storage\StorageDriverManager::class)->current() === 'flat'
+                return $app->make(StorageDriverManager::class)->current() === 'flat'
                     ? $app->make($flat)
                     : $app->make($eloquent);
             });
@@ -480,8 +504,8 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $actions = $this->app->make(ActionRegistry::class);
         $actions->registerDefaults();
 
-        /** @var \Goldnead\WebhookManager\Registries\PresetRegistry $presets */
-        $presets = $this->app->make(\Goldnead\WebhookManager\Registries\PresetRegistry::class);
+        /** @var PresetRegistry $presets */
+        $presets = $this->app->make(PresetRegistry::class);
         $presets->registerDefaults();
 
         $this->registerCustomEventTriggers();

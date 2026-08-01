@@ -19,9 +19,7 @@ use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
  */
 class WriteLogNoteAction implements ActionInterface
 {
-    public function __construct(protected SystemLogger $logger)
-    {
-    }
+    public function __construct(protected SystemLogger $logger) {}
 
     public function handle(): string
     {

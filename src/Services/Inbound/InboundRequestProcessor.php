@@ -8,6 +8,7 @@ use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Orchestrates the inbound pipeline:
@@ -44,12 +45,11 @@ class InboundRequestProcessor
         protected ReplayProtectionService $replay,
         protected SystemLogger $logger,
         protected RateLimiter $limiter,
-    ) {
-    }
+    ) {}
 
     public function process(Request $request, InboundEndpoint $endpoint): JsonResponse
     {
-        $correlationId = (string) \Illuminate\Support\Str::uuid();
+        $correlationId = (string) Str::uuid();
         $logCtx = [
             'endpoint_id' => $endpoint->id,
             'handle' => $endpoint->handle,
@@ -98,6 +98,7 @@ class InboundRequestProcessor
         if ($allowed && ! in_array(strtoupper($request->method()), $allowed, true)) {
             $this->logger->warning('inbound_method_not_allowed',
                 "Method {$request->method()} not allowed on {$endpoint->handle}", $logCtx);
+
             return $this->error($endpoint, 'Method not allowed.', 405);
         }
 
@@ -108,6 +109,7 @@ class InboundRequestProcessor
             if ($bodyLen > $maxKb * 1024) {
                 $this->logger->warning('inbound_payload_too_large',
                     "Payload {$bodyLen}B exceeds {$maxKb}KB on {$endpoint->handle}", $logCtx);
+
                 return $this->error($endpoint, 'Payload too large.', 413);
             }
         }
@@ -116,6 +118,7 @@ class InboundRequestProcessor
         if (! $this->auth->verify($request, $endpoint)) {
             $this->logger->warning('inbound_auth_failed',
                 "Auth failed on {$endpoint->handle} ({$endpoint->auth_type})", $logCtx);
+
             return $this->error($endpoint, 'Unauthorized.', 401);
         }
 
@@ -124,6 +127,7 @@ class InboundRequestProcessor
         $parsed = $this->parser->parse($request, $contentType);
         if (! $parsed['ok']) {
             $this->logger->warning('inbound_parse_failed', $parsed['error'] ?? 'Parse failed', $logCtx);
+
             return $this->error($endpoint, $parsed['error'] ?? 'Bad request.', 400);
         }
         $rawPayload = $parsed['data'];
@@ -134,6 +138,7 @@ class InboundRequestProcessor
             if (! $this->replay->check($key)) {
                 $this->logger->warning('inbound_replay_blocked',
                     "Replay-protected request rejected on {$endpoint->handle}", $logCtx);
+
                 return $this->error($endpoint, 'Duplicate request.', 409);
             }
         }
@@ -143,6 +148,7 @@ class InboundRequestProcessor
         if (! $mapped['ok']) {
             $this->logger->warning('inbound_mapping_failed',
                 'Mapping errors: '.implode('; ', $mapped['errors'] ?? []), $logCtx);
+
             return $this->error($endpoint, 'Mapping failed.', 422, [
                 'errors' => $mapped['errors'] ?? [],
             ]);
@@ -228,6 +234,7 @@ class InboundRequestProcessor
         if ($sig !== '') {
             return "endpoint:{$endpoint->id}:sig:{$sig}";
         }
+
         return "endpoint:{$endpoint->id}:body:".sha1((string) $request->getContent());
     }
 

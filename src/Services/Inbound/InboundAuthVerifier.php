@@ -8,9 +8,7 @@ use Illuminate\Http\Request;
 
 class InboundAuthVerifier
 {
-    public function __construct(protected AuthSchemeRegistry $schemes)
-    {
-    }
+    public function __construct(protected AuthSchemeRegistry $schemes) {}
 
     public function verify(Request $request, InboundEndpoint $endpoint): bool
     {
@@ -18,6 +16,7 @@ class InboundAuthVerifier
         if (! $scheme) {
             return false;
         }
+
         return $scheme->verify($request, $endpoint->auth_config ?? []);
     }
 }

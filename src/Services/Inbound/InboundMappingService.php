@@ -6,9 +6,7 @@ use Goldnead\WebhookManager\Mappers\MappingEngine;
 
 class InboundMappingService
 {
-    public function __construct(protected MappingEngine $engine)
-    {
-    }
+    public function __construct(protected MappingEngine $engine) {}
 
     /**
      * @return array{ok:bool, data:array, errors:array<int,string>}
@@ -18,6 +16,7 @@ class InboundMappingService
         if (empty($config)) {
             return ['ok' => true, 'data' => $payload, 'errors' => []];
         }
+
         return $this->engine->map($config, $payload);
     }
 }

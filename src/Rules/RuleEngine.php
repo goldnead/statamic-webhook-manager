@@ -2,8 +2,8 @@
 
 namespace Goldnead\WebhookManager\Rules;
 
-use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
+use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
@@ -24,8 +24,7 @@ class RuleEngine
         protected ConditionEvaluator $conditions,
         protected ActionExecutor $actions,
         protected SystemLogger $logger,
-    ) {
-    }
+    ) {}
 
     /**
      * Evaluate all enabled rules for the trigger in the context and execute
@@ -64,6 +63,7 @@ class RuleEngine
                 'rule_id' => $rule->id,
                 'correlation_id' => $context->event->correlationId,
             ]);
+
             return ExecutionResult::fail("Condition evaluation threw: {$e->getMessage()}",
                 $this->meta($rule, false, []));
         }

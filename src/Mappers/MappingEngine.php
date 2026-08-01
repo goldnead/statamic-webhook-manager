@@ -16,8 +16,7 @@ class MappingEngine
         protected ValueTransformer $transformer,
         protected TypeCoercer $coercer,
         protected DefaultValueResolver $defaults,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, array{path?:string, default?:mixed, transform?:string|array, type?:string, required?:bool}>  $mapping
@@ -38,6 +37,7 @@ class MappingEngine
 
             if ($value === null && ($rule['required'] ?? false)) {
                 $errors[] = "Missing required value for '{$targetKey}' (path: {$path}).";
+
                 continue;
             }
 

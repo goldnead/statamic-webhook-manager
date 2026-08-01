@@ -10,6 +10,7 @@ use Goldnead\WebhookManager\Contracts\PresetInterface;
 use Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface;
 use Goldnead\WebhookManager\Contracts\TemplateVariableResolverInterface;
 use Goldnead\WebhookManager\Contracts\TriggerInterface;
+use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\ConditionRegistry;
@@ -18,7 +19,6 @@ use Goldnead\WebhookManager\Registries\PresetRegistry;
 use Goldnead\WebhookManager\Registries\SuccessEvaluatorRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
-use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Triggers\CustomEventTrigger;
 use Illuminate\Contracts\Events\Dispatcher;
 
@@ -42,8 +42,7 @@ class WebhookManager
         protected InboundActionHandlerRegistry $inboundActionHandlers,
         protected PresetRegistry $presets,
         protected Dispatcher $events,
-    ) {
-    }
+    ) {}
 
     /**
      * Turn ANY Laravel/Statamic event class into a webhook trigger.
@@ -135,6 +134,7 @@ class WebhookManager
     public function registerPreset(PresetInterface $preset): self
     {
         $this->presets->register($preset);
+
         return $this;
     }
 
@@ -146,42 +146,49 @@ class WebhookManager
     public function registerTrigger(TriggerInterface $trigger): self
     {
         $this->triggers->register($trigger);
+
         return $this;
     }
 
     public function registerCondition(ConditionInterface $condition): self
     {
         $this->conditions->register($condition);
+
         return $this;
     }
 
     public function registerAction(ActionInterface $action): self
     {
         $this->actions->register($action);
+
         return $this;
     }
 
     public function registerAuthScheme(AuthVerifierInterface $verifier): self
     {
         $this->authSchemes->register($verifier);
+
         return $this;
     }
 
     public function registerVariableResolver(TemplateVariableResolverInterface $resolver): self
     {
         $this->variableResolvers->register($resolver);
+
         return $this;
     }
 
     public function registerSuccessEvaluator(SuccessEvaluatorInterface $evaluator): self
     {
         $this->successEvaluators->register($evaluator);
+
         return $this;
     }
 
     public function registerInboundActionHandler(InboundActionHandlerInterface $handler): self
     {
         $this->inboundActionHandlers->register($handler);
+
         return $this;
     }
 

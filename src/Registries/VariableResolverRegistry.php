@@ -34,12 +34,12 @@ class VariableResolverRegistry
 
     public function registerDefaults(): void
     {
-        $this->register(new EntryVariableResolver());
-        $this->register(new FormSubmissionVariableResolver());
-        $this->register(new UserVariableResolver());
-        $this->register(new AssetVariableResolver());
-        $this->register(new SiteVariableResolver());
-        $this->register(new SystemVariableResolver());
-        $this->register(new PayloadVariableResolver());
+        $this->register(new EntryVariableResolver);
+        $this->register(new FormSubmissionVariableResolver);
+        $this->register(new UserVariableResolver);
+        $this->register(new AssetVariableResolver);
+        $this->register(new SiteVariableResolver);
+        $this->register(new SystemVariableResolver);
+        $this->register(new PayloadVariableResolver);
     }
 }

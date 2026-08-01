@@ -15,6 +15,7 @@ class HmacSignatureVerifierTest extends TestCase
         foreach ($headers as $k => $v) {
             $r->headers->set($k, $v);
         }
+
         return $r;
     }
 
@@ -26,7 +27,7 @@ class HmacSignatureVerifierTest extends TestCase
 
         $request = $this->makeRequest($body, ['X-Webhook-Signature' => 'sha256='.$signature]);
 
-        $verifier = new HmacSignatureVerifier();
+        $verifier = new HmacSignatureVerifier;
         $this->assertTrue($verifier->verify($request, ['secret' => $secret]));
     }
 
@@ -35,20 +36,20 @@ class HmacSignatureVerifierTest extends TestCase
         $request = $this->makeRequest('{"hello":"world"}', [
             'X-Webhook-Signature' => 'sha256=deadbeef',
         ]);
-        $verifier = new HmacSignatureVerifier();
+        $verifier = new HmacSignatureVerifier;
         $this->assertFalse($verifier->verify($request, ['secret' => 'super-secret']));
     }
 
     public function test_rejects_when_secret_is_missing(): void
     {
         $request = $this->makeRequest('{}', ['X-Webhook-Signature' => 'sha256=abc']);
-        $verifier = new HmacSignatureVerifier();
+        $verifier = new HmacSignatureVerifier;
         $this->assertFalse($verifier->verify($request, []));
     }
 
     public function test_signs_outbound_request_with_timestamp_and_signature(): void
     {
-        $verifier = new HmacSignatureVerifier();
+        $verifier = new HmacSignatureVerifier;
         $signed = $verifier->sign([
             'method' => 'POST',
             'url' => 'https://example.com',

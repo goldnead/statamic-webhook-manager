@@ -13,9 +13,7 @@ use Illuminate\Http\Client\Response;
  */
 class HttpClient
 {
-    public function __construct(protected HttpFactory $http)
-    {
-    }
+    public function __construct(protected HttpFactory $http) {}
 
     /**
      * @return array{ok:bool, status:?int, headers:array, body:?string, duration_ms:int, error_message:?string, error_kind:?string}

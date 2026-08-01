@@ -7,9 +7,7 @@ use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 
 class ToggleInboundEndpointAction
 {
-    public function __construct(protected InboundEndpointRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected InboundEndpointRepositoryInterface $repository) {}
 
     public function __invoke(InboundEndpoint $endpoint, ?bool $enabled = null): InboundEndpoint
     {

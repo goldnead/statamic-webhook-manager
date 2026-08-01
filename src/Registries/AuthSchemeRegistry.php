@@ -38,21 +38,22 @@ class AuthSchemeRegistry
         foreach ($this->schemes as $s) {
             $opts[$s->handle()] = $s->label();
         }
+
         return $opts;
     }
 
     public function registerDefaults(): void
     {
-        $this->register(new NoAuthVerifier());
-        $this->register(new StaticHeaderVerifier());
-        $this->register(new BearerTokenVerifier());
-        $this->register(new BasicAuthVerifier());
-        $this->register(new HmacSignatureVerifier());
+        $this->register(new NoAuthVerifier);
+        $this->register(new StaticHeaderVerifier);
+        $this->register(new BearerTokenVerifier);
+        $this->register(new BasicAuthVerifier);
+        $this->register(new HmacSignatureVerifier);
         // Selectable in SaveInboundEndpointRequest, given a badge colour on the
         // inbound index and an example config on the edit screen since 1.0 —
         // but never registered here, so `AuthSchemeRegistry::get()` answered
         // null and InboundAuthVerifier failed the request closed. An operator
         // who picked "IP allowlist" got an endpoint that 401s everything.
-        $this->register(new IpAllowlistVerifier());
+        $this->register(new IpAllowlistVerifier);
     }
 }

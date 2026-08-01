@@ -35,7 +35,7 @@ class FormSubmittedTrigger implements TriggerInterface
             site: $payload['site'] ?? null,
             locale: null,
             isReplay: (bool) ($context['replay'] ?? false),
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
     }
 }

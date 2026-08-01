@@ -3,6 +3,13 @@
 namespace Goldnead\WebhookManager\Registries;
 
 use Goldnead\WebhookManager\Contracts\PresetInterface;
+use Goldnead\WebhookManager\Presets\DiscordPreset;
+use Goldnead\WebhookManager\Presets\GenericJsonPreset;
+use Goldnead\WebhookManager\Presets\MakePreset;
+use Goldnead\WebhookManager\Presets\MicrosoftTeamsPreset;
+use Goldnead\WebhookManager\Presets\N8nPreset;
+use Goldnead\WebhookManager\Presets\SlackPreset;
+use Goldnead\WebhookManager\Presets\ZapierPreset;
 
 /**
  * Registry of outbound integration presets. Built-ins are registered in
@@ -54,13 +61,13 @@ class PresetRegistry
     public function registerDefaults(): void
     {
         $defaults = [
-            \Goldnead\WebhookManager\Presets\SlackPreset::class,
-            \Goldnead\WebhookManager\Presets\DiscordPreset::class,
-            \Goldnead\WebhookManager\Presets\MicrosoftTeamsPreset::class,
-            \Goldnead\WebhookManager\Presets\ZapierPreset::class,
-            \Goldnead\WebhookManager\Presets\MakePreset::class,
-            \Goldnead\WebhookManager\Presets\N8nPreset::class,
-            \Goldnead\WebhookManager\Presets\GenericJsonPreset::class,
+            SlackPreset::class,
+            DiscordPreset::class,
+            MicrosoftTeamsPreset::class,
+            ZapierPreset::class,
+            MakePreset::class,
+            N8nPreset::class,
+            GenericJsonPreset::class,
         ];
 
         foreach ($defaults as $class) {

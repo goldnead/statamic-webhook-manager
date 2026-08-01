@@ -12,8 +12,7 @@ class CreateInboundEndpointAction
     public function __construct(
         protected InboundEndpointRepositoryInterface $repository,
         protected AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     public function __invoke(array $attributes): InboundEndpoint
     {

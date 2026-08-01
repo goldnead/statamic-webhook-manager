@@ -3,10 +3,10 @@
 namespace Goldnead\WebhookManager\Services\Http;
 
 use Goldnead\WebhookManager\Auth\Support\SecretMasker;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
-use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Services\FailureClassifier;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Goldnead\WebhookManager\Templates\TemplateRenderer;
@@ -25,8 +25,7 @@ class HttpRequestFactory
         protected AuthSchemeRegistry $authSchemes,
         protected TemplateRepositoryInterface $templates,
         protected SystemLogger $logger,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{method:string, url:string, headers:array<string,string>, body:string, idempotency_key:?string}
@@ -110,6 +109,7 @@ class HttpRequestFactory
             // sensible default: JSON-encoded payload from the trigger
             return (string) json_encode($context->event->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         }
+
         return $this->renderer->render($inline, $context);
     }
 

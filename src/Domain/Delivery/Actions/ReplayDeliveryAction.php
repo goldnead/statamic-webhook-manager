@@ -28,8 +28,7 @@ class ReplayDeliveryAction
         protected DeliveryLogger $logger,
         protected TemplateRenderer $renderer,
         protected OutboundWebhookRepositoryInterface $webhooks,
-    ) {
-    }
+    ) {}
 
     public function __invoke(Delivery $delivery, bool $reRender = false): Delivery
     {
@@ -62,6 +61,7 @@ class ReplayDeliveryAction
 
         $delivery = $this->engine->send($delivery);
         $this->logger->replayed($delivery);
+
         return $delivery;
     }
 }

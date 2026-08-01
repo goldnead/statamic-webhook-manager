@@ -30,8 +30,7 @@ class TriggerDispatcher
         protected ResolveOutboundWebhookQuery $resolveOutbound,
         protected DispatchOutboundWebhookAction $dispatchOutbound,
         protected RuleEngine $rules,
-    ) {
-    }
+    ) {}
 
     public function dispatch(TriggerEvent $trigger): void
     {

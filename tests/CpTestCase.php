@@ -5,6 +5,7 @@ namespace Goldnead\WebhookManager\Tests;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Statamic\Facades\Permission;
 
 /**
  * Base class for tests that exercise the REAL Control-Panel request path:
@@ -75,7 +76,7 @@ abstract class CpTestCase extends TestCase
     /** @return array<int,string> */
     protected function registeredAbilities(): array
     {
-        return \Statamic\Facades\Permission::all()
+        return Permission::all()
             ->filter(fn ($permission) => $permission->group() === 'webhook_manager')
             ->map(fn ($permission) => $permission->value())
             ->filter(fn ($value) => is_string($value))

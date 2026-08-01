@@ -3,8 +3,8 @@
 namespace Goldnead\WebhookManager\Triggers;
 
 use Goldnead\WebhookManager\Contracts\TriggerInterface;
-use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
 use Goldnead\WebhookManager\Support\StatamicSnapshot;
+use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
 
 class EntryDeletedTrigger implements TriggerInterface
 {
@@ -35,7 +35,7 @@ class EntryDeletedTrigger implements TriggerInterface
             site: $payload['site'] ?? null,
             locale: $payload['locale'] ?? null,
             isReplay: (bool) ($context['replay'] ?? false),
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
     }
 }

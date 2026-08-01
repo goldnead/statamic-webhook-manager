@@ -24,13 +24,11 @@ class TemplateRenderer implements PayloadRendererInterface
 {
     public const TOKEN_PATTERN = '/\{\{\s*([a-zA-Z0-9_]+)\s*:\s*([a-zA-Z0-9_.-]+)\s*(?:\|\s*default\(\s*\'([^\']*)\'\s*\)\s*)?\}\}/';
 
-    public function __construct(protected VariableResolverRegistry $resolvers)
-    {
-    }
+    public function __construct(protected VariableResolverRegistry $resolvers) {}
 
     public function render(string $template, ExecutionContext $context): string
     {
-        return preg_replace_callback(self::TOKEN_PATTERN, function (array $matches) use ($context, $template) {
+        return preg_replace_callback(self::TOKEN_PATTERN, function (array $matches) use ($context) {
             [, $namespace, $key, $default] = $matches + [3 => null];
 
             $resolver = $this->resolvers->get($namespace);
@@ -46,8 +44,10 @@ class TemplateRenderer implements PayloadRendererInterface
                 if ($default !== null) {
                     return $default;
                 }
+
                 return '';
             }
+
             return self::stringify($value);
         }, $template) ?? $template;
     }
@@ -68,6 +68,7 @@ class TemplateRenderer implements PayloadRendererInterface
             && (preg_match_all(self::TOKEN_PATTERN, $template, $strict) < count($allMatches[0]))) {
             $issues[] = 'Some tokens do not match the supported {{ namespace:key }} syntax.';
         }
+
         return $issues;
     }
 
@@ -79,6 +80,7 @@ class TemplateRenderer implements PayloadRendererInterface
         if (is_array($value) || is_object($value)) {
             return (string) json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         }
+
         return (string) $value;
     }
 }

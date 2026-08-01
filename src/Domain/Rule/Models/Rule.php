@@ -5,6 +5,7 @@ namespace Goldnead\WebhookManager\Domain\Rule\Models;
 use Goldnead\BrandContext\Concerns\HasBrand;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * A "When → If → Then" automation rule: a trigger, a condition tree and an
@@ -32,7 +33,7 @@ class Rule extends Model
     {
         static::creating(function (Rule $rule) {
             if (! $rule->uuid) {
-                $rule->uuid = (string) \Illuminate\Support\Str::uuid();
+                $rule->uuid = (string) Str::uuid();
             }
         });
     }

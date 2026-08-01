@@ -8,9 +8,7 @@ use Illuminate\Support\Str;
 
 class CreateTemplateAction
 {
-    public function __construct(protected TemplateRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected TemplateRepositoryInterface $repository) {}
 
     public function __invoke(array $attributes): Template
     {

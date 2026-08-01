@@ -29,6 +29,7 @@ class SeedWebhookExamplesCommand extends Command
         $this->seedOutboundHooks($force);
 
         $this->info('Sample fixtures installed. Visit Webhooks → Outbound in the CP.');
+
         return self::SUCCESS;
     }
 

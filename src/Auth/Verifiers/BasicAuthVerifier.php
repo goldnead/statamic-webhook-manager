@@ -44,6 +44,7 @@ class BasicAuthVerifier implements AuthVerifierInterface
         if ($user !== '' || $pass !== '') {
             $request['headers']['Authorization'] = 'Basic '.base64_encode($user.':'.$pass);
         }
+
         return $request;
     }
 }

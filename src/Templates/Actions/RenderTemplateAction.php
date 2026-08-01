@@ -7,9 +7,7 @@ use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 
 class RenderTemplateAction
 {
-    public function __construct(protected TemplateRenderer $renderer)
-    {
-    }
+    public function __construct(protected TemplateRenderer $renderer) {}
 
     public function __invoke(string $template, ExecutionContext $context): string
     {

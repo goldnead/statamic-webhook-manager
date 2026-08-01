@@ -16,8 +16,7 @@ class CircuitBreaker
     public function __construct(
         protected SystemLogger $logger,
         protected OutboundWebhookRepositoryInterface $repository,
-    ) {
-    }
+    ) {}
 
     public function recordSuccess(OutboundWebhook $hook): void
     {

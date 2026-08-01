@@ -30,6 +30,7 @@ class StatusListSuccessEvaluator implements SuccessEvaluatorInterface
         if ($needle && is_string($response['body'] ?? null)) {
             return str_contains($response['body'], $needle);
         }
+
         return $allowed !== [];
     }
 }

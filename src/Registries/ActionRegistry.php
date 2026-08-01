@@ -2,6 +2,15 @@
 
 namespace Goldnead\WebhookManager\Registries;
 
+use Goldnead\WebhookManager\Actions\CreateEntryAction;
+use Goldnead\WebhookManager\Actions\CreateFormSubmissionAction;
+use Goldnead\WebhookManager\Actions\DispatchEventAction;
+use Goldnead\WebhookManager\Actions\SendEmailAction;
+use Goldnead\WebhookManager\Actions\SendOutboundWebhookAction;
+use Goldnead\WebhookManager\Actions\SendSlackWebhookAction;
+use Goldnead\WebhookManager\Actions\SetFieldValueAction;
+use Goldnead\WebhookManager\Actions\UpdateEntryAction;
+use Goldnead\WebhookManager\Actions\WriteLogNoteAction;
 use Goldnead\WebhookManager\Contracts\ActionInterface;
 
 /**
@@ -41,6 +50,7 @@ class ActionRegistry
         foreach ($this->actions as $a) {
             $opts[$a->handle()] = $a->label();
         }
+
         return $opts;
     }
 
@@ -52,15 +62,15 @@ class ActionRegistry
     public function registerDefaults(): void
     {
         $defaults = [
-            \Goldnead\WebhookManager\Actions\SendOutboundWebhookAction::class,
-            \Goldnead\WebhookManager\Actions\CreateEntryAction::class,
-            \Goldnead\WebhookManager\Actions\UpdateEntryAction::class,
-            \Goldnead\WebhookManager\Actions\CreateFormSubmissionAction::class,
-            \Goldnead\WebhookManager\Actions\DispatchEventAction::class,
-            \Goldnead\WebhookManager\Actions\SendEmailAction::class,
-            \Goldnead\WebhookManager\Actions\SendSlackWebhookAction::class,
-            \Goldnead\WebhookManager\Actions\SetFieldValueAction::class,
-            \Goldnead\WebhookManager\Actions\WriteLogNoteAction::class,
+            SendOutboundWebhookAction::class,
+            CreateEntryAction::class,
+            UpdateEntryAction::class,
+            CreateFormSubmissionAction::class,
+            DispatchEventAction::class,
+            SendEmailAction::class,
+            SendSlackWebhookAction::class,
+            SetFieldValueAction::class,
+            WriteLogNoteAction::class,
         ];
 
         foreach ($defaults as $class) {

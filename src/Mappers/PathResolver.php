@@ -16,10 +16,13 @@ class PathResolver
         foreach ($segments as $segment) {
             if (is_array($value) && array_key_exists($segment, $value)) {
                 $value = $value[$segment];
+
                 continue;
             }
+
             return null;
         }
+
         return $value;
     }
 
@@ -33,6 +36,7 @@ class PathResolver
         foreach ($parts as $p) {
             $out[] = is_numeric($p) ? (int) $p : (string) $p;
         }
+
         return $out;
     }
 }

@@ -14,7 +14,7 @@ class SystemVariableResolver implements TemplateVariableResolverInterface
 
     public function resolve(string $key, ExecutionContext $context): mixed
     {
-        $now = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable;
 
         return match ($key) {
             'timestamp' => $now->getTimestamp(),

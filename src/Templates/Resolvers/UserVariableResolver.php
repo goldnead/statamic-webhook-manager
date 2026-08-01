@@ -17,6 +17,7 @@ class UserVariableResolver implements TemplateVariableResolverInterface
         if ($context->event->sourceType !== 'user') {
             return null;
         }
+
         return $context->payload()[$key] ?? null;
     }
 }

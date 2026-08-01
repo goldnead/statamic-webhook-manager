@@ -3,8 +3,8 @@
 namespace Goldnead\WebhookManager\Actions;
 
 use Goldnead\WebhookManager\Contracts\ActionInterface;
-use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction;
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DispatchOutboundWebhookAction;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
 
@@ -21,8 +21,7 @@ class SendOutboundWebhookAction implements ActionInterface
     public function __construct(
         protected OutboundWebhookRepositoryInterface $hooks,
         protected DispatchOutboundWebhookAction $dispatch,
-    ) {
-    }
+    ) {}
 
     public function handle(): string
     {
@@ -51,6 +50,7 @@ class SendOutboundWebhookAction implements ActionInterface
 
         try {
             $deliveryId = ($this->dispatch)($hook, $context);
+
             return ExecutionResult::ok('Outbound webhook dispatched.', [
                 'webhook_handle' => $handle,
                 'delivery_id' => $deliveryId,

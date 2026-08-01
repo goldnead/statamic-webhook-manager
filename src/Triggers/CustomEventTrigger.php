@@ -24,8 +24,8 @@ class CustomEventTrigger implements TriggerInterface
      * @param  string  $label  Human-readable label for the CP picker.
      * @param  string  $sourceType  Source category, e.g. "order" or "event".
      * @param  (callable(mixed): array)|null  $payloadResolver  Maps the raw
-     *         event object to an array payload. When null, build() falls back
-     *         to toArray()/public properties/array pass-through.
+     *                                                          event object to an array payload. When null, build() falls back
+     *                                                          to toArray()/public properties/array pass-through.
      * @param  string|null  $description  Optional human description.
      */
     public function __construct(
@@ -34,8 +34,7 @@ class CustomEventTrigger implements TriggerInterface
         protected string $sourceType = 'event',
         protected mixed $payloadResolver = null,
         protected ?string $description = null,
-    ) {
-    }
+    ) {}
 
     public function handle(): string
     {
@@ -69,7 +68,7 @@ class CustomEventTrigger implements TriggerInterface
             site: $payload['site'] ?? null,
             locale: $payload['locale'] ?? null,
             isReplay: (bool) ($context['replay'] ?? false),
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
     }
 

@@ -163,6 +163,7 @@ class LogController extends CpController
         }
         $key = 'webhook-manager::messages.failure_types.'.$type;
         $translated = __($key);
+
         // If there is no translation registered, __() returns the key
         // unchanged. Fall back to the raw type in that case.
         return $translated === $key ? $type : $translated;

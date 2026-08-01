@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Actions\CreateInboundEndpointAction;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Actions\DeleteInboundEndpointAction;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Actions\ToggleInboundEndpointAction;
@@ -10,7 +11,7 @@ use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Http\Requests\SaveInboundEndpointRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
-use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInterface;
+use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -28,7 +29,7 @@ class InboundController extends CpController
         // `perPage`. We accept the legacy `q` param too to keep older
         // bookmarked links working.
         $perPage = (int) $request->get('perPage', 25) ?: 25;
-        $search  = $request->get('search', $request->get('q', ''));
+        $search = $request->get('search', $request->get('q', ''));
 
         $endpoints = $repository->paginate($perPage, $search);
 
@@ -40,11 +41,11 @@ class InboundController extends CpController
             'data' => $rows,
             'meta' => [
                 'current_page' => $endpoints->currentPage(),
-                'last_page'    => $endpoints->lastPage(),
-                'per_page'     => $endpoints->perPage(),
-                'total'        => $endpoints->total(),
-                'from'         => $endpoints->firstItem(),
-                'to'           => $endpoints->lastItem(),
+                'last_page' => $endpoints->lastPage(),
+                'per_page' => $endpoints->perPage(),
+                'total' => $endpoints->total(),
+                'from' => $endpoints->firstItem(),
+                'to' => $endpoints->lastItem(),
             ],
         ];
 
@@ -56,15 +57,15 @@ class InboundController extends CpController
         }
 
         return Inertia::render('webhook-manager::Inbound/Index', [
-            'endpoints'      => $listingPayload,
+            'endpoints' => $listingPayload,
             'initialColumns' => $this->indexColumns(),
-            'listingUrl'     => cp_route('webhook-manager.inbound.index'),
-            'actionUrl'      => cp_route('webhook-manager.inbound.index'),
-            'createUrl'      => cp_route('webhook-manager.inbound.create'),
-            'canCreate'      => (bool) $request->user()?->can('manage inbound endpoints'),
-            'searchTerm'     => $search,
-            'actionOptions'  => $actions->options(),
-            'routePrefix'    => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'listingUrl' => cp_route('webhook-manager.inbound.index'),
+            'actionUrl' => cp_route('webhook-manager.inbound.index'),
+            'createUrl' => cp_route('webhook-manager.inbound.create'),
+            'canCreate' => (bool) $request->user()?->can('manage inbound endpoints'),
+            'searchTerm' => $search,
+            'actionOptions' => $actions->options(),
+            'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 
@@ -76,25 +77,25 @@ class InboundController extends CpController
         $this->authorizeOr403($request, 'manage inbound endpoints');
 
         $endpoint = new InboundEndpoint([
-            'enabled'                   => true,
-            'allowed_methods'           => ['POST'],
-            'auth_type'                 => 'static_header',
-            'expected_content_type'     => 'application/json',
-            'max_payload_kb'            => 512,
+            'enabled' => true,
+            'allowed_methods' => ['POST'],
+            'auth_type' => 'static_header',
+            'expected_content_type' => 'application/json',
+            'max_payload_kb' => 512,
             'replay_protection_enabled' => false,
-            'logging_mode'              => 'partial',
-            'action_type'               => 'noop',
+            'logging_mode' => 'partial',
+            'action_type' => 'noop',
         ]);
 
         return Inertia::render('webhook-manager::Inbound/Edit', [
-            'endpoint'    => $this->editPayload($endpoint),
+            'endpoint' => $this->editPayload($endpoint),
             'authOptions' => $auth->options(),
             'actionOptions' => $actions->options(),
-            'isNew'       => true,
-            'canDelete'   => false,
-            'saveUrl'     => cp_route('webhook-manager.inbound.store'),
-            'indexUrl'    => cp_route('webhook-manager.inbound.index'),
-            'routePrefix' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'isNew' => true,
+            'canDelete' => false,
+            'saveUrl' => cp_route('webhook-manager.inbound.store'),
+            'indexUrl' => cp_route('webhook-manager.inbound.index'),
+            'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 
@@ -105,8 +106,8 @@ class InboundController extends CpController
         $this->authorizeOr403($request, 'manage inbound endpoints');
 
         $attributes = $this->normalizeAuthConfig($request->validated());
-        $attributes = $this->normalizeJsonConfig($attributes, ['mapping_config_json'  => 'mapping_config']);
-        $attributes = $this->normalizeJsonConfig($attributes, ['action_config_json'   => 'action_config']);
+        $attributes = $this->normalizeJsonConfig($attributes, ['mapping_config_json' => 'mapping_config']);
+        $attributes = $this->normalizeJsonConfig($attributes, ['action_config_json' => 'action_config']);
         $attributes = $this->normalizeJsonConfig($attributes, ['response_config_json' => 'response_config']);
 
         $endpoint = ($create)($attributes);
@@ -126,17 +127,17 @@ class InboundController extends CpController
         $user = $request->user();
 
         return Inertia::render('webhook-manager::Inbound/Edit', [
-            'endpoint'      => $this->editPayload($webhookInbound),
-            'authOptions'   => $auth->options(),
+            'endpoint' => $this->editPayload($webhookInbound),
+            'authOptions' => $auth->options(),
             'actionOptions' => $actions->options(),
-            'isNew'         => false,
-            'canDelete'     => (bool) $user?->can('manage inbound endpoints'),
-            'saveUrl'       => cp_route('webhook-manager.inbound.update', $webhookInbound),
-            'deleteUrl'     => cp_route('webhook-manager.inbound.destroy', $webhookInbound),
-            'toggleUrl'     => cp_route('webhook-manager.inbound.toggle', $webhookInbound),
-            'testUrl'       => cp_route('webhook-manager.actions.test-inbound', $webhookInbound),
-            'indexUrl'      => cp_route('webhook-manager.inbound.index'),
-            'routePrefix'   => \Goldnead\WebhookManager\WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'isNew' => false,
+            'canDelete' => (bool) $user?->can('manage inbound endpoints'),
+            'saveUrl' => cp_route('webhook-manager.inbound.update', $webhookInbound),
+            'deleteUrl' => cp_route('webhook-manager.inbound.destroy', $webhookInbound),
+            'toggleUrl' => cp_route('webhook-manager.inbound.toggle', $webhookInbound),
+            'testUrl' => cp_route('webhook-manager.actions.test-inbound', $webhookInbound),
+            'indexUrl' => cp_route('webhook-manager.inbound.index'),
+            'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
         ]);
     }
 
@@ -148,8 +149,8 @@ class InboundController extends CpController
         $this->authorizeOr403($request, 'manage inbound endpoints');
 
         $attributes = $this->normalizeAuthConfig($request->validated());
-        $attributes = $this->normalizeJsonConfig($attributes, ['mapping_config_json'  => 'mapping_config']);
-        $attributes = $this->normalizeJsonConfig($attributes, ['action_config_json'   => 'action_config']);
+        $attributes = $this->normalizeJsonConfig($attributes, ['mapping_config_json' => 'mapping_config']);
+        $attributes = $this->normalizeJsonConfig($attributes, ['action_config_json' => 'action_config']);
         $attributes = $this->normalizeJsonConfig($attributes, ['response_config_json' => 'response_config']);
 
         ($update)($webhookInbound, $attributes);
@@ -215,28 +216,28 @@ class InboundController extends CpController
      */
     protected function row(InboundEndpoint $endpoint, Request $request): array
     {
-        $user      = $request->user();
+        $user = $request->user();
         $canManage = (bool) $user?->can('manage inbound endpoints');
 
         return [
-            'id'          => $endpoint->id,
-            'uuid'        => $endpoint->uuid,
-            'name'        => $endpoint->name,
-            'handle'      => $endpoint->handle,
-            'path'        => $endpoint->path,
-            'auth_type'   => $endpoint->auth_type,
+            'id' => $endpoint->id,
+            'uuid' => $endpoint->uuid,
+            'name' => $endpoint->name,
+            'handle' => $endpoint->handle,
+            'path' => $endpoint->path,
+            'auth_type' => $endpoint->auth_type,
             'action_type' => $endpoint->action_type,
-            'enabled'     => (bool) $endpoint->enabled,
+            'enabled' => (bool) $endpoint->enabled,
 
             // Permissions surfaced to the UI so v-if conditions stay
             // declarative and don't leak ability strings into Vue.
-            'can_edit'    => $canManage,
-            'can_toggle'  => $canManage,
-            'can_delete'  => $canManage,
+            'can_edit' => $canManage,
+            'can_toggle' => $canManage,
+            'can_delete' => $canManage,
 
-            'edit_url'    => cp_route('webhook-manager.inbound.edit', $endpoint),
-            'toggle_url'  => cp_route('webhook-manager.inbound.toggle', $endpoint),
-            'delete_url'  => cp_route('webhook-manager.inbound.destroy', $endpoint),
+            'edit_url' => cp_route('webhook-manager.inbound.edit', $endpoint),
+            'toggle_url' => cp_route('webhook-manager.inbound.toggle', $endpoint),
+            'delete_url' => cp_route('webhook-manager.inbound.destroy', $endpoint),
         ];
     }
 
@@ -252,24 +253,24 @@ class InboundController extends CpController
     protected function editPayload(InboundEndpoint $endpoint): array
     {
         return [
-            'id'                        => $endpoint->id,
-            'uuid'                      => $endpoint->uuid,
-            'name'                      => $endpoint->name,
-            'handle'                    => $endpoint->handle,
-            'description'               => $endpoint->description,
-            'enabled'                   => (bool) ($endpoint->enabled ?? true),
-            'path'                      => $endpoint->path,
-            'allowed_methods'           => $endpoint->allowed_methods ?? ['POST'],
-            'auth_type'                 => $endpoint->auth_type ?? 'static_header',
-            'auth_configured'           => ! empty($endpoint->auth_config),
-            'expected_content_type'     => $endpoint->expected_content_type ?? 'application/json',
-            'max_payload_kb'            => (int) ($endpoint->max_payload_kb ?? 512),
+            'id' => $endpoint->id,
+            'uuid' => $endpoint->uuid,
+            'name' => $endpoint->name,
+            'handle' => $endpoint->handle,
+            'description' => $endpoint->description,
+            'enabled' => (bool) ($endpoint->enabled ?? true),
+            'path' => $endpoint->path,
+            'allowed_methods' => $endpoint->allowed_methods ?? ['POST'],
+            'auth_type' => $endpoint->auth_type ?? 'static_header',
+            'auth_configured' => ! empty($endpoint->auth_config),
+            'expected_content_type' => $endpoint->expected_content_type ?? 'application/json',
+            'max_payload_kb' => (int) ($endpoint->max_payload_kb ?? 512),
             'replay_protection_enabled' => (bool) ($endpoint->replay_protection_enabled ?? false),
-            'logging_mode'              => $endpoint->logging_mode ?? 'partial',
-            'mapping_config'            => $endpoint->mapping_config ?? null,
-            'action_type'               => $endpoint->action_type ?? 'noop',
-            'action_config'             => $endpoint->action_config ?? null,
-            'response_config'           => $endpoint->response_config ?? null,
+            'logging_mode' => $endpoint->logging_mode ?? 'partial',
+            'mapping_config' => $endpoint->mapping_config ?? null,
+            'action_type' => $endpoint->action_type ?? 'noop',
+            'action_config' => $endpoint->action_config ?? null,
+            'response_config' => $endpoint->response_config ?? null,
         ];
     }
 
@@ -295,6 +296,7 @@ class InboundController extends CpController
         if (is_array($decoded)) {
             $attributes['auth_config'] = $decoded;
         }
+
         return $attributes;
     }
 
@@ -321,6 +323,7 @@ class InboundController extends CpController
                 $attributes[$arrayKey] = $decoded;
             }
         }
+
         return $attributes;
     }
 

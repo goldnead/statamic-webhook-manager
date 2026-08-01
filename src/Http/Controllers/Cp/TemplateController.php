@@ -2,13 +2,13 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Template\Actions\CreateTemplateAction;
 use Goldnead\WebhookManager\Domain\Template\Actions\DeleteTemplateAction;
 use Goldnead\WebhookManager\Domain\Template\Actions\UpdateTemplateAction;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveTemplateRequest;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
-use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -25,7 +25,7 @@ class TemplateController extends CpController
 
         // Statamic Listing sends `search` / `perPage`; accept legacy `q` too.
         $perPage = (int) $request->get('perPage', 25) ?: 25;
-        $search  = $request->get('search', $request->get('q', ''));
+        $search = $request->get('search', $request->get('q', ''));
 
         $type = $request->get('type');
         $type = in_array($type, ['outbound_body', 'inbound_response', 'notification'], true)
@@ -42,11 +42,11 @@ class TemplateController extends CpController
             'data' => $rows,
             'meta' => [
                 'current_page' => $templates->currentPage(),
-                'last_page'    => $templates->lastPage(),
-                'per_page'     => $templates->perPage(),
-                'total'        => $templates->total(),
-                'from'         => $templates->firstItem(),
-                'to'           => $templates->lastItem(),
+                'last_page' => $templates->lastPage(),
+                'per_page' => $templates->perPage(),
+                'total' => $templates->total(),
+                'from' => $templates->firstItem(),
+                'to' => $templates->lastItem(),
             ],
         ];
 
@@ -57,12 +57,12 @@ class TemplateController extends CpController
         }
 
         return Inertia::render('webhook-manager::Templates/Index', [
-            'templates'      => $listingPayload,
+            'templates' => $listingPayload,
             'initialColumns' => $this->indexColumns(),
-            'listingUrl'     => cp_route('webhook-manager.templates.index'),
-            'actionUrl'      => cp_route('webhook-manager.templates.index'),
-            'createUrl'      => cp_route('webhook-manager.templates.create'),
-            'canCreate'      => (bool) $request->user()?->can('manage webhook templates'),
+            'listingUrl' => cp_route('webhook-manager.templates.index'),
+            'actionUrl' => cp_route('webhook-manager.templates.index'),
+            'createUrl' => cp_route('webhook-manager.templates.create'),
+            'canCreate' => (bool) $request->user()?->can('manage webhook templates'),
         ]);
     }
 
@@ -80,14 +80,14 @@ class TemplateController extends CpController
         ]);
 
         return Inertia::render('webhook-manager::Templates/Edit', [
-            'template'    => $this->editPayload($template),
+            'template' => $this->editPayload($template),
             'typeOptions' => $this->typeOptions(),
-            'namespaces'  => array_keys($vars->all()),
-            'isNew'       => true,
-            'canDelete'   => false,
-            'saveUrl'     => cp_route('webhook-manager.templates.store'),
-            'previewUrl'  => cp_route('webhook-manager.actions.preview-template'),
-            'indexUrl'    => cp_route('webhook-manager.templates.index'),
+            'namespaces' => array_keys($vars->all()),
+            'isNew' => true,
+            'canDelete' => false,
+            'saveUrl' => cp_route('webhook-manager.templates.store'),
+            'previewUrl' => cp_route('webhook-manager.actions.preview-template'),
+            'indexUrl' => cp_route('webhook-manager.templates.index'),
         ]);
     }
 
@@ -113,15 +113,15 @@ class TemplateController extends CpController
         $this->authorizeOr403($request, 'manage webhook templates');
 
         return Inertia::render('webhook-manager::Templates/Edit', [
-            'template'    => $this->editPayload($webhookTemplate),
+            'template' => $this->editPayload($webhookTemplate),
             'typeOptions' => $this->typeOptions(),
-            'namespaces'  => array_keys($vars->all()),
-            'isNew'       => false,
-            'canDelete'   => (bool) $request->user()?->can('manage webhook templates'),
-            'saveUrl'     => cp_route('webhook-manager.templates.update', $webhookTemplate),
-            'deleteUrl'   => cp_route('webhook-manager.templates.destroy', $webhookTemplate),
-            'previewUrl'  => cp_route('webhook-manager.actions.preview-template'),
-            'indexUrl'    => cp_route('webhook-manager.templates.index'),
+            'namespaces' => array_keys($vars->all()),
+            'isNew' => false,
+            'canDelete' => (bool) $request->user()?->can('manage webhook templates'),
+            'saveUrl' => cp_route('webhook-manager.templates.update', $webhookTemplate),
+            'deleteUrl' => cp_route('webhook-manager.templates.destroy', $webhookTemplate),
+            'previewUrl' => cp_route('webhook-manager.actions.preview-template'),
+            'indexUrl' => cp_route('webhook-manager.templates.index'),
         ]);
     }
 
@@ -161,25 +161,23 @@ class TemplateController extends CpController
      *
      * All permission and URL fields are pre-computed here so the Vue
      * template stays logic-free — the same convention as OutboundController.
-     *
-     * @return array
      */
     protected function row(Template $template, Request $request): array
     {
         $canManage = (bool) $request->user()?->can('manage webhook templates');
 
         return [
-            'id'         => $template->id,
-            'uuid'       => $template->uuid,
-            'name'       => $template->name,
-            'handle'     => $template->handle,
-            'type'       => $template->type,
+            'id' => $template->id,
+            'uuid' => $template->uuid,
+            'name' => $template->name,
+            'handle' => $template->handle,
+            'type' => $template->type,
             'type_label' => $this->typeOptions()[$template->type] ?? $template->type,
             'type_color' => $this->typeColor($template->type),
             'updated_at' => $template->updated_at?->toIso8601String(),
-            'edit_url'   => cp_route('webhook-manager.templates.edit', $template),
+            'edit_url' => cp_route('webhook-manager.templates.edit', $template),
             'delete_url' => cp_route('webhook-manager.templates.destroy', $template),
-            'can_edit'   => $canManage,
+            'can_edit' => $canManage,
             'can_delete' => $canManage,
             // Templates do not have a duplicate route yet; set to null
             // and the Vue template will suppress the Dropdown item.
@@ -189,19 +187,17 @@ class TemplateController extends CpController
 
     /**
      * Payload passed to the Edit/Create Inertia page.
-     *
-     * @return array
      */
     protected function editPayload(Template $template): array
     {
         return [
-            'id'     => $template->id,
-            'uuid'   => $template->uuid,
-            'name'   => $template->name,
+            'id' => $template->id,
+            'uuid' => $template->uuid,
+            'name' => $template->name,
             'handle' => $template->handle,
-            'type'   => $template->type ?? Template::TYPE_OUTBOUND_BODY,
-            'body'   => $template->body ?? '',
-            'meta'   => $template->meta ?? null,
+            'type' => $template->type ?? Template::TYPE_OUTBOUND_BODY,
+            'body' => $template->body ?? '',
+            'meta' => $template->meta ?? null,
         ];
     }
 
@@ -209,8 +205,6 @@ class TemplateController extends CpController
      * Column definitions for the Listing component.
      * PHP-side definitions keep column labels translatable and let
      * Statamic's Listing handle sorting / preferences automatically.
-     *
-     * @return array
      */
     protected function indexColumns(): array
     {
@@ -224,15 +218,13 @@ class TemplateController extends CpController
 
     /**
      * Human-readable labels for the type Select and Badge.
-     *
-     * @return array
      */
     protected function typeOptions(): array
     {
         return [
-            Template::TYPE_OUTBOUND_BODY      => __('Outbound request body'),
-            Template::TYPE_INBOUND_RESPONSE   => __('Inbound response body'),
-            Template::TYPE_NOTIFICATION       => __('Notification body'),
+            Template::TYPE_OUTBOUND_BODY => __('Outbound request body'),
+            Template::TYPE_INBOUND_RESPONSE => __('Inbound response body'),
+            Template::TYPE_NOTIFICATION => __('Notification body'),
         ];
     }
 
@@ -244,9 +236,9 @@ class TemplateController extends CpController
     protected function typeColor(string $type): string
     {
         return match ($type) {
-            Template::TYPE_OUTBOUND_BODY    => 'blue',
-            Template::TYPE_NOTIFICATION     => 'amber',
-            default                         => 'gray',
+            Template::TYPE_OUTBOUND_BODY => 'blue',
+            Template::TYPE_NOTIFICATION => 'amber',
+            default => 'gray',
         };
     }
 

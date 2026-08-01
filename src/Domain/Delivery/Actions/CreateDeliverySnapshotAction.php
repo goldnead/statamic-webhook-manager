@@ -16,9 +16,7 @@ use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
  */
 class CreateDeliverySnapshotAction
 {
-    public function __construct(protected HttpRequestFactory $requestFactory)
-    {
-    }
+    public function __construct(protected HttpRequestFactory $requestFactory) {}
 
     public function __invoke(OutboundWebhook $hook, ExecutionContext $context): Delivery
     {

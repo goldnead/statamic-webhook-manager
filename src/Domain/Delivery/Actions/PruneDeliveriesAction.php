@@ -10,8 +10,7 @@ class PruneDeliveriesAction
     public function __construct(
         protected DeliveryRepository $deliveries,
         protected LogRepository $logs,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{deliveries:int, logs:int}
@@ -20,6 +19,7 @@ class PruneDeliveriesAction
     {
         $d = $deliveryDays > 0 ? $this->deliveries->pruneOlderThan($deliveryDays) : 0;
         $l = $logDays > 0 ? $this->logs->pruneOlderThan($logDays) : 0;
+
         return ['deliveries' => $d, 'logs' => $l];
     }
 }

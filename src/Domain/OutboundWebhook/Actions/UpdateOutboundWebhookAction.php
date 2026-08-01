@@ -11,8 +11,7 @@ class UpdateOutboundWebhookAction
     public function __construct(
         protected OutboundWebhookRepositoryInterface $repository,
         protected AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     public function __invoke(OutboundWebhook $hook, array $attributes): OutboundWebhook
     {

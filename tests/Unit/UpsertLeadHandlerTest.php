@@ -26,7 +26,7 @@ class UpsertLeadHandlerTest extends TestCase
 
     public function test_handle_and_label(): void
     {
-        $handler = new UpsertLeadHandler();
+        $handler = new UpsertLeadHandler;
 
         $this->assertSame('upsert_lead', $handler->handle());
         $this->assertNotEmpty($handler->label());
@@ -34,7 +34,7 @@ class UpsertLeadHandlerTest extends TestCase
 
     public function test_it_is_registered_among_the_inbound_defaults(): void
     {
-        $registry = new InboundActionHandlerRegistry();
+        $registry = new InboundActionHandlerRegistry;
         $registry->registerDefaults();
 
         $this->assertNotNull($registry->get('upsert_lead'));
@@ -51,7 +51,7 @@ class UpsertLeadHandlerTest extends TestCase
         // handler must degrade gracefully rather than fatally.
         $endpoint = new InboundEndpoint(['action_config' => []]);
 
-        $result = (new UpsertLeadHandler())->handleAction(
+        $result = (new UpsertLeadHandler)->handleAction(
             $endpoint,
             ['email' => 'buyer@example.com'],
             [],
@@ -70,7 +70,7 @@ class UpsertLeadHandlerTest extends TestCase
             'source' => 'stripe',
         ]]);
 
-        $result = (new UpsertLeadHandler())->handleAction(
+        $result = (new UpsertLeadHandler)->handleAction(
             $endpoint,
             ['email' => 'buyer@example.com', 'first_name' => 'Ada'],
             [],
@@ -100,7 +100,7 @@ class UpsertLeadHandlerTest extends TestCase
             'pipeline' => 'sales',
         ]]);
 
-        $result = (new UpsertLeadHandler())->handleAction(
+        $result = (new UpsertLeadHandler)->handleAction(
             $endpoint,
             ['email' => 'buyer@example.com', 'value' => 99],
             [],

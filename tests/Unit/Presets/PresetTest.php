@@ -28,7 +28,7 @@ class PresetTest extends TestCase
 
     public function test_slack_preset_builds_a_text_payload(): void
     {
-        $attrs = (new SlackPreset())->build([
+        $attrs = (new SlackPreset)->build([
             'name' => 'Notify team',
             'trigger_type' => 'entry.published',
             'webhook_url' => 'https://hooks.slack.com/services/T/B/x',
@@ -44,7 +44,7 @@ class PresetTest extends TestCase
 
     public function test_discord_preset_builds_a_content_payload(): void
     {
-        $attrs = (new DiscordPreset())->build([
+        $attrs = (new DiscordPreset)->build([
             'name' => 'Discord',
             'trigger_type' => 'entry.published',
             'webhook_url' => 'https://discord.com/api/webhooks/1/x',
@@ -56,7 +56,7 @@ class PresetTest extends TestCase
 
     public function test_zapier_preset_uses_the_structured_event_template(): void
     {
-        $attrs = (new ZapierPreset())->build([
+        $attrs = (new ZapierPreset)->build([
             'name' => 'Zap',
             'trigger_type' => 'entry.published',
             'webhook_url' => 'https://hooks.zapier.com/x',
@@ -69,7 +69,7 @@ class PresetTest extends TestCase
 
     public function test_generic_json_preset_reads_the_url_field_and_custom_template(): void
     {
-        $attrs = (new GenericJsonPreset())->build([
+        $attrs = (new GenericJsonPreset)->build([
             'name' => 'Custom',
             'trigger_type' => 'entry.published',
             'url' => 'https://example.com/hook',

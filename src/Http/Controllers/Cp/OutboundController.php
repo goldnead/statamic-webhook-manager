@@ -2,6 +2,8 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\CreateOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\DeleteOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\ToggleOutboundWebhookAction;
@@ -11,8 +13,6 @@ use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveOutboundWebhookRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
-use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
-use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -311,6 +311,7 @@ class OutboundController extends CpController
         foreach ($templates->ofType(Template::TYPE_OUTBOUND_BODY) as $template) {
             $opts[$template->handle] = $template->name.' ('.$template->handle.')';
         }
+
         return $opts;
     }
 
@@ -338,6 +339,7 @@ class OutboundController extends CpController
         if (is_array($decoded)) {
             $attributes['auth_config'] = $decoded;
         }
+
         return $attributes;
     }
 

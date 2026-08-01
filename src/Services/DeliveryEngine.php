@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Services;
 
 use Goldnead\WebhookManager\Contracts\DeliverySenderInterface;
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliveryFailureAction;
 use Goldnead\WebhookManager\Domain\Delivery\Actions\MarkDeliverySuccessAction;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
@@ -36,8 +37,7 @@ class DeliveryEngine implements DeliverySenderInterface
         protected DeliveryLogger $logger,
         protected CircuitBreaker $circuitBreaker,
         protected OutboundWebhookRepositoryInterface $webhooks,
-    ) {
-    }
+    ) {}
 
     public function send(Delivery $delivery): Delivery
     {
@@ -74,6 +74,7 @@ class DeliveryEngine implements DeliverySenderInterface
         if ($isSuccess) {
             $this->circuitBreaker->recordSuccess($hook);
             $this->logger->success($delivery);
+
             return ($this->markSuccess)($delivery);
         }
 
@@ -97,12 +98,13 @@ class DeliveryEngine implements DeliverySenderInterface
         return $delivery;
     }
 
-    protected function resolveEvaluator(?array $matcher): \Goldnead\WebhookManager\Contracts\SuccessEvaluatorInterface
+    protected function resolveEvaluator(?array $matcher): SuccessEvaluatorInterface
     {
         if (! $matcher) {
             return $this->evaluators->default();
         }
         $handle = (string) ($matcher['evaluator'] ?? 'default');
+
         return $this->evaluators->get($handle) ?? $this->evaluators->default();
     }
 }

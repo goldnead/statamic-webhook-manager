@@ -17,8 +17,7 @@ class FakeShipmentEvent
     public function __construct(
         public string $orderId,
         public array $items = [],
-    ) {
-    }
+    ) {}
 }
 
 /**

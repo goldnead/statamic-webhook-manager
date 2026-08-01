@@ -3,9 +3,13 @@
 namespace Goldnead\WebhookManager\Tests;
 
 use Goldnead\BrandContext\ServiceProvider as BrandContextServiceProvider;
+use Illuminate\Database\Connection;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * A bed for migrating a database by hand, from any released schema forward.
@@ -211,12 +215,12 @@ abstract class MigrationPathTestCase extends TestCase
         return __DIR__.'/../database/migrations';
     }
 
-    protected function isolated(): \Illuminate\Database\Connection
+    protected function isolated(): Connection
     {
         return DB::connection(self::CONNECTION);
     }
 
-    protected function isolatedSchema(): \Illuminate\Database\Schema\Builder
+    protected function isolatedSchema(): Builder
     {
         return Schema::connection(self::CONNECTION);
     }
@@ -263,7 +267,7 @@ abstract class MigrationPathTestCase extends TestCase
 
         $row = collect((array) $existing)
             ->except('id')
-            ->put('uuid', (string) \Illuminate\Support\Str::uuid())
+            ->put('uuid', (string) Str::uuid())
             ->all();
 
         if ($brandId !== null && $this->isolatedSchema()->hasColumn('webhook_outbounds', 'brand_id')) {
@@ -272,7 +276,7 @@ abstract class MigrationPathTestCase extends TestCase
 
         try {
             $id = $this->isolated()->table('webhook_outbounds')->insertGetId($row);
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             return false;
         }
 

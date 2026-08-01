@@ -98,6 +98,7 @@ final class StatamicSnapshot
         }
         try {
             $value = $obj->{$method}();
+
             return is_scalar($value) || is_null($value) ? $value : (string) $value;
         } catch (\Throwable $e) {
             return null;
@@ -126,6 +127,7 @@ final class StatamicSnapshot
             if (is_object($related) && method_exists($related, $sub)) {
                 return (string) $related->{$sub}();
             }
+
             return null;
         } catch (\Throwable $e) {
             return null;
@@ -145,6 +147,7 @@ final class StatamicSnapshot
         } catch (\Throwable $e) {
             // ignore
         }
+
         return null;
     }
 
@@ -166,6 +169,7 @@ final class StatamicSnapshot
                 return null;
             }
         }
+
         return null;
     }
 }

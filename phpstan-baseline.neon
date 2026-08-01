@@ -1,0 +1,769 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\Entry\:\:collection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Actions/CreateEntryAction.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\Collection\:\:id\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Actions/CreateFormSubmissionAction.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\Collection\:\:save\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Actions/CreateFormSubmissionAction.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\QueryBuilder\:\:where\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Actions/SetFieldValueAction.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\QueryBuilder\:\:where\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Actions/UpdateEntryAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\:\:\$trigger_reference\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Delivery/Actions/ReplayDeliveryAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$brand_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Domain/InboundEndpoint/Actions/ToggleInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$brand_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Domain/InboundEndpoint/Handlers/AuditLogHandler.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\Entry\:\:collection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/CreateEntryHandler.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\Collection\:\:id\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/CreateFormSubmissionHandler.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\Collection\:\:save\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/CreateFormSubmissionHandler.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\QueryBuilder\:\:where\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/UpdateEntryHandler.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\Entry\:\:collection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/UpsertEntryHandler.php
+
+		-
+			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\QueryBuilder\:\:where\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Handlers/UpsertEntryHandler.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/InboundEndpoint/Models/InboundEndpoint.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$brand_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/OutboundWebhook/Actions/CreateOutboundWebhookAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$brand_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/OutboundWebhook/Actions/UpdateOutboundWebhookAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$trigger_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Rule/Actions/TestRuleAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Domain/Rule/Actions/ToggleRuleAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Rule/Models/Rule.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$payload_template_handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Template/Actions/DeleteTemplateAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Template/Actions/DeleteTemplateAction.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Domain/Template/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Http/Controllers/Cp/DeliveryController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\:\:\$trigger_reference\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/DeliveryController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/DeliveryController.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Http\\Controllers\\Cp\\DeliveryController\:\:indexColumns\(\) should return array\<int, array\{handle\: string, label\: string, visible\: bool, sortable\: bool\}\> but returns array\{array\{field\: ''status'', label\: \(array\|string\), visible\: true, sortable\: true\}, array\{field\: ''outbound_name'', label\: \(array\|string\), visible\: true, sortable\: false\}, array\{field\: ''url'', label\: \(array\|string\), visible\: true, sortable\: false\}, array\{field\: ''method'', label\: \(array\|string\), visible\: true, sortable\: false\}, array\{field\: ''response_code'', label\: \(array\|string\), visible\: true, sortable\: true\}, array\{field\: ''attempts'', label\: \(array\|string\), visible\: true, sortable\: true\}, array\{field\: ''error_type'', label\: \(array\|string\), visible\: false, sortable\: true\}, array\{field\: ''when'', label\: \(array\|string\), visible\: true, sortable\: true\}\}\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Http/Controllers/Cp/DeliveryController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type mixed\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Http/Controllers/Cp/DeliveryController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$action_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$path\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/InboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Log\\Models\\LogEntry\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/LogController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/LogController.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Http\\Controllers\\Cp\\LogController\:\:indexColumns\(\) should return array\<int, array\{handle\: string, label\: string, visible\: bool, sortable\: bool\}\> but returns array\{array\{field\: ''level'', label\: \(array\|string\), visible\: true, sortable\: true\}, array\{field\: ''message'', label\: \(array\|string\), visible\: true, sortable\: false\}, array\{field\: ''correlation_id'', label\: \(array\|string\), visible\: true, sortable\: false\}, array\{field\: ''error_type'', label\: \(array\|string\), visible\: true, sortable\: true\}, array\{field\: ''created_at'', label\: \(array\|string\), visible\: true, sortable\: true\}\}\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Http/Controllers/Cp/LogController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/OutboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$payload_template_handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/OutboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/OutboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/OutboundController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/OutboundController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/OverviewController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$actions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$order_index\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$trigger_type\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/RuleController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Http/Controllers/Cp/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/InboundWebhookController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Http/Requests/SaveInboundEndpointRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>auth_config" in empty\(\) is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Http/Requests/SaveOutboundWebhookRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Http/Requests/SaveOutboundWebhookRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Http/Requests/SaveRuleRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Http/Requests/SaveTemplateRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Listeners/SendFailureAlertListener.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Listeners/SendFailureAlertListener.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(string\|array\{name\:string, \.\.\.mixed\}  \$rule\)\: Unexpected token "mixed", expected ''\}'' at offset 48 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: src/Mappers/ValueTransformer.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Notifications/DeliveryFailedNotification.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileInboundEndpointRepository\:\:create\(\) should return Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileInboundEndpointRepository\:\:find\(\) should return Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileInboundEndpointRepository\:\:findByHandle\(\) should return Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileInboundEndpointRepository\:\:findByUuid\(\) should return Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileInboundEndpointRepository\:\:save\(\) should return Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileInboundEndpointRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:activeForTrigger\(\) should return Illuminate\\Support\\Collection\<int, Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\> but returns Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:create\(\) should return Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:find\(\) should return Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:findByHandle\(\) should return Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:findByUuid\(\) should return Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileOutboundWebhookRepository\:\:save\(\) should return Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\)\: bool given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Repositories/FlatFile/FlatFileOutboundWebhookRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$order_index\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$trigger_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:activeForTrigger\(\) should return Illuminate\\Support\\Collection\<int, Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\> but returns Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:create\(\) should return Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:find\(\) should return Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:findByHandle\(\) should return Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:findByUuid\(\) should return Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:save\(\) should return Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\)\: bool given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Return type \(Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\) of method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileRuleRepository\:\:all\(\) should be compatible with return type \(Illuminate\\Support\\Collection\<int, Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\>\) of method Goldnead\\WebhookManager\\Contracts\\Repositories\\RuleRepositoryInterface\:\:all\(\)$#'
+			identifier: method.childReturnType
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileRuleRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:create\(\) should return Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:find\(\) should return Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:findByHandle\(\) should return Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:findByUuid\(\) should return Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:ofType\(\) should return Illuminate\\Support\\Collection\<int, Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\> but returns Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Repositories\\FlatFile\\FlatFileTemplateRepository\:\:save\(\) should return Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\)\: bool given\.$#'
+			identifier: argument.type
+			count: 3
+			path: src/Repositories/FlatFile/FlatFileTemplateRepository.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Rules/RuleEngine.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 5
+			path: src/Rules/RuleEngine.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Rule\\Models\\Rule\:\:\$stop_on_failure\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Rules/RuleEngine.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$consecutive_failures\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Services/CircuitBreaker.php
+
+		-
+			message: '#^Property Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\:\:\$next_retry_at \(Carbon\\Carbon\|null\) does not accept Carbon\\CarbonImmutable\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: src/Services/DeliveryEngine.php
+
+		-
+			message: '#^Method Goldnead\\WebhookManager\\Services\\DeliveryStatsService\:\:rows\(\) should return Illuminate\\Support\\Collection\<int, object\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, Goldnead\\WebhookManager\\Domain\\Delivery\\Models\\Delivery\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Services/DeliveryStatsService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Support\\Collection\<int, object\>\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: src/Services/DeliveryStatsService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),array\<string, mixed\>\>\:\:sortByDesc\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: src/Services/DeliveryStatsService.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$idempotency_enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/Http/HttpRequestFactory.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\Template\\Models\\Template\:\:\$body\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Services/Http/HttpRequestFactory.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$action_type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Services/Inbound/InboundRequestProcessor.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/Inbound/InboundRequestProcessor.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 7
+			path: src/Services/Inbound/InboundRequestProcessor.php
+
+		-
+			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$replay_protection_enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/Inbound/InboundRequestProcessor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 6
+			path: src/Storage/AbstractFlatFileRepository.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 5
+			path: src/Storage/AbstractFlatFileRepository.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Storage/AbstractFlatFileRepository.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Storage/StorageMigrator.php
+
+		-
+			message: '#^Property Goldnead\\WebhookManager\\WebhookManagerServiceProvider\:\:\$vite \(list\<string\>\) does not accept default value of type array\{hotFile\: literal\-string&non\-falsy\-string, publicDirectory\: ''resources/dist'', input\: array\{''resources/js/cp\.js'', ''resources/css/cp\.css''\}\}\.$#'
+			identifier: property.defaultValue
+			count: 1
+			path: src/WebhookManagerServiceProvider.php

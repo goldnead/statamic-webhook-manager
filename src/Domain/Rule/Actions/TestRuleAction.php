@@ -20,9 +20,7 @@ use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
  */
 class TestRuleAction
 {
-    public function __construct(protected RuleEngine $engine)
-    {
-    }
+    public function __construct(protected RuleEngine $engine) {}
 
     /**
      * @return ExecutionResult The combined ExecutionResult from RuleEngine::evaluateOne.
@@ -36,7 +34,7 @@ class TestRuleAction
             payload: $samplePayload,
             site: $site,
             isReplay: false,
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
 
         return $this->engine->evaluateOne($rule, new ExecutionContext($event));

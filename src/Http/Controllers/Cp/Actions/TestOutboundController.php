@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp\Actions;
 
+use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\TestOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
@@ -21,7 +22,7 @@ class TestOutboundController extends Controller
         $delivery = ($test)($webhookOutbound, (array) $request->input('sample_payload', []));
 
         return response()->json([
-            'ok' => $delivery->status === \Goldnead\WebhookManager\Domain\Delivery\Models\Delivery::STATUS_SUCCESS,
+            'ok' => $delivery->status === Delivery::STATUS_SUCCESS,
             'delivery_id' => $delivery->id,
             'status' => $delivery->status,
             'response_status' => $delivery->response_status,

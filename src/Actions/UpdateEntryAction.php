@@ -84,6 +84,7 @@ class UpdateEntryAction implements ActionInterface
         if ($collection !== '') {
             $query->where('collection', $collection);
         }
+
         return $query->first();
     }
 }

@@ -23,6 +23,7 @@ final class SecretMasker
         if ($len <= 8) {
             return str_repeat('•', $len);
         }
+
         return substr($secret, 0, 4).str_repeat('•', max(4, $len - 8)).substr($secret, -4);
     }
 
@@ -42,10 +43,12 @@ final class SecretMasker
                 $out[$name] = is_array($value)
                     ? array_map(fn ($v) => self::mask((string) $v), $value)
                     : self::mask((string) $value);
+
                 continue;
             }
             $out[$name] = $value;
         }
+
         return $out;
     }
 
@@ -64,10 +67,12 @@ final class SecretMasker
         foreach ($payload as $key => $value) {
             if (is_string($key) && in_array(strtolower($key), $maskLowered, true)) {
                 $out[$key] = is_string($value) ? self::mask($value) : '«masked»';
+
                 continue;
             }
             $out[$key] = is_array($value) ? self::maskPayload($value, $maskKeys) : $value;
         }
+
         return $out;
     }
 }

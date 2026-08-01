@@ -16,8 +16,7 @@ class HandleEntrySavedListener
     public function __construct(
         protected TriggerRegistry $triggers,
         protected Dispatcher $events,
-    ) {
-    }
+    ) {}
 
     public function handle(object $event): void
     {

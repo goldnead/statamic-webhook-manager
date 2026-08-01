@@ -35,7 +35,6 @@ class SendWebhook extends Action
 
     public function buttonText()
     {
-        /** @phpstan-ignore-next-line — count provided by the framework */
         return trans_choice('webhook-manager::messages.send_webhook_button', $this->items->count());
     }
 

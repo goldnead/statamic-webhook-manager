@@ -2,9 +2,9 @@
 
 namespace Goldnead\WebhookManager\Console\Commands;
 
-use Goldnead\WebhookManager\Repositories\DeliveryRepository;
-use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\BrandContext\Concerns\RunsForEachBrand;
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Repositories\DeliveryRepository;
 use Illuminate\Console\Command;
 
 class InspectWebhookHealthCommand extends Command
@@ -12,13 +12,13 @@ class InspectWebhookHealthCommand extends Command
     use RunsForEachBrand;
 
     protected $signature = 'webhook-manager:health {--brand= : Restrict to one brand handle or id}';
+
     protected $description = 'Show counts and a quick health snapshot.';
 
     public function handle(
         OutboundWebhookRepositoryInterface $hooks,
         DeliveryRepository $deliveries,
-    ): int
-    {
+    ): int {
         // A scheduled run has no session and therefore no brand; without
         // this the fail-closed scope hides every row and the command
         // reports success while doing nothing at all.
@@ -28,8 +28,7 @@ class InspectWebhookHealthCommand extends Command
     protected function handleForBrand(
         OutboundWebhookRepositoryInterface $hooks,
         DeliveryRepository $deliveries,
-    ): int
-    {
+    ): int {
         $counts = $deliveries->counts();
         $rate = $deliveries->successRate(24);
 

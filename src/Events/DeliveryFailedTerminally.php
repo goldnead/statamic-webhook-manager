@@ -14,7 +14,5 @@ class DeliveryFailedTerminally
 {
     use Dispatchable;
 
-    public function __construct(public Delivery $delivery)
-    {
-    }
+    public function __construct(public Delivery $delivery) {}
 }

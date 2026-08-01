@@ -9,12 +9,19 @@ namespace Goldnead\WebhookManager\Services;
 class FailureClassifier
 {
     public const NETWORK = 'network';
+
     public const TIMEOUT = 'timeout';
+
     public const AUTH = 'auth';
+
     public const CLIENT = 'client';
+
     public const SERVER = 'server';
+
     public const PAYLOAD = 'payload';
+
     public const CONFIGURATION = 'configuration';
+
     public const INTERNAL = 'internal';
 
     /**
@@ -30,10 +37,12 @@ class FailureClassifier
                     ? self::TIMEOUT
                     : self::NETWORK;
             }
+
             return self::INTERNAL;
         }
 
         $status = (int) ($response['status'] ?? 0);
+
         return match (true) {
             $status === 401 || $status === 403 => self::AUTH,
             $status === 408 || $status === 504 => self::TIMEOUT,

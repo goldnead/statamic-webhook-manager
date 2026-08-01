@@ -20,8 +20,7 @@ class DispatchOutboundWebhookAction
     public function __construct(
         protected CreateDeliverySnapshotAction $snapshot,
         protected DeliveryEngine $engine,
-    ) {
-    }
+    ) {}
 
     /**
      * @return int Delivery id (regardless of sync/queued mode)
@@ -39,6 +38,7 @@ class DispatchOutboundWebhookAction
         }
 
         $sent = $this->engine->send($delivery);
+
         return $sent->id;
     }
 }

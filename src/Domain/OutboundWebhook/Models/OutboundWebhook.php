@@ -5,32 +5,32 @@ namespace Goldnead\WebhookManager\Domain\OutboundWebhook\Models;
 use Goldnead\BrandContext\Concerns\HasBrand;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 /**
- * @property int    $id
+ * @property int $id
  * @property string $uuid
  * @property string $name
  * @property string $handle
- * @property bool   $enabled
+ * @property bool $enabled
  * @property string $trigger_type
- * @property array  $trigger_config
+ * @property array $trigger_config
  * @property string $url
  * @property string $method
- * @property array  $headers
- * @property int    $timeout_seconds
- * @property bool   $follow_redirects
+ * @property array $headers
+ * @property int $timeout_seconds
+ * @property bool $follow_redirects
  * @property string $auth_type
- * @property array  $auth_config       decrypted auth config
+ * @property array $auth_config decrypted auth config
  * @property string $payload_type
  * @property string $payload_template
- * @property array  $conditions
- * @property array  $retry_strategy
- * @property bool   $queue_enabled
+ * @property array $conditions
+ * @property array $retry_strategy
+ * @property bool $queue_enabled
  * @property string $log_body_mode
  */
 class OutboundWebhook extends Model
@@ -58,7 +58,7 @@ class OutboundWebhook extends Model
     {
         static::creating(function (OutboundWebhook $hook) {
             if (! $hook->uuid) {
-                $hook->uuid = (string) \Illuminate\Support\Str::uuid();
+                $hook->uuid = (string) Str::uuid();
             }
         });
     }
@@ -89,6 +89,7 @@ class OutboundWebhook extends Model
                 if (empty($value)) {
                     return null;
                 }
+
                 return Crypt::encrypt($value);
             },
         );

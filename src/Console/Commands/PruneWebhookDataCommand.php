@@ -2,8 +2,8 @@
 
 namespace Goldnead\WebhookManager\Console\Commands;
 
-use Goldnead\WebhookManager\Domain\Delivery\Actions\PruneDeliveriesAction;
 use Goldnead\BrandContext\Concerns\RunsForEachBrand;
+use Goldnead\WebhookManager\Domain\Delivery\Actions\PruneDeliveriesAction;
 use Illuminate\Console\Command;
 
 class PruneWebhookDataCommand extends Command

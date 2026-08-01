@@ -11,8 +11,7 @@ final class ExecutionResult
         public readonly bool $ok,
         public readonly string $message = '',
         public readonly array $data = [],
-    ) {
-    }
+    ) {}
 
     public static function ok(string $message = '', array $data = []): self
     {

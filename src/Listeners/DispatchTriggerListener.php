@@ -12,9 +12,7 @@ use Goldnead\WebhookManager\Services\TriggerDispatcher;
  */
 class DispatchTriggerListener
 {
-    public function __construct(protected TriggerDispatcher $dispatcher)
-    {
-    }
+    public function __construct(protected TriggerDispatcher $dispatcher) {}
 
     public function handle(TriggerDetected $event): void
     {

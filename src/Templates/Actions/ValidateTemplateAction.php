@@ -6,9 +6,7 @@ use Goldnead\WebhookManager\Templates\TemplateValidator;
 
 class ValidateTemplateAction
 {
-    public function __construct(protected TemplateValidator $validator)
-    {
-    }
+    public function __construct(protected TemplateValidator $validator) {}
 
     /**
      * @return array{valid:bool, issues:array<int,string>}

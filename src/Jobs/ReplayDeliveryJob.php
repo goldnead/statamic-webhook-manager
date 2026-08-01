@@ -16,9 +16,7 @@ class ReplayDeliveryJob implements ShouldQueue
 
     public int $tries = 1;
 
-    public function __construct(public int $deliveryId, public bool $reRender = false)
-    {
-    }
+    public function __construct(public int $deliveryId, public bool $reRender = false) {}
 
     public function handle(ReplayDeliveryAction $replay): void
     {

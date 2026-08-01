@@ -14,6 +14,7 @@ class DefaultSuccessEvaluator implements SuccessEvaluatorInterface
     public function isSuccess(array $response, array $config = []): bool
     {
         $status = (int) ($response['status'] ?? 0);
+
         return $status >= 200 && $status < 300;
     }
 }

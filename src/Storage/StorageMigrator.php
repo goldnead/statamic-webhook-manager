@@ -30,8 +30,7 @@ class StorageMigrator
     public function __construct(
         protected FileStore $files,
         protected ModelHydrator $hydrator,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,array{model:class-string<Model>,eloquent:class-string,subdir:string}>
@@ -65,7 +64,7 @@ class StorageMigrator
      * Copy every entity from one driver to the other. The target store is
      * cleared first, so this is a clean import rather than a merge.
      *
-     * @return array<string,int>  copied count per entity
+     * @return array<string,int> copied count per entity
      */
     public function migrate(string $from, string $to): array
     {
@@ -76,6 +75,7 @@ class StorageMigrator
 
             if ($records->isEmpty()) {
                 $this->clearTarget($to, $meta);
+
                 continue;
             }
 

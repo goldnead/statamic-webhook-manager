@@ -7,6 +7,7 @@ use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 class DebugController extends CpController
 {
@@ -29,8 +30,8 @@ class DebugController extends CpController
         );
 
         $triggersData = collect($triggers->all())->map(fn ($t) => [
-            'handle'      => $t->handle(),
-            'label'       => $t->label(),
+            'handle' => $t->handle(),
+            'label' => $t->label(),
             'source_type' => $t->sourceType(),
             'description' => method_exists($t, 'description') ? $t->description() : null,
         ])->values();
@@ -41,13 +42,13 @@ class DebugController extends CpController
 
         // Both action routes must exist; the Vue layer guards on simulateUrl
         // being non-null before rendering the "Simulate Trigger" panel.
-        $previewUrl  = cp_route('webhook-manager.actions.preview-template');
+        $previewUrl = cp_route('webhook-manager.actions.preview-template');
         $simulateUrl = $this->routeExistsOrNull('webhook-manager.actions.simulate-trigger');
 
         return Inertia::render('webhook-manager::Debug/Index', [
-            'triggers'    => $triggersData,
-            'resolvers'   => $resolversData,
-            'previewUrl'  => $previewUrl,
+            'triggers' => $triggersData,
+            'resolvers' => $resolversData,
+            'previewUrl' => $previewUrl,
             'simulateUrl' => $simulateUrl,
         ]);
     }
@@ -62,7 +63,7 @@ class DebugController extends CpController
     {
         try {
             return cp_route($name);
-        } catch (\Symfony\Component\Routing\Exception\RouteNotFoundException) {
+        } catch (RouteNotFoundException) {
             return null;
         } catch (\InvalidArgumentException) {
             return null;

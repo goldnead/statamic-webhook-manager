@@ -11,8 +11,7 @@ class UpdateInboundEndpointAction
     public function __construct(
         protected InboundEndpointRepositoryInterface $repository,
         protected AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     public function __invoke(InboundEndpoint $endpoint, array $attributes): InboundEndpoint
     {

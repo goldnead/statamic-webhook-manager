@@ -17,8 +17,7 @@ class DeleteTemplateAction
     public function __construct(
         protected TemplateRepositoryInterface $templates,
         protected OutboundWebhookRepositoryInterface $outbounds,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{deleted:bool, detached_outbounds:int}

@@ -11,8 +11,7 @@ final class ExecutionContext
     public function __construct(
         public readonly TriggerEvent $event,
         public readonly array $extra = [],
-    ) {
-    }
+    ) {}
 
     public function payload(): array
     {
@@ -26,10 +25,13 @@ final class ExecutionContext
         foreach ($segments as $segment) {
             if (is_array($value) && array_key_exists($segment, $value)) {
                 $value = $value[$segment];
+
                 continue;
             }
+
             return $default;
         }
+
         return $value;
     }
 

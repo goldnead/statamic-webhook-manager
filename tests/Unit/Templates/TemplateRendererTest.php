@@ -13,8 +13,9 @@ class TemplateRendererTest extends TestCase
 {
     private function rendererWithDefaults(): TemplateRenderer
     {
-        $registry = new VariableResolverRegistry();
+        $registry = new VariableResolverRegistry;
         $registry->registerDefaults();
+
         return new TemplateRenderer($registry);
     }
 
@@ -27,6 +28,7 @@ class TemplateRendererTest extends TestCase
             payload: $payload,
             site: $payload['site'] ?? 'default',
         );
+
         return new ExecutionContext($event);
     }
 

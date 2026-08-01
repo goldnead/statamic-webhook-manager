@@ -35,6 +35,7 @@ class ValueTransformer
         } catch (\Throwable) {
             return null;
         }
+
         return $dt ? $dt->format(\DateTimeInterface::ATOM) : null;
     }
 }

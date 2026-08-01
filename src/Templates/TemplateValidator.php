@@ -4,9 +4,7 @@ namespace Goldnead\WebhookManager\Templates;
 
 class TemplateValidator
 {
-    public function __construct(protected TemplateRenderer $renderer)
-    {
-    }
+    public function __construct(protected TemplateRenderer $renderer) {}
 
     /**
      * @return array{valid: bool, issues: array<int, string>}

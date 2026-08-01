@@ -17,8 +17,7 @@ class InboundActionDispatcher
     public function __construct(
         protected InboundActionHandlerRegistry $registry,
         protected SystemLogger $logger,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{ok:bool, message:string, data:array}

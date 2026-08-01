@@ -5,18 +5,19 @@ namespace Goldnead\WebhookManager\Domain\Log\Models;
 use Goldnead\BrandContext\Concerns\HasBrand;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
- * @property int     $id
- * @property string  $uuid
- * @property string  $level
- * @property string  $type
- * @property ?int    $related_webhook_id
- * @property ?int    $related_endpoint_id
- * @property ?int    $related_delivery_id
+ * @property int $id
+ * @property string $uuid
+ * @property string $level
+ * @property string $type
+ * @property ?int $related_webhook_id
+ * @property ?int $related_endpoint_id
+ * @property ?int $related_delivery_id
  * @property ?string $correlation_id
- * @property string  $message
- * @property array   $context
+ * @property string $message
+ * @property array $context
  */
 class LogEntry extends Model
 {
@@ -37,7 +38,7 @@ class LogEntry extends Model
     {
         static::creating(function (LogEntry $log) {
             if (! $log->uuid) {
-                $log->uuid = (string) \Illuminate\Support\Str::uuid();
+                $log->uuid = (string) Str::uuid();
             }
         });
     }

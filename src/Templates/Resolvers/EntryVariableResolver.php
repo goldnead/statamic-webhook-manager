@@ -40,10 +40,13 @@ class EntryVariableResolver implements TemplateVariableResolverInterface
         foreach ($segments as $segment) {
             if (is_array($value) && array_key_exists($segment, $value)) {
                 $value = $value[$segment];
+
                 continue;
             }
+
             return null;
         }
+
         return $value;
     }
 }

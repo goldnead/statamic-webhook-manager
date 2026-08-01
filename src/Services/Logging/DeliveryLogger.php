@@ -9,9 +9,7 @@ use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
  */
 class DeliveryLogger
 {
-    public function __construct(protected SystemLogger $system)
-    {
-    }
+    public function __construct(protected SystemLogger $system) {}
 
     public function failed(Delivery $delivery, string $reason): void
     {

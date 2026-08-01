@@ -2,10 +2,12 @@
 
 namespace Goldnead\WebhookManager\Tests\Feature;
 
+use Goldnead\WebhookManager\Auth\Verifiers\IpAllowlistVerifier;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 
 /**
  * `ip_allowlist` was accepted by SaveInboundEndpointRequest, given a badge
@@ -69,7 +71,7 @@ class IpAllowlistAuthSchemeIsSelectableTest extends TestCase
 
     public function test_an_empty_allowlist_rejects_everything(): void
     {
-        $verifier = new \Goldnead\WebhookManager\Auth\Verifiers\IpAllowlistVerifier();
+        $verifier = new IpAllowlistVerifier;
 
         $this->assertFalse($verifier->verify(request(), []));
         $this->assertFalse($verifier->verify(request(), ['ips' => []]));
@@ -80,9 +82,9 @@ class IpAllowlistAuthSchemeIsSelectableTest extends TestCase
     {
         // Anything configured before this fix used `allow`, because that is
         // what the class read. Those endpoints must keep working.
-        $verifier = new \Goldnead\WebhookManager\Auth\Verifiers\IpAllowlistVerifier();
+        $verifier = new IpAllowlistVerifier;
 
-        $request = \Illuminate\Http\Request::create('/', 'POST', server: ['REMOTE_ADDR' => '10.0.0.5']);
+        $request = Request::create('/', 'POST', server: ['REMOTE_ADDR' => '10.0.0.5']);
 
         $this->assertTrue($verifier->verify($request, ['allow' => ['10.0.0.5']]));
         $this->assertTrue($verifier->verify($request, ['ips' => ['10.0.0.5']]));

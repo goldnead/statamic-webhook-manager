@@ -2,11 +2,13 @@
 
 namespace Goldnead\WebhookManager\Domain\Delivery\Models;
 
+use Carbon\Carbon;
 use Goldnead\BrandContext\Concerns\HasBrand;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * Persistent record of one outbound delivery attempt.
@@ -14,29 +16,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Holds full request/response snapshots so failures can be diagnosed
  * and replayed without re-executing upstream logic.
  *
- * @property int     $id
- * @property string  $uuid
- * @property int     $outbound_webhook_id
- * @property ?int    $rule_id
- * @property string  $trigger_type
- * @property string  $status
- * @property string  $request_url
- * @property string  $request_method
- * @property array   $request_headers
- * @property string  $request_body
- * @property ?int    $response_status
- * @property ?array  $response_headers
+ * @property int $id
+ * @property string $uuid
+ * @property int $outbound_webhook_id
+ * @property ?int $rule_id
+ * @property string $trigger_type
+ * @property string $status
+ * @property string $request_url
+ * @property string $request_method
+ * @property array $request_headers
+ * @property string $request_body
+ * @property ?int $response_status
+ * @property ?array $response_headers
  * @property ?string $response_body
  * @property ?string $error_type
  * @property ?string $error_message
- * @property int     $attempts
- * @property ?\Carbon\Carbon $first_attempted_at
- * @property ?\Carbon\Carbon $last_attempted_at
- * @property ?\Carbon\Carbon $next_retry_at
+ * @property int $attempts
+ * @property ?Carbon $first_attempted_at
+ * @property ?Carbon $last_attempted_at
+ * @property ?Carbon $next_retry_at
  * @property ?string $correlation_id
  * @property ?string $idempotency_key
- * @property ?int    $duration_ms
- * @property bool    $rendered_from_snapshot
+ * @property ?int $duration_ms
+ * @property bool $rendered_from_snapshot
  */
 class Delivery extends Model
 {
@@ -44,9 +46,13 @@ class Delivery extends Model
     use HasFactory;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_PROCESSING = 'processing';
+
     public const STATUS_SUCCESS = 'success';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $table = 'webhook_deliveries';
@@ -69,7 +75,7 @@ class Delivery extends Model
     {
         static::creating(function (Delivery $d) {
             if (! $d->uuid) {
-                $d->uuid = (string) \Illuminate\Support\Str::uuid();
+                $d->uuid = (string) Str::uuid();
             }
         });
     }

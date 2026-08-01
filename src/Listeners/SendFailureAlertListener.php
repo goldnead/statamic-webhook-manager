@@ -21,8 +21,7 @@ class SendFailureAlertListener
         protected Cache $cache,
         protected SystemLogger $logger,
         protected OutboundWebhookRepositoryInterface $webhooks,
-    ) {
-    }
+    ) {}
 
     public function handle(DeliveryFailedTerminally $event): void
     {

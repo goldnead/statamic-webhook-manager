@@ -9,6 +9,7 @@ class TypeCoercer
         if ($value === null) {
             return null;
         }
+
         return match ($type) {
             'string' => is_scalar($value) ? (string) $value : (string) json_encode($value),
             'int', 'integer' => is_numeric($value) ? (int) $value : null,
@@ -30,6 +31,7 @@ class TypeCoercer
         if (is_string($value)) {
             return in_array(strtolower($value), ['1', 'true', 'yes', 'y', 'on'], true);
         }
+
         return (bool) $value;
     }
 }

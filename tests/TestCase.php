@@ -92,5 +92,4 @@ abstract class TestCase extends BaseTestCase
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
-
 }

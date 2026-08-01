@@ -6,7 +6,6 @@ use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInte
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Storage\AbstractFlatFileRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 /**
  * YAML-backed inbound endpoint repository. Files live at

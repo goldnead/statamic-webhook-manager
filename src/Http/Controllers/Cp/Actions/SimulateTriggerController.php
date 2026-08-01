@@ -35,7 +35,7 @@ class SimulateTriggerController extends Controller
             sourceReference: $payload['id'] ?? 'simulated',
             payload: $payload,
             isReplay: false,
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
 
         $events->dispatch(new TriggerDetected($event));

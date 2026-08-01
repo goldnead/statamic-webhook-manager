@@ -19,6 +19,7 @@ class InboundPayloadParser
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return ['ok' => false, 'data' => [], 'error' => 'Invalid JSON: '.json_last_error_msg()];
             }
+
             return ['ok' => true, 'data' => is_array($decoded) ? $decoded : ['value' => $decoded]];
         }
 

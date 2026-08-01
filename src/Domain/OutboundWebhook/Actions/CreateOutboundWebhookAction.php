@@ -12,8 +12,7 @@ class CreateOutboundWebhookAction
     public function __construct(
         protected OutboundWebhookRepositoryInterface $repository,
         protected AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     public function __invoke(array $attributes): OutboundWebhook
     {
@@ -46,6 +45,7 @@ class CreateOutboundWebhookAction
         $attributes['log_body_mode'] = $attributes['log_body_mode'] ?? 'partial';
         $attributes['payload_type'] = $attributes['payload_type'] ?? 'raw_json';
         $attributes['auth_type'] = $attributes['auth_type'] ?? 'none';
+
         return $attributes;
     }
 }

@@ -2,15 +2,14 @@
 
 namespace Goldnead\WebhookManager\Notifications;
 
+use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class DeliveryFailedNotification extends Notification
 {
-    public function __construct(public Delivery $delivery)
-    {
-    }
+    public function __construct(public Delivery $delivery) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array
@@ -20,11 +19,11 @@ class DeliveryFailedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $hook = app(\Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface::class)
+        $hook = app(OutboundWebhookRepositoryInterface::class)
             ->find($this->delivery->outbound_webhook_id);
         $name = $hook?->name ?? 'Webhook';
 
-        return (new MailMessage())
+        return (new MailMessage)
             ->error()
             ->subject(__('Webhook delivery failed: :name', ['name' => $name]))
             ->line(__('A webhook delivery has failed after all retries.'))

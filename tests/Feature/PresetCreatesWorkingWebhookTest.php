@@ -23,7 +23,7 @@ class PresetCreatesWorkingWebhookTest extends TestCase
             'https://hooks.slack.com/*' => Http::response(['ok' => true], 200),
         ]);
 
-        $attributes = (new SlackPreset())->build([
+        $attributes = (new SlackPreset)->build([
             'name' => 'Notify on publish',
             'trigger_type' => 'entry.published',
             'webhook_url' => 'https://hooks.slack.com/services/T/B/x',

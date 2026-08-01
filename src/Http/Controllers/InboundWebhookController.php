@@ -24,8 +24,7 @@ class InboundWebhookController extends Controller
         protected InboundEndpointRepositoryInterface $endpoints,
         protected InboundRequestProcessor $processor,
         protected SystemLogger $logger,
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, string $handle): JsonResponse
     {

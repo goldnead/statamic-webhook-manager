@@ -6,6 +6,7 @@ use Goldnead\BrandContext\Facades\BrandContext;
 use Goldnead\WebhookManager\Console\Commands\MigrateFlatBrandsCommand;
 use Goldnead\WebhookManager\Storage\FileStore;
 use Goldnead\WebhookManager\Tests\TestCase;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -41,7 +42,7 @@ class MigrateFlatBrandsCommandTest extends TestCase
         // directly instead. A real console install picks the command up twice
         // over: from $commands and from the Console/Commands autoload. Register
         // it here so the test exercises the command rather than the harness.
-        $this->app[\Illuminate\Contracts\Console\Kernel::class]
+        $this->app[Kernel::class]
             ->registerCommand($this->app->make(MigrateFlatBrandsCommand::class));
     }
 

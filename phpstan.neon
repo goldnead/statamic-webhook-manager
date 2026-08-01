@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    # Level 5 with a generated baseline, deliberately. The point of static
+    # analysis here is a ratchet on new code, not a rewrite of 14,000 existing
+    # lines: anything already in the baseline stays as it is, anything new has
+    # to be clean. Raise the level (and regenerate) when the baseline is small
+    # enough that the next step is cheap.
+    level: 5
+
+    paths:
+        - src
+
+    excludePaths:
+        - src/../resources/dist
+
+    treatPhpDocTypesAsCertain: false

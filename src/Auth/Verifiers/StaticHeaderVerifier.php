@@ -32,6 +32,7 @@ class StaticHeaderVerifier implements AuthVerifierInterface
         }
 
         $actual = (string) $request->header($name, '');
+
         return hash_equals((string) $expected, $actual);
     }
 
@@ -42,6 +43,7 @@ class StaticHeaderVerifier implements AuthVerifierInterface
         if ($secret) {
             $request['headers'][$name] = $secret;
         }
+
         return $request;
     }
 }

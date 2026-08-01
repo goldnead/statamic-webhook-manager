@@ -11,9 +11,7 @@ use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
  */
 class PreviewTemplateAction
 {
-    public function __construct(protected TemplateRenderer $renderer)
-    {
-    }
+    public function __construct(protected TemplateRenderer $renderer) {}
 
     /**
      * @return array{rendered:string, issues:array<int,string>}

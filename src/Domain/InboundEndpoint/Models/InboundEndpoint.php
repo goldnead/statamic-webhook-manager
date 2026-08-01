@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 /**
  * Inbound endpoint config — a stable, authenticated URL that receives and
@@ -36,7 +37,7 @@ class InboundEndpoint extends Model
     {
         static::creating(function (InboundEndpoint $endpoint) {
             if (! $endpoint->uuid) {
-                $endpoint->uuid = (string) \Illuminate\Support\Str::uuid();
+                $endpoint->uuid = (string) Str::uuid();
             }
         });
     }

@@ -2,6 +2,4 @@
 
 namespace Goldnead\WebhookManager\Templates\Exceptions;
 
-class TemplateRenderException extends \RuntimeException
-{
-}
+class TemplateRenderException extends \RuntimeException {}

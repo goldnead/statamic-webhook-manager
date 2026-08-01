@@ -7,9 +7,7 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 
 class DeleteOutboundWebhookAction
 {
-    public function __construct(protected OutboundWebhookRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected OutboundWebhookRepositoryInterface $repository) {}
 
     public function __invoke(OutboundWebhook $hook): bool
     {

@@ -3,6 +3,14 @@
 namespace Goldnead\WebhookManager\Registries;
 
 use Goldnead\WebhookManager\Contracts\InboundActionHandlerInterface;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\AuditLogHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\CreateEntryHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\CreateFormSubmissionHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\DispatchEventHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\NoopHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpdateEntryHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpsertEntryHandler;
+use Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpsertLeadHandler;
 
 /**
  * Registry for inbound action handlers.
@@ -48,19 +56,20 @@ class InboundActionHandlerRegistry
         foreach ($this->handlers as $h) {
             $opts[$h->handle()] = $h->label();
         }
+
         return $opts;
     }
 
     public function registerDefaults(): void
     {
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\NoopHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\CreateEntryHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpdateEntryHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpsertEntryHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\CreateFormSubmissionHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\DispatchEventHandler());
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\AuditLogHandler());
+        $this->register(new NoopHandler);
+        $this->register(new CreateEntryHandler);
+        $this->register(new UpdateEntryHandler);
+        $this->register(new UpsertEntryHandler);
+        $this->register(new CreateFormSubmissionHandler);
+        $this->register(new DispatchEventHandler);
+        $this->register(new AuditLogHandler);
         // Self-guards on LeadHub presence, so registering it unconditionally is safe.
-        $this->register(new \Goldnead\WebhookManager\Domain\InboundEndpoint\Handlers\UpsertLeadHandler());
+        $this->register(new UpsertLeadHandler);
     }
 }

@@ -18,8 +18,7 @@ class TestOutboundWebhookAction
     public function __construct(
         protected CreateDeliverySnapshotAction $snapshotAction,
         protected DeliveryEngine $engine,
-    ) {
-    }
+    ) {}
 
     public function __invoke(OutboundWebhook $hook, array $samplePayload = []): Delivery
     {
@@ -31,7 +30,7 @@ class TestOutboundWebhookAction
             site: null,
             locale: null,
             isReplay: false,
-            eventAt: new \DateTimeImmutable(),
+            eventAt: new \DateTimeImmutable,
         );
 
         $context = new ExecutionContext($event);

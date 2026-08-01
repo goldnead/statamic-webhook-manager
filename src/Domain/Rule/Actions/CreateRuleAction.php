@@ -8,9 +8,7 @@ use Illuminate\Support\Str;
 
 class CreateRuleAction
 {
-    public function __construct(protected RuleRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected RuleRepositoryInterface $repository) {}
 
     public function __invoke(array $attributes): Rule
     {

@@ -20,8 +20,10 @@ class FormSubmissionVariableResolver implements TemplateVariableResolverInterfac
         $payload = $context->payload();
         if (str_starts_with($key, 'data.')) {
             $data = $payload['data'] ?? [];
+
             return $data[substr($key, 5)] ?? null;
         }
+
         return $payload[$key] ?? ($payload['data'][$key] ?? null);
     }
 }

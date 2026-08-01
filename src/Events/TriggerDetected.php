@@ -11,7 +11,5 @@ use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
  */
 class TriggerDetected
 {
-    public function __construct(public readonly TriggerEvent $trigger)
-    {
-    }
+    public function __construct(public readonly TriggerEvent $trigger) {}
 }

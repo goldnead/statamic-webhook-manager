@@ -26,6 +26,7 @@ class BearerTokenVerifier implements AuthVerifierInterface
             return false;
         }
         $actual = substr($auth, 7);
+
         return $expected !== '' && hash_equals($expected, $actual);
     }
 
@@ -35,6 +36,7 @@ class BearerTokenVerifier implements AuthVerifierInterface
         if ($token) {
             $request['headers']['Authorization'] = 'Bearer '.$token;
         }
+
         return $request;
     }
 }

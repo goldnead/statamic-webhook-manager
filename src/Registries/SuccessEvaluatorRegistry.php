@@ -23,12 +23,12 @@ class SuccessEvaluatorRegistry
 
     public function default(): SuccessEvaluatorInterface
     {
-        return $this->get('default') ?? new DefaultSuccessEvaluator();
+        return $this->get('default') ?? new DefaultSuccessEvaluator;
     }
 
     public function registerDefaults(): void
     {
-        $this->register(new DefaultSuccessEvaluator());
-        $this->register(new StatusListSuccessEvaluator());
+        $this->register(new DefaultSuccessEvaluator);
+        $this->register(new StatusListSuccessEvaluator);
     }
 }

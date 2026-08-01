@@ -31,8 +31,7 @@ abstract class AbstractFlatFileRepository
     public function __construct(
         protected FileStore $files,
         protected ModelHydrator $hydrator,
-    ) {
-    }
+    ) {}
 
     /** @return class-string<Model> */
     abstract protected function modelClass(): string;

@@ -3,8 +3,8 @@
 namespace Goldnead\WebhookManager\Console\Commands;
 
 use Carbon\Carbon;
-use Goldnead\WebhookManager\Services\DeliveryReplayService;
 use Goldnead\BrandContext\Concerns\RunsForEachBrand;
+use Goldnead\WebhookManager\Services\DeliveryReplayService;
 use Illuminate\Console\Command;
 
 class ReplayFailedDeliveriesCommand extends Command

@@ -8,6 +8,7 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Statamic\Contracts\Entries\Entry;
 
 class SendWebhookActionTest extends TestCase
 {
@@ -39,7 +40,7 @@ class SendWebhookActionTest extends TestCase
             ['id' => '2', 'title' => 'Second', 'site' => 'default'],
         ]);
 
-        $action = new SendWebhook();
+        $action = new SendWebhook;
         $action->items($entries);
         $result = $action->run($entries, ['webhook' => $hook->uuid]);
 
@@ -54,10 +55,10 @@ class SendWebhookActionTest extends TestCase
 
     public function test_visible_only_when_an_enabled_webhook_exists(): void
     {
-        $action = new SendWebhook();
+        $action = new SendWebhook;
 
         // No webhooks yet → hidden even for an entry-like item.
-        $entry = \Mockery::mock(\Statamic\Contracts\Entries\Entry::class);
+        $entry = \Mockery::mock(Entry::class);
         $this->assertFalse($action->visibleTo($entry));
 
         OutboundWebhook::create([

@@ -11,7 +11,7 @@ class FailureClassifierTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->classifier = new FailureClassifier();
+        $this->classifier = new FailureClassifier;
     }
 
     public function test_network_error(): void

@@ -6,15 +6,17 @@ use Goldnead\WebhookManager\Domain\Delivery\Actions\CreateDeliverySnapshotAction
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
+use Goldnead\WebhookManager\Listeners\SendFailureAlertListener;
 use Goldnead\WebhookManager\Notifications\DeliveryFailedNotification;
-use Goldnead\WebhookManager\Services\CircuitBreaker;
 use Goldnead\WebhookManager\Services\DeliveryEngine;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class FailureAlertingTest extends TestCase
 {
@@ -25,7 +27,7 @@ class FailureAlertingTest extends TestCase
         parent::setUp();
         // The alert throttle lives in the cache, which (unlike the DB) is not
         // reset between tests; flush it so per-hook throttling stays isolated.
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
     }
 
     protected function failingHook(array $overrides = []): OutboundWebhook
@@ -95,7 +97,7 @@ class FailureAlertingTest extends TestCase
 
         $hook = $this->failingHook();
         $delivery = Delivery::create([
-            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'uuid' => (string) Str::uuid(),
             'outbound_webhook_id' => $hook->id,
             'trigger_type' => 'entry.published',
             'status' => Delivery::STATUS_FAILED,
@@ -107,7 +109,7 @@ class FailureAlertingTest extends TestCase
             'error_message' => 'HTTP 500',
         ]);
 
-        $listener = app(\Goldnead\WebhookManager\Listeners\SendFailureAlertListener::class);
+        $listener = app(SendFailureAlertListener::class);
 
         // First terminal failure → alert fires (mail + slack), throttle armed.
         $listener->handle(new DeliveryFailedTerminally($delivery));

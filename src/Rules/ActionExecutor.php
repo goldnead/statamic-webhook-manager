@@ -21,8 +21,7 @@ class ActionExecutor
     public function __construct(
         protected ActionRegistry $registry,
         protected FailureClassifier $classifier,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<int, array{handle:string, config?:array}>  $actions
@@ -43,6 +42,7 @@ class ActionExecutor
                 if ($stopOnFailure) {
                     break;
                 }
+
                 continue;
             }
 
@@ -75,6 +75,7 @@ class ActionExecutor
                 break;
             }
         }
+
         return $results;
     }
 }

@@ -15,7 +15,7 @@ class RetryPlannerTest extends TestCase
         $delivery = new Delivery(['attempts' => 1]);
         $hook = new OutboundWebhook(['retry_strategy' => ['strategy' => 'none', 'max_attempts' => 3]]);
 
-        $planner = new RetryPlanner(new FailureClassifier());
+        $planner = new RetryPlanner(new FailureClassifier);
         $next = $planner->plan($delivery, $hook, ['ok' => true, 'status' => 500]);
         $this->assertNull($next);
     }
@@ -25,7 +25,7 @@ class RetryPlannerTest extends TestCase
         $delivery = new Delivery(['attempts' => 3]);
         $hook = new OutboundWebhook(['retry_strategy' => ['strategy' => 'exponential', 'max_attempts' => 3, 'retry_on_status' => [500]]]);
 
-        $planner = new RetryPlanner(new FailureClassifier());
+        $planner = new RetryPlanner(new FailureClassifier);
         $next = $planner->plan($delivery, $hook, ['ok' => true, 'status' => 500]);
         $this->assertNull($next);
     }
@@ -44,7 +44,7 @@ class RetryPlannerTest extends TestCase
             ],
         ]);
 
-        $planner = new RetryPlanner(new FailureClassifier());
+        $planner = new RetryPlanner(new FailureClassifier);
         $next = $planner->plan($delivery, $hook, ['ok' => true, 'status' => 500]);
         $this->assertNotNull($next);
         $this->assertGreaterThan(time(), $next->getTimestamp());
@@ -59,7 +59,7 @@ class RetryPlannerTest extends TestCase
             'retry_on_status' => [500],
         ]]);
 
-        $planner = new RetryPlanner(new FailureClassifier());
+        $planner = new RetryPlanner(new FailureClassifier);
         $next = $planner->plan($delivery, $hook, ['ok' => true, 'status' => 422]);
         $this->assertNull($next);
     }

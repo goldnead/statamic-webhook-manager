@@ -14,8 +14,7 @@ class DeliveryReplayService
     public function __construct(
         protected DeliveryRepository $repository,
         protected ReplayDeliveryAction $replay,
-    ) {
-    }
+    ) {}
 
     public function replayOne(Delivery $delivery, bool $reRender = false): Delivery
     {
@@ -29,6 +28,7 @@ class DeliveryReplayService
             ($this->replay)($delivery, $reRender);
             $count++;
         }
+
         return $count;
     }
 }

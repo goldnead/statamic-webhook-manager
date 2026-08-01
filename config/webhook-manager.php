@@ -1,5 +1,7 @@
 <?php
 
+use Goldnead\WebhookManager\WebhookManagerServiceProvider;
+
 return [
 
     /*
@@ -161,14 +163,14 @@ return [
          * from this value, so what an operator copies out of the CP is what is
          * actually routed.
          */
-        'route_prefix' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::DEFAULT_INBOUND_PREFIX,
+        'route_prefix' => WebhookManagerServiceProvider::DEFAULT_INBOUND_PREFIX,
 
         /*
          * Prefixes that stay routable for senders configured against an older
          * release. Set to [] once no sender uses the old URL any more.
          */
         'legacy_route_prefixes' => [
-            \Goldnead\WebhookManager\WebhookManagerServiceProvider::LEGACY_INBOUND_PREFIX,
+            WebhookManagerServiceProvider::LEGACY_INBOUND_PREFIX,
         ],
 
         /*
@@ -176,7 +178,7 @@ return [
          * appended to `web`. Adding 'web' here re-introduces CSRF validation
          * and every external delivery starts failing with 419 again.
          */
-        'middleware' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE,
+        'middleware' => WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE,
 
         'max_payload_kb' => 512,
 

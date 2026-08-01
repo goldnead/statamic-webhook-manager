@@ -3,6 +3,7 @@
 namespace Goldnead\WebhookManager\Tests\Feature;
 
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
+use Goldnead\WebhookManager\Domain\Log\Models\LogEntry;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -139,7 +140,7 @@ class InboundRateLimitIsEnforcedTest extends TestCase
 
         $this->assertSame(
             1,
-            \Goldnead\WebhookManager\Domain\Log\Models\LogEntry::where('type', 'inbound_rate_limited')->count(),
+            LogEntry::where('type', 'inbound_rate_limited')->count(),
             'A throttled delivery left no trace in the log, so nobody can tell a limit from an outage.'
         );
     }

@@ -2,6 +2,8 @@
 
 namespace Goldnead\WebhookManager\Storage;
 
+use Goldnead\BrandContext\Models\Brand;
+
 /**
  * Where a brand's flat files live, and which of them a read may open.
  *
@@ -155,7 +157,7 @@ class BrandSegments
             return [''];
         }
 
-        $handles = \Goldnead\BrandContext\Models\Brand::query()
+        $handles = Brand::query()
             ->orderBy('id')
             ->pluck('handle')
             ->map(fn (string $h) => $this->segmentFor($h))

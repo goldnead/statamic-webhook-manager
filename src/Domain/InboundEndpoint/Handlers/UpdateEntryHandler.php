@@ -98,6 +98,7 @@ class UpdateEntryHandler implements InboundActionHandlerInterface
         if ($collection !== '') {
             $query->where('collection', $collection);
         }
+
         return $query->first();
     }
 }

@@ -29,7 +29,7 @@ class PermissionsRestrictSensitivePayloadsTest extends TestCase
             'request_body' => json_encode(['secret' => 'shh-very-secret', 'visible' => 'ok']),
         ]);
 
-        $masker = new DeliveryMaskingService();
+        $masker = new DeliveryMaskingService;
 
         $masked = $masker->maskForViewer($delivery, false);
         $this->assertStringNotContainsString('shh-very-secret', $masked->request_body);

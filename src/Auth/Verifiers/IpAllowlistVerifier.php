@@ -44,6 +44,7 @@ class IpAllowlistVerifier implements AuthVerifierInterface
                 return true;
             }
         }
+
         return false;
     }
 
@@ -60,8 +61,10 @@ class IpAllowlistVerifier implements AuthVerifierInterface
         if (str_contains($rule, '/')) {
             [$subnet, $mask] = explode('/', $rule);
             $maskBits = (int) $mask;
+
             return self::cidrMatch($ip, $subnet, $maskBits);
         }
+
         return false;
     }
 
@@ -81,6 +84,7 @@ class IpAllowlistVerifier implements AuthVerifierInterface
             return true;
         }
         $maskByte = chr(~((1 << (8 - $bits)) - 1) & 0xFF);
+
         return (ord($ipBin[$bytes]) & ord($maskByte)) === (ord($subnetBin[$bytes]) & ord($maskByte));
     }
 }

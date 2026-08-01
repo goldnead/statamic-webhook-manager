@@ -17,6 +17,7 @@ class AssetVariableResolver implements TemplateVariableResolverInterface
         if ($context->event->sourceType !== 'asset') {
             return null;
         }
+
         return $context->payload()[$key] ?? null;
     }
 }

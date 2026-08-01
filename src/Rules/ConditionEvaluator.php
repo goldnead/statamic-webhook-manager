@@ -30,6 +30,7 @@ class ConditionEvaluator
         if (empty($tree)) {
             return true;
         }
+
         return $this->evaluateNode($tree, $context);
     }
 
@@ -38,6 +39,7 @@ class ConditionEvaluator
         if (isset($node['conditions']) && is_array($node['conditions'])) {
             $logic = strtolower($node['logic'] ?? 'and');
             $results = array_map(fn ($child) => $this->evaluateNode($child, $context), $node['conditions']);
+
             return $logic === 'or' ? in_array(true, $results, true) : ! in_array(false, $results, true);
         }
 

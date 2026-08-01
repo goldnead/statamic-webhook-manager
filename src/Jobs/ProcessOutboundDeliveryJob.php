@@ -28,9 +28,7 @@ class ProcessOutboundDeliveryJob implements ShouldQueue
 
     public int $tries = 1; // we manage retries ourselves
 
-    public function __construct(public int $deliveryId)
-    {
-    }
+    public function __construct(public int $deliveryId) {}
 
     public function handle(DeliveryEngine $engine): void
     {

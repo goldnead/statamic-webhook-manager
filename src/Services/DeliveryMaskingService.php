@@ -38,6 +38,7 @@ class DeliveryMaskingService
     protected function looksLikeJson(string $body): bool
     {
         $trim = ltrim($body);
+
         return str_starts_with($trim, '{') || str_starts_with($trim, '[');
     }
 }

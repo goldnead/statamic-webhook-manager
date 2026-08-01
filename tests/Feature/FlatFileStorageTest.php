@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInte
 use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\CreateOutboundWebhookAction;
 use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileOutboundWebhookRepository;
+use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository;
 use Goldnead\WebhookManager\Storage\FileStore;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Illuminate\Support\Facades\File;
@@ -44,7 +45,7 @@ class FlatFileStorageTest extends TestCase
     {
         $this->assertInstanceOf(FlatFileOutboundWebhookRepository::class, $this->repo());
         $this->assertInstanceOf(
-            \Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository::class,
+            FlatFileTemplateRepository::class,
             $this->app->make(TemplateRepositoryInterface::class),
         );
     }

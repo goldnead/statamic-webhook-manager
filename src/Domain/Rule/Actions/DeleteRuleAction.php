@@ -7,9 +7,7 @@ use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 
 class DeleteRuleAction
 {
-    public function __construct(protected RuleRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected RuleRepositoryInterface $repository) {}
 
     public function __invoke(Rule $rule): void
     {

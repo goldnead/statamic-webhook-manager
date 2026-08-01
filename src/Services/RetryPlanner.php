@@ -18,9 +18,7 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
  */
 class RetryPlanner
 {
-    public function __construct(protected FailureClassifier $classifier)
-    {
-    }
+    public function __construct(protected FailureClassifier $classifier) {}
 
     /**
      * @return ?CarbonImmutable next attempt time, or null if no retry.
