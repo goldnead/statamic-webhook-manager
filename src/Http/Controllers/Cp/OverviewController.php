@@ -82,7 +82,7 @@ class OverviewController extends CpController
             // Pre-computed permission flags so v-if stays declarative.
             'canCreateOutbound' => (bool) $request->user()?->can('manage outbound webhooks'),
             'canCreateInbound' => (bool) $request->user()?->can('manage inbound endpoints'),
-            'canCreateRule' => (bool) $request->user()?->can('manage rules'),
+            'canCreateRule' => (bool) $request->user()?->can('manage webhook rules'),
         ]);
     }
 

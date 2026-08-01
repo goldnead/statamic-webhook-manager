@@ -58,22 +58,29 @@ abstract class CpTestCase extends TestCase
         return new FakeCpUser($abilities);
     }
 
-    /** Every ability the addon registers — the "super user" stand-in. */
+    /**
+     * Every ability the addon registers — the "super user" stand-in.
+     *
+     * Read out of the registry rather than typed out, so a newly registered
+     * permission is granted here automatically and a renamed one cannot leave
+     * a stale literal behind. A hand-maintained copy of this list is the same
+     * failure mode as the `manage rules` typo: it drifts silently and the
+     * tests keep passing.
+     */
     protected function superUser(): Authenticatable
     {
-        return $this->cpUser([
-            'view webhooks',
-            'manage outbound webhooks',
-            'test outbound webhooks',
-            'manage inbound endpoints',
-            'manage webhook rules',
-            'view webhook deliveries',
-            'replay webhook deliveries',
-            'view sensitive payloads',
-            'manage webhook settings',
-            'manage webhook templates',
-            'use webhook debug tools',
-        ]);
+        return $this->cpUser($this->registeredAbilities());
+    }
+
+    /** @return array<int,string> */
+    protected function registeredAbilities(): array
+    {
+        return \Statamic\Facades\Permission::all()
+            ->filter(fn ($permission) => $permission->group() === 'webhook_manager')
+            ->map(fn ($permission) => $permission->value())
+            ->filter(fn ($value) => is_string($value))
+            ->values()
+            ->all();
     }
 
     /**
