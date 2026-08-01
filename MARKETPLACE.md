@@ -10,13 +10,13 @@ Source material for the Statamic Marketplace listing.
 
 ## Tagline / Short Description
 
-A central, CP-native integration layer for outbound webhooks, inbound endpoints, deliveries, retries, rules and templates — all from one place inside the Control Panel.
+A central, CP-native integration layer for outbound webhooks, inbound endpoints, deliveries, retries, rules and templates, all from one place inside the Control Panel.
 
 ## Long Description
 
 Webhook Manager turns Statamic into a first-class integration hub. Instead of scattering `Http::post(...)` calls across event listeners and remembering to handle retries, signatures and logging yourself, you configure everything from the Control Panel: which events fire which requests, how payloads are shaped, how endpoints authenticate, and what happens when a delivery fails.
 
-Every outbound request is recorded as a **delivery snapshot** — full request/response bodies, status, error classification, attempts and the retry schedule — so you can see exactly what was sent and replay it with one click. **Inbound endpoints** give external systems a stable, authenticated URL that maps incoming payloads onto Statamic actions (create/update entries, form submissions, events). **Rules** add a `When → If → Then` automation layer, and a **token-based template renderer** keeps payloads readable.
+Every outbound request is recorded as a **delivery snapshot**: full request/response bodies, status, error classification, attempts and the retry schedule. You can see exactly what was sent and replay it with one click. **Inbound endpoints** give external systems a stable, authenticated URL that maps incoming payloads onto Statamic actions (create/update entries, form submissions, events). **Rules** add a `When → If → Then` automation layer, and a **token-based template renderer** keeps payloads readable.
 
 It is the missing integration layer between your Statamic site and the rest of your stack.
 
@@ -40,7 +40,7 @@ Stop hand-rolling webhook glue code. Webhook Manager gives Statamic a configurab
 - Granular CP permissions (config, sensitive payloads, replays, debug tools)
 - Sensitive-payload masking and structured logging
 - Console commands for pruning, bulk replay, health checks and example fixtures
-- Native Statamic 6 CP — Vue 3, Inertia.js and Statamic's `@ui` components
+- Native Statamic 6 CP: Vue 3, Inertia.js and Statamic's `@ui` components
 
 ## Who It's For
 
@@ -70,19 +70,19 @@ Integrations · Automation · Workflow · Developer Tools · Utility
 
 | File | Caption |
 | --- | --- |
-| `screenshots/outbound.png` | Outbound webhooks — which events fire which requests, and whether they are healthy |
+| `screenshots/outbound.png` | Outbound webhooks: which events fire which requests, and whether they are healthy |
 | `screenshots/deliveries.png` | Delivery log with status, error classification and attempt count |
-| `screenshots/delivery-detail.png` | Delivery snapshot — full request and response, replayable with one click |
-| `screenshots/insights.png` | Insights — delivery volume, success rate and failures over time |
+| `screenshots/delivery-detail.png` | Delivery snapshot: full request and response, replayable with one click |
+| `screenshots/insights.png` | Insights: delivery volume, success rate and failures over time |
 
 ## Art
 
-- `art/logo.svg` / `art/logo.png` — addon icon (256×256)
-- `art/cover.png` — marketplace cover, source: `art/cover.svg`
+- `art/logo.svg` / `art/logo.png`: addon icon (256×256)
+- `art/cover.png`: marketplace cover, built from `art/cover.svg`
 
 ## Suggested Pricing Tiers
 
-> **Not implemented.** The addon declares no `extra.statamic.editions` and contains no `Addon::edition()` check, so everything below ships to everyone. This table is a pricing proposal, not a description of the package. Nothing may be sold as tier-exclusive until the edition gate exists — a paid tier whose headline feature is already in the free one is a rejectable listing.
+> **Not implemented.** The addon declares no `extra.statamic.editions` and contains no `Addon::edition()` check, so everything below ships to everyone. This table is a pricing proposal, not a description of the package. Nothing may be sold as tier-exclusive until the edition gate exists. A paid tier whose headline feature is already in the free one is a rejectable listing.
 
 | Tier | Price | Includes |
 |---|---|---|
