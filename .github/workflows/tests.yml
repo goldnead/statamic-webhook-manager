@@ -77,7 +77,14 @@ jobs:
         run: composer update --${{ matrix.stability }} --prefer-dist --no-progress --no-interaction
 
       - name: Show resolved versions
-        run: composer show laravel/framework statamic/cms --format=summary || true
+        # Zwei Pakete auf einmal nimmt `composer show` nicht -- es liest das zweite als
+        # Version und bricht mit "Too many arguments" ab. Das `|| true` hat den Job
+        # gruen gehalten und den Schritt dabei nutzlos gemacht: er hat nie etwas
+        # ausgegeben. Jetzt eine Schleife, und der Abbruch faellt auf.
+        run: |
+          for pkg in laravel/framework statamic/cms; do
+            composer show "$pkg" | grep -E '^(name|versions)'
+          done
 
       - name: Run PHPUnit test suite
         run: vendor/bin/phpunit --colors=always
