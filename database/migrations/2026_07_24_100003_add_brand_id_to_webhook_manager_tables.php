@@ -187,8 +187,35 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Take brand scoping back out — or refuse, before touching anything.
+     *
+     * The whole point of `up()` is that two brands may hold the same handle, so
+     * by the time anybody rolls back, the data may no longer satisfy the global
+     * unique this has to restore. The engine says so with `Duplicate entry 'x'
+     * for key 'webhook_outbounds_handle_unique'` from inside an `alter table`,
+     * at which point the brand-scoped unique on that table is already dropped,
+     * the migration is not recorded as rolled back, and the install carries no
+     * uniqueness on `handle` at all — a table where anything can now be written
+     * twice, produced by a command that looked like it was undoing something.
+     *
+     * Deduplicating for the operator is worse than stopping. An outbound webhook
+     * row is a destination URL plus the credential that signs it; two brands
+     * that both call theirs `crm-lead` point at two different systems, and there
+     * is nothing in the row that says which one the install should keep. Picking
+     * the lower id would silently repoint one tenant's traffic at the other's
+     * endpoint, which is not a rollback, it is a data-loss event with a green
+     * console.
+     *
+     * So the collisions are collected first, across all four root tables, and if
+     * there are any this throws with the table and the handles named — while
+     * every table is still whole and the migration is still recorded as run.
+     * Resolving it is one rename per collision, then the same command again.
+     */
     public function down(): void
     {
+        $this->refuseWhileHandlesCollide();
+
         if ($this->hasIndexOver('webhook_deliveries', ['brand_id', 'idempotency_key'])) {
             Schema::table('webhook_deliveries', function (Blueprint $table) {
                 $table->dropIndex(['brand_id', 'idempotency_key']);
@@ -221,6 +248,58 @@ return new class extends Migration
                 $table->dropColumn('brand_id');
             });
         }
+    }
+
+    /**
+     * Stop the rollback while any root table holds a handle more than once.
+     *
+     * Runs before the first statement of `down()`, so a refusal costs nothing:
+     * the schema is untouched and the migration stays recorded as run.
+     */
+    private function refuseWhileHandlesCollide(): void
+    {
+        if (! $this->canProbeSchema()) {
+            return;
+        }
+
+        $collisions = [];
+
+        foreach ($this->rootTables as $t) {
+            if (! Schema::hasTable($t) || ! Schema::hasColumn($t, 'handle')) {
+                continue;
+            }
+
+            $handles = DB::table($t)
+                ->select('handle')
+                ->groupBy('handle')
+                ->havingRaw('count(*) > 1')
+                ->orderBy('handle')
+                ->pluck('handle')
+                ->all();
+
+            if ($handles !== []) {
+                $collisions[$t] = $handles;
+            }
+        }
+
+        if ($collisions === []) {
+            return;
+        }
+
+        $detail = collect($collisions)
+            ->map(fn (array $handles, string $table) => '  - '.$table.': '.implode(', ', $handles))
+            ->implode("\n");
+
+        throw new RuntimeException(
+            "Cannot roll the Webhook Manager brand scoping back: `handle` would have to be globally unique\n"
+            ."again, and these are held by more than one brand:\n\n"
+            .$detail."\n\n"
+            .'Rolling back means going back to one handle per install, and this migration will not choose '
+            .'which of the rows survives — an outbound webhook carries a target URL and the credential that '
+            ."signs it, so keeping the wrong one silently repoints a brand's traffic. Rename or remove one "
+            ."side of every collision above, then run `php artisan migrate:rollback` again.\n"
+            .'Nothing was changed; brand scoping is still fully in place.'
+        );
     }
 
     /**

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.10.1 — 2026-08-01
+### Fixed — rolling brand scoping back could strip `handle` of any uniqueness at all
+
+1.7.3 recorded ten MySQL failures as known, pre-existing and deferred: `down()` of the brand-scoping migration restores the global `unique('handle')`, and an install where two brands share a handle cannot satisfy it, so `migrate:rollback` died with `1062 Duplicate entry` from inside an `alter table`. The note said the fix was a decision about what un-brand-scoping should do to multi-brand data. This is that decision.
+
+It refuses. No engine rolls DDL back, so the old behaviour left the table it died on with its brand-scoped unique already dropped and the global one not yet built — a `handle` column carrying no uniqueness whatsoever, on an install whose operator had just watched a command fail and would reasonably assume nothing had happened. And the alternative, deduplicating on the way past, is worse: an outbound webhook row is a target URL plus the credential that signs it, two brands that both call theirs `crm-lead` point at two different systems, and nothing in the row says which one an install should keep. Keeping the lower id would silently repoint one tenant's traffic at another tenant's endpoint.
+
+So `down()` now collects the colliding handles across all four root tables **before its first statement** and, if there are any, throws with the table and the handles named and the schema untouched. Resolving it is one rename per collision, then the same command again. A rollback with no collision behaves exactly as before.
+
+**Are you affected?** Only if you run `php artisan migrate:rollback` or `migrate:reset` far enough back to reach `2026_07_24_100003_add_brand_id_to_webhook_manager_tables`, on an install running more than one brand. Nothing about a forward `php artisan migrate` changes, and no site that has never rolled back is in a bad state. If you did roll back and it failed on `1062 Duplicate entry` (MySQL) or `UNIQUE constraint failed` (SQLite): check `show index from webhook_outbounds` — a table with neither `webhook_outbounds_handle_unique` nor `webhook_outbounds_brand_id_handle_unique` was left half-converted by the old code and needs the index put back by hand.
+
+### Fixed — the test bed could not see the rollback path
+
+`tests/Migrations/RollbackWithExistingDataTest` is the mirror of the forward-path bed added in 1.7.3: it installs the head schema, fills every table, and rolls back — refusing while two brands share a handle, going through and restoring the global unique when they do not, and taking every table with it on a full reset. It runs on both engines.
+
+The reason this went uncovered for four releases is worth naming. The default suite is in-memory SQLite, whose database is gone before testbench's teardown rollback ever reads a row, so `down()` was executed against nothing on every run since it was written. Only the MySQL leg added in 1.10.0 keeps a real database between setUp and teardown — and it found this on its first run, which is the whole argument for having it.
+
+`phpunit -c phpunit.mysql.xml` is now green: 241 tests, 1071 assertions, same as SQLite.
+
 ## 1.10.0 — 2026-08-01
 ### Fixed — automatic retries were planned and never executed
 
