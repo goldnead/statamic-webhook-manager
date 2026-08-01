@@ -51,7 +51,12 @@ linked into a Statamic 6 dev site.
 - [ ] Tabs render: General / Trigger / Request / Authentication / Payload / Delivery
 - [ ] Header shows StatusIndicator + Active/Disabled badge (Edit only)
 - [ ] Test button (Edit only, when `can_test`): firing it shows `<Alert variant=success/error>` with HTTP status, duration, error
-- [ ] Save button: shortcut `mod+s` works, loading state shows
+- [ ] Save button: loading state shows
+- [ ] Save button: `mod+s` — **not implemented.** There is no keyboard handler
+      anywhere in `resources/js` and no unsaved-changes guard either, so leaving
+      a half-edited form discards it without a warning. This line used to assert
+      the shortcut worked, which made a manual QA pass tick a box for behaviour
+      that does not exist. Tracked as follow-up work; do not tick it.
 - [ ] Validation: submit empty form, required fields error, the **first failing tab** auto-activates and shows a red `!` badge in the trigger
 - [ ] **General**: Switch enabled/disabled, handle pattern, description textarea
 - [ ] **Trigger**: Select with all registered triggers

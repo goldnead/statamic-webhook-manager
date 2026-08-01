@@ -141,7 +141,7 @@ const actionErrors = ref({});
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Outbound Webhooks')" url="https://statamic.dev/" />
+        <DocsCallout :topic="__('Outbound Webhooks')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
     </div>
 
     <div v-else class="max-w-page mx-auto">
@@ -246,6 +246,6 @@ const actionErrors = ref({});
             </template>
         </Listing>
 
-        <DocsCallout :topic="__('Outbound Webhooks')" url="https://statamic.dev/" />
+        <DocsCallout :topic="__('Outbound Webhooks')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
     </div>
 </template>

@@ -88,7 +88,7 @@ const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Webhook Manager')" url="https://statamic.dev/" />
+        <DocsCallout :topic="__('Webhook Manager')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
     </template>
 
     <!-- ── Populated state ─────────────────────────────────────────── -->
@@ -150,6 +150,6 @@ const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
             </Listing>
         </Panel>
 
-        <DocsCallout :topic="__('Webhook Manager')" url="https://statamic.dev/" />
+        <DocsCallout :topic="__('Webhook Manager')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
     </template>
 </template>

@@ -88,7 +88,7 @@ const errorTypeLabel = (type) => ({
                 >
                     <DocsCallout
                         :heading="__('Learn about logs')"
-                        url="https://statamic.com/addons/goldnead/webhook-manager/docs/logs"
+                        url="https://github.com/goldnead/statamic-webhook-manager#concepts"
                     />
                 </EmptyStateItem>
             </EmptyStateMenu>

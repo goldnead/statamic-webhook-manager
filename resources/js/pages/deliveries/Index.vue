@@ -116,7 +116,7 @@ function replay(row) {
 
             <DocsCallout
                 :topic="__('Deliveries')"
-                url="https://statamic.com/addons/goldnead/webhook-manager/docs/deliveries"
+                url="https://github.com/goldnead/statamic-webhook-manager#retries"
             />
         </div>
 
@@ -228,7 +228,7 @@ function replay(row) {
 
             <DocsCallout
                 :topic="__('Deliveries')"
-                url="https://statamic.com/addons/goldnead/webhook-manager/docs/deliveries"
+                url="https://github.com/goldnead/statamic-webhook-manager#retries"
             />
         </div>
     </div>

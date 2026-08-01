@@ -26,6 +26,13 @@ A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)
 - **Permissions** for granular access to outbound config, sensitive payloads, replays, debug tools.
 - **Native Statamic 6 CP** — built with Vue 3, Inertia.js and Statamic's `@ui` component library; fits seamlessly into the CP look & feel.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Outbound webhooks](screenshots/outbound.png)<br>**Outbound** — which events fire which requests, and whether they are healthy | ![Deliveries](screenshots/deliveries.png)<br>**Deliveries** — status, error classification and attempt count |
+| ![Delivery detail](screenshots/delivery-detail.png)<br>**Delivery snapshot** — full request and response, replayable with one click | ![Insights](screenshots/insights.png)<br>**Insights** — volume, success rate and failures over time |
+
 ## Requirements
 
 - PHP **8.2+**
@@ -141,6 +148,20 @@ WEBHOOK_MANAGER_ALERT_EMAILS="ops@example.com,team@example.com"
 - **Delivery** — one attempt to deliver a webhook, with full snapshot.
 - **Rule** — `When → If → Then` flow with conditions and actions.
 - **Inbound endpoint** — stable HTTPS URL receiving and validating external requests.
+
+### Integration presets
+
+Rather than hand-writing a Slack or Discord payload, pick the destination and fill in a URL. Presets ship for Slack, Discord, Microsoft Teams, Zapier, Make, n8n and generic JSON; each one creates a normal outbound webhook with a working payload template you can then edit like any other. CP → Webhooks → Integrations.
+
+### Rules
+
+A rule is a `When → If → Then` flow: an incoming trigger (a Statamic event or an inbound webhook), an optional condition tree with AND/OR groups, and an ordered list of actions — send an outbound webhook, create or update an entry, create a form submission, dispatch an event, send an email or a Slack message, set a field, write a log note. Conditions and actions are registry-driven, so a site can add its own (see [Extending](#extending)).
+
+Rules are the layer between "something happened" and "these requests go out", without a listener class.
+
+### Templates
+
+A template is a reusable payload body, referenced by handle from any number of outbound webhooks. The body is rendered with token variables (`{{ entry:title }}`, `{{ system:timestamp_iso }}`, …) that are resolved from the trigger payload at delivery time. Attach one to a webhook so several webhooks can share a single payload shape; deleting a template detaches the webhooks using it and they fall back to their inline body.
 
 ## Usage example
 

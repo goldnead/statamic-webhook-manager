@@ -172,6 +172,7 @@ const actionErrors = ref({});
                         type="button"
                         class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
                         :title="__('Copy URL')"
+                        :aria-label="__('Copy URL')"
                         @click.prevent="$clipboard(fullUrl(row))"
                     >
                         <Icon name="duplicate" class="w-3.5 h-3.5" />

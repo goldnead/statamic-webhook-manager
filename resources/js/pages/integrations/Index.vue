@@ -42,8 +42,20 @@ const setupUrl = (handle) => props.setupUrlBase.replace('__PRESET__', handle);
                 :heading="preset.label"
                 :description="preset.description"
             />
+
+            <!-- Every other index screen in this addon has an empty state.
+                 This one rendered a heading and a subheading over nothing when
+                 the registry came back empty, which is what happens the moment
+                 a site removes the built-in presets. -->
+            <EmptyStateItem
+                v-if="!presets.length"
+                :href="outboundUrl"
+                icon="arrow-up-right"
+                :heading="__('No integrations available')"
+                :description="__('No presets are registered. Create an outbound webhook by hand, or register a preset from a service provider.')"
+            />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Integrations')" url="https://statamic.com/addons/goldnead/webhook-manager" />
+        <DocsCallout :topic="__('Integrations')" url="https://github.com/goldnead/statamic-webhook-manager#integration-presets" />
     </div>
 </template>
