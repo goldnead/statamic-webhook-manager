@@ -238,7 +238,7 @@ function copyCurl() {
         <Panel :heading="__('Delivery')" class="mt-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Trigger') }}
                     </p>
                     <Badge color="blue" :text="delivery.trigger_label || delivery.trigger_type || '—'" />
@@ -251,25 +251,25 @@ function copyCurl() {
                 </div>
 
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Attempts') }}
                     </p>
-                    <span class="text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                    <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
                         {{ delivery.attempts ?? '—' }}
                     </span>
                 </div>
 
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Duration') }}
                     </p>
-                    <span class="text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                    <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
                         {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
                     </span>
                 </div>
 
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Correlation ID') }}
                     </p>
                     <code
@@ -294,14 +294,14 @@ function copyCurl() {
                 <div class="space-y-4 p-4">
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Method') }}
                         </p>
                         <Badge :color="methodColor" :text="delivery.method" />
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('URL') }}
                         </p>
                         <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">
@@ -310,7 +310,7 @@ function copyCurl() {
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Headers') }}
                         </p>
                         <CodeEditor
@@ -322,7 +322,7 @@ function copyCurl() {
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Body') }}
                         </p>
                         <CodeEditor
@@ -340,7 +340,7 @@ function copyCurl() {
                 <div class="space-y-4 p-4">
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Status Code') }}
                         </p>
                         <Badge
@@ -350,16 +350,16 @@ function copyCurl() {
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Duration') }}
                         </p>
-                        <span class="text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                        <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
                             {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
                         </span>
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Headers') }}
                         </p>
                         <CodeEditor
@@ -371,7 +371,7 @@ function copyCurl() {
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                             {{ __('Body') }}
                         </p>
                         <CodeEditor
@@ -394,7 +394,7 @@ function copyCurl() {
             <div class="space-y-3 p-4">
 
                 <div v-if="delivery.error_type" class="flex items-center gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
                         {{ __('Error Type') }}
                     </p>
                     <Badge
@@ -404,7 +404,7 @@ function copyCurl() {
                 </div>
 
                 <div v-if="delivery.error" class="flex items-start gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0 pt-0.5">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0 pt-0.5">
                         {{ __('Message') }}
                     </p>
                     <span class="text-sm text-red-700 dark:text-red-400 break-words">
@@ -413,7 +413,7 @@ function copyCurl() {
                 </div>
 
                 <div v-if="delivery.next_retry_at" class="flex items-center gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 w-28 shrink-0">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
                         {{ __('Next Retry') }}
                     </p>
                     <date-time :of="delivery.next_retry_at" class="text-sm" />

@@ -62,7 +62,7 @@ function removeChild(index) {
         class="rounded-lg border p-3 space-y-2"
         :class="isRoot
             ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40'
-            : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800'"
+            : 'border-gray-300 dark:border-gray-700 bg-content-bg'"
     >
         <!-- Group header: AND/OR toggle + remove (non-root) -->
         <div class="flex items-center justify-between">
@@ -91,7 +91,7 @@ function removeChild(index) {
         </div>
 
         <!-- Empty state -->
-        <p v-if="!items.length" class="text-xs text-gray-500 italic">
+        <p v-if="!items.length" class="text-xs text-gray-500 dark:text-gray-400 italic">
             {{ isRoot
                 ? __('No conditions — rule fires for every matching trigger.')
                 : __('Empty group — add a condition or another nested group below.') }}

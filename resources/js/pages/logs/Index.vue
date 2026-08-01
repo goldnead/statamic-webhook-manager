@@ -126,7 +126,7 @@ const errorTypeLabel = (type) => ({
                         :text="row.correlation_id"
                         class="font-mono text-sm"
                     />
-                    <span v-else class="text-gray-400">—</span>
+                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- error_type column -->
@@ -137,7 +137,7 @@ const errorTypeLabel = (type) => ({
                     >
                         {{ errorTypeLabel(row.error_type) }}
                     </Badge>
-                    <span v-else class="text-gray-400">—</span>
+                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- created_at column -->

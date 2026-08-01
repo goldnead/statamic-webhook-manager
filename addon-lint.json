@@ -1,0 +1,19 @@
+{
+    "_": "Configuration for statamic-addon-studio/tools/addon-lint. Every downgrade below needs a reason in _reasons. A rule turned down without one is a defect that was hidden, not fixed.",
+
+    "severity": {
+        "ui.inertia-navigation": "info",
+        "testing.addon-testcase": "info"
+    },
+
+    "_reasons": {
+        "ui.inertia-navigation": {
+            "reviewed": "2026-08-01",
+            "why": "The seven flagged call sites are the Test / Preview / Simulate buttons (outbound Index+Edit, inbound Edit, rules Edit, templates Edit, debug Index). They are XHR probes, not navigations: the endpoint answers a JSON result object which the page renders inline in an <Alert> without leaving the screen, and five of the six sit on a half-filled Edit form whose state has to survive the click. router.post() would do the opposite of what is wanted here. It performs an Inertia visit, replaces the page props, and trips exactly the dirty-state guard the rule cites as its benefit, which would block testing an unsaved webhook. Every genuine mutation in this addon (create, update, delete, toggle, replay, storage switch) already goes through the Inertia router; templates/Index.vue was the last outlier and now uses router.delete behind a ConfirmationModal. Revisit if Statamic ships a non-navigating Inertia request."
+        },
+        "testing.addon-testcase": {
+            "reviewed": "2026-08-01",
+            "why": "Migration attempted on 2026-08-01 and reverted deliberately. Statamic\\Testing\\AddonTestCase boots the real StatamicServiceProvider, which registers this addon's CP routes itself behind the real statamic.cp.authenticated middleware. That middleware resolves the user through Statamic's own user repository, so tests/FakeCpUser (a plain Authenticatable with an explicit ability list, which six CP test classes and ~25 tests are built on) stops authenticating: 302 on GET, 401 on POST. Switching over means replacing FakeCpUser with real Statamic file users and roles across the whole CP harness. That is the right end state and is filed as follow-up work; doing it half-way at the end of a hardening pass would have left the suite red. Until then the suite extends orchestra/testbench and calls bootAddon() by hand, documented in tests/TestCase.php."
+        }
+    }
+}

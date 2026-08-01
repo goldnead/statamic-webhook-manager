@@ -156,7 +156,7 @@ const actionErrors = ref({});
             <template #cell-name="{ row }">
                 <div>
                     <Link :href="row.edit_url" class="font-medium">{{ row.name }}</Link>
-                    <div class="text-xs text-gray-500 mt-0.5 font-mono">{{ row.handle }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">{{ row.handle }}</div>
                 </div>
             </template>
 
@@ -166,7 +166,7 @@ const actionErrors = ref({});
                     <MiddleEllipsis
                         :text="fullUrl(row)"
                         :href="fullUrl(row)"
-                        class="text-blue-600 dark:text-blue-400"
+                        class="text-primary"
                     />
                     <button
                         type="button"

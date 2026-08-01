@@ -564,7 +564,7 @@ async function runTest() {
                         </Field>
 
                         <div v-if="Object.keys(actionOptions).length" class="mt-2">
-                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <p class="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
                                 {{ __('Available action handles:') }}
                             </p>
                             <ul class="space-y-0.5">
@@ -573,7 +573,7 @@ async function runTest() {
                                     :key="handle"
                                     class="text-xs font-mono text-gray-600 dark:text-gray-400"
                                 >
-                                    {{ handle }} <span class="font-sans text-gray-500">— {{ label }}</span>
+                                    {{ handle }} <span class="font-sans text-gray-500 dark:text-gray-400">— {{ label }}</span>
                                 </li>
                             </ul>
                         </div>

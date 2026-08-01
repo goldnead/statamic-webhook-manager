@@ -306,7 +306,7 @@ function copyToClipboard(text) {
                             collapsible
                             :collapsed="true"
                         >
-                            <ul class="divide-y divide-gray-200 dark:divide-dark-900">
+                            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <li
                                     v-for="ns in namespaces"
                                     :key="ns"

@@ -56,7 +56,7 @@ const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
     <template v-if="isEmpty">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
-                <Icon name="link" class="size-5 text-gray-500" />
+                <Icon name="link" class="size-5 text-gray-500 dark:text-gray-400" />
                 {{ __('Webhook Manager') }}
             </h1>
         </header>
@@ -139,7 +139,7 @@ const hasRecentFailures = computed(() => props.recentFailures?.length > 0);
                 </template>
 
                 <template #cell-url="{ value }">
-                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                    <span class="font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="value || ''" />
                     </span>
                 </template>

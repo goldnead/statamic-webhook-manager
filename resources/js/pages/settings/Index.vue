@@ -125,7 +125,7 @@ const statusCodesToString = (val) => {
             <template #default>
                 <span>
                     {{ __('These settings are managed in') }}
-                    <code class="font-mono text-sm bg-gray-100 dark:bg-dark-700 rounded px-1">{{ configFilePath }}</code>.
+                    <code class="font-mono text-sm bg-gray-100 dark:bg-gray-800 rounded px-1">{{ configFilePath }}</code>.
                     {{ __('Edit that file to change retry policy, logging mode, masking rules, route prefixes, etc.') }}
                 </span>
                 <Button
@@ -172,7 +172,7 @@ const statusCodesToString = (val) => {
                         <Field inline
                             :label="__('webhook-manager::messages.storage_records')"
                         >
-                            <span class="text-sm text-gray-700 dark:text-gray-300 tabular-nums">{{ storageCountsLine }}</span>
+                            <span class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ storageCountsLine }}</span>
                         </Field>
 
                         <Field inline
@@ -589,7 +589,7 @@ const statusCodesToString = (val) => {
         <!-- ── Raw config panel ─────────────────────────────────────── -->
         <Panel :heading="__('Raw configuration')" class="mt-6">
                     <Card>
-            <p class="text-sm text-gray-600 dark:text-dark-150 mb-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
             </p>
             <CodeEditor

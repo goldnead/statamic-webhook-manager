@@ -14,6 +14,7 @@ import {
     Icon,
     Listing,
     CommandPaletteItem,
+    ConfirmationModal,
 } from '@statamic/cms/ui';
 
 // Persistent-but-dismissible intro shown above the populated listing.
@@ -65,11 +66,30 @@ const typeColor = (type) => {
 // whatever comes back is shown in the banner above the rows.
 const actionErrors = ref({});
 
+// Deleting a template detaches it from every outbound webhook that used it as
+// a body source, so it gets the same confirmation core puts in front of every
+// destructive action — and the same one templates/Edit.vue already had. This
+// listing was the one place a single click deleted without asking.
+const pendingDelete = ref(null);
+const confirmingDelete = computed({
+    get: () => pendingDelete.value !== null,
+    set: (open) => { if (!open) pendingDelete.value = null; },
+});
+
+function confirmDestroy(row) {
+    if (!row.delete_url) return;
+    pendingDelete.value = row;
+}
+
 // Was an inline `router.delete(..., { onSuccess: reloadPage })` in the
 // template with no error branch at all: a refused delete left the row in
 // place and said nothing.
-function destroy(row) {
-    if (!row.delete_url) return;
+function destroy() {
+    const row = pendingDelete.value;
+    pendingDelete.value = null;
+
+    if (!row?.delete_url) return;
+
     router.delete(row.delete_url, {
         preserveScroll: true,
         onError: (errors) => { actionErrors.value = errors || {}; },
@@ -186,9 +206,20 @@ function destroy(row) {
                     :text="__('Delete')"
                     icon="trash"
                     danger
-                    @click="destroy(row)"
+                    @click="confirmDestroy(row)"
                 />
             </template>
         </Listing>
     </div>
+
+    <!-- ── Delete confirmation ────────────────────────────────────── -->
+    <ConfirmationModal
+        :open="confirmingDelete"
+        :title="__('Delete Template')"
+        :body-text="__('Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.')"
+        :button-text="__('Delete')"
+        :danger="true"
+        @confirm="destroy"
+        @update:open="confirmingDelete = $event"
+    />
 </template>

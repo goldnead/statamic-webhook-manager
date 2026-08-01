@@ -160,7 +160,7 @@ function replay(row) {
                     <a
                         v-if="row.show_url"
                         :href="row.show_url"
-                        class="font-semibold hover:text-blue-600"
+                        class="font-semibold hover:text-primary"
                     >{{ row.outbound_name || row.trigger_type || '—' }}</a>
                     <span v-else>{{ row.outbound_name || row.trigger_type || '—' }}</span>
                     <span
@@ -171,7 +171,7 @@ function replay(row) {
 
                 <!-- url column — mono + middle ellipsis -->
                 <template #cell-url="{ row }">
-                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                    <span class="font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="row.url || ''" />
                     </span>
                 </template>
@@ -202,7 +202,7 @@ function replay(row) {
                         :color="errorTypeColor(row.error_type)"
                         :text="errorTypeLabel(row.error_type)"
                     />
-                    <span v-else class="text-gray-400">—</span>
+                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- when column -->

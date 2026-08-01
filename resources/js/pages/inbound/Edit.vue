@@ -318,8 +318,8 @@ async function runTest() {
 
                     <Field inline :label="__('Path')" :error="form.errors.path" :instructions="__('The URL path segment for this endpoint.')">
                         <Input v-model="form.path" :placeholder="__('my-endpoint')" class="font-mono" />
-                        <div class="mt-1 text-xs text-gray-500 font-mono">
-                            {{ __('Full URL:') }} <span class="text-blue-600 dark:text-blue-400">{{ fullUrl }}</span>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 font-mono">
+                            {{ __('Full URL:') }} <span class="text-primary">{{ fullUrl }}</span>
                         </div>
                     </Field>
 
@@ -474,7 +474,7 @@ async function runTest() {
                             :disabled="!testUrl || testing"
                             @click="runTest"
                         />
-                        <span v-if="!testUrl" class="ml-3 text-sm text-gray-400">
+                        <span v-if="!testUrl" class="ml-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             {{ __('Save the endpoint first to enable testing.') }}
                         </span>
                     </div>

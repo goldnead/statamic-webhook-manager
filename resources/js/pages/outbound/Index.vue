@@ -119,7 +119,7 @@ const actionErrors = ref({});
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
-                <Icon name="arrow-up-right" class="size-5 text-gray-500" />
+                <Icon name="arrow-up-right" class="size-5 text-gray-500 dark:text-gray-400" />
                 {{ __('Outbound Webhooks') }}
             </h1>
         </header>
@@ -212,7 +212,7 @@ const actionErrors = ref({});
             </template>
 
             <template #cell-url="{ value }">
-                <span class="text-gray-700 dark:text-gray-300 font-mono text-xs">
+                <span class="text-gray-900 dark:text-gray-100 font-mono text-xs">
                     <MiddleEllipsis :text="value || ''" />
                 </span>
             </template>

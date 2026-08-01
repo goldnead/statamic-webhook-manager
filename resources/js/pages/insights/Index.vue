@@ -171,7 +171,7 @@ function shortDate(iso) {
                         />
                     </div>
                 </div>
-                <div class="flex justify-between mt-2 text-xs text-gray-400">
+                <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     <span>{{ shortDate(series[0].date) }}</span>
                     <span>{{ shortDate(series[series.length - 1].date) }}</span>
                 </div>
@@ -200,7 +200,7 @@ function shortDate(iso) {
                                 stroke-linejoin="round" stroke-linecap="round" />
                         </svg>
                     </div>
-                    <div class="flex justify-between mt-2 text-xs text-gray-400">
+                    <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                         <span>0%</span><span>100%</span>
                     </div>
                 </div>
@@ -216,12 +216,12 @@ function shortDate(iso) {
                         <div v-for="row in latencyRows" :key="row.label" class="flex items-center gap-3">
                             <span class="w-10 text-xs font-medium text-gray-500 dark:text-gray-400 tabular-nums">{{ row.label }}</span>
                             <div class="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded">
-                                <div class="h-full bg-blue-500 rounded" :style="{ width: row.pct + '%' }" />
+                                <div class="h-full bg-primary rounded" :style="{ width: row.pct + '%' }" />
                             </div>
-                            <span class="w-16 text-right text-xs tabular-nums text-gray-700 dark:text-gray-300">{{ ms(row.value) }}</span>
+                            <span class="w-16 text-right text-xs tabular-nums text-gray-900 dark:text-gray-100">{{ ms(row.value) }}</span>
                         </div>
                     </div>
-                    <p v-else class="text-sm text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_latency') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_latency') }}</p>
                 </div>
             </Panel>
         </div>
@@ -239,10 +239,10 @@ function shortDate(iso) {
                             <div class="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded">
                                 <div class="h-full bg-red-400 dark:bg-red-500 rounded" :style="{ width: Math.max(4, (e.count / maxError) * 100) + '%' }" />
                             </div>
-                            <span class="w-10 text-right text-xs tabular-nums text-gray-700 dark:text-gray-300">{{ e.count }}</span>
+                            <span class="w-10 text-right text-xs tabular-nums text-gray-900 dark:text-gray-100">{{ e.count }}</span>
                         </div>
                     </div>
-                    <p v-else class="text-sm text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
                 </div>
             </Panel>
 
@@ -263,7 +263,7 @@ function shortDate(iso) {
                             <Badge color="red" :text="String(row.failures)" />
                         </li>
                     </ul>
-                    <p v-else class="text-sm text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
                 </div>
             </Panel>
         </div>
