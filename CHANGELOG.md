@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Fixed — the Overview hid its own "Add a Rule" button from everyone
+
+`OverviewController` asked `can('manage rules')`. The registered ability is `manage webhook rules`. An ability nobody registered answers `false` for every user, super users included, so the CTA never rendered — on the very first screen a new install shows. No exception, no log line, no failing test; the same shape of defect as `test outbound webhooks` before 1.6.
+
+Correcting the one string is not the fix. `PermissionStringsAreRegisteredTest` now compares every ability literal in `src/` against the registry in both directions: an ability that is checked but not registered fails, and an ability that is registered but never checked fails too. `CpTestCase::superUser()` reads its ability list out of the registry instead of repeating it, because the hand-typed copy was the same kind of drift waiting to happen.
+
+### Fixed — the inbound rate limit did nothing
+
+`inbound.rate_limit_per_minute` was declared in config, rendered into the Settings screen as a live "Rate limit (per minute)" security field, and sold in the marketplace copy — and no code anywhere read it. A control an operator believes is protecting a public endpoint, and is not, is worse than no control.
+
+It is now the first step of `InboundRequestProcessor`, ahead of the method allowlist and ahead of authentication:
+
+- keyed per endpoint id, so a flood on one endpoint does not throttle the others, and the legacy `!/webhooks/inbound` prefix shares the bucket instead of being a way around the limit;
+- `429` plus `Retry-After` on rejection, `X-RateLimit-Limit` and `X-RateLimit-Remaining` on every response;
+- a per-endpoint override through the `rate_limit_config` column, which until now was validated, cast, stored and never read;
+- `0` disables it;
+- rejections are logged as `inbound_rate_limited`, so a limit is distinguishable from an outage.
+
+### Fixed — the IP allowlist auth scheme rejected everything
+
+`ip_allowlist` was accepted by `SaveInboundEndpointRequest`, coloured on the inbound index and given an example config on the edit screen, but `IpAllowlistVerifier` was never passed to `AuthSchemeRegistry::registerDefaults()`. `get()` answered `null` and `InboundAuthVerifier` failed the request closed, so an operator who chose it got an endpoint that 401'd every delivery for no visible reason.
+
+The verifier is registered, and it now reads both `ips` (what the CP's own example always showed) and `allow` (what the class always read) — whichever was copied, one of the two used to be ignored. `IpAllowlistAuthSchemeIsSelectableTest` asserts structurally that every `auth_type` the form accepts is a registered scheme.
+
 ## 1.9.0 — 2026-07-30
 
 ### Fixed — the flat driver leaked webhook credentials between brands
@@ -79,6 +105,8 @@ The stack is `webhook-manager.inbound.middleware` and it is the complete list, n
 No endpoint on any environment we can see uses `basic`; the one configured inbound endpoint uses `static_header`, which was never affected. The exposure mattered more the moment the route stopped sitting behind `web`, since the verifier is now the only thing in front of it.
 
 ### Known — configured but not enforced
+
+> Both entries below were fixed after this release; see the Unreleased section at the top of this file. They are left here because the 1.9.0 tag still behaves as described.
 
 Two columns on `webhook_inbounds` are accepted by the CP, validated, cast and stored, and then never consulted at request time:
 

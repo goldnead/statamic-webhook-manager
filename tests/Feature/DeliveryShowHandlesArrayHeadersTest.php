@@ -121,7 +121,11 @@ JS;
         $file = tempnam(sys_get_temp_dir(), 'whm-show-').'.mjs';
         file_put_contents($file, $script);
 
-        $output = (string) shell_exec(escapeshellcmd($node).' '.escapeshellarg($file).' 2>&1');
+        // escapeshellarg, not escapeshellcmd: the node binary can live under a
+        // path with a space in it (Herd installs to ~/Library/Application
+        // Support/…), and escapeshellcmd leaves the space unquoted, so the
+        // shell splits the path and the test fails with "No such file".
+        $output = (string) shell_exec(escapeshellarg($node).' '.escapeshellarg($file).' 2>&1');
         @unlink($file);
 
         $this->assertStringContainsString('OK', $output, "Header handling failed under node:\n".$output);

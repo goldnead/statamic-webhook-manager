@@ -19,7 +19,8 @@ A central, CP-native integration layer for **[Statamic 6](https://statamic.com/)
 - **Failure alerting & circuit breaker** — email + Slack alerts (throttled per hook) when a delivery fails for good, and automatic disabling of a hook after too many consecutive failures.
 - **Insights dashboard** — delivery volume, success-rate trend, latency percentiles (p50/p95/p99), error breakdown and top-failing endpoints, with day-range and per-webhook filters.
 - **"Send webhook" entry action** — fire any enabled outbound webhook for selected entries straight from the native CP action toolbar.
-- **Auth schemes**: none, bearer token, basic auth, custom header, HMAC SHA256 signature.
+- **Auth schemes**: none, bearer token, basic auth, custom header, HMAC SHA256 signature, IP allowlist (single addresses and CIDR ranges).
+- **Inbound rate limiting** — a per-endpoint requests-per-minute cap, enforced before authentication, answering 429 with `Retry-After`.
 - **Token-based template renderer** (`{{ entry:title }}`, `{{ system:timestamp_iso }}`, …) with variable resolver registry.
 - **Pluggable storage driver** — keep webhook config in the database, or as human-readable, git-versionable YAML under `content/webhooks/` (delivery history always stays in the database).
 - **Permissions** for granular access to outbound config, sensitive payloads, replays, debug tools.
@@ -79,6 +80,37 @@ Or do it from the CLI (records are copied id-for-id either way):
 php artisan webhook-manager:storage:migrate --from=eloquent --to=flat --dry-run
 php artisan webhook-manager:storage:migrate --from=eloquent --to=flat
 ```
+
+### Inbound rate limiting
+
+An inbound endpoint accepts a fixed number of requests per minute. The limit is checked first, before the method allowlist and before authentication, so a flood cannot be used to make the site do work.
+
+```php
+// config/webhook-manager.php
+'inbound' => [
+    'rate_limit_per_minute' => 60, // 0 disables throttling
+],
+```
+
+- The counter is keyed **per endpoint**, so one noisy sender cannot take the other endpoints down with it, and the legacy `!/webhooks/inbound` prefix shares the bucket with the canonical URL rather than offering a way around the limit.
+- Exceeding the limit answers **429** with a `Retry-After` header. Every response — accepted or rejected — carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`, so a well-behaved sender can slow down before it is rejected.
+- A single endpoint can override the global default via its `rate_limit_config`:
+
+  ```json
+  { "per_minute": 600 }
+  ```
+
+- Throttled requests are logged as `inbound_rate_limited` and are visible in the CP log, so a limit does not look like an outage.
+
+### IP allowlist
+
+`ip_allowlist` is one of the inbound auth schemes. It accepts single addresses and CIDR ranges, IPv4 and IPv6:
+
+```json
+{ "ips": ["203.0.113.9", "192.168.10.0/24"] }
+```
+
+It fails closed: an endpoint with an empty or missing allowlist rejects every request. Behind a proxy or load balancer, configure Laravel's `TrustProxies` — otherwise `$request->ip()` is your proxy's address and no allowlist will ever match.
 
 ### Failure alerting
 

@@ -28,7 +28,8 @@ Stop hand-rolling webhook glue code. Webhook Manager gives Statamic a configurab
 
 - Outbound webhooks triggered by Statamic events (entry / form / user / asset)
 - Conditional execution, payload templates, custom headers and auth control
-- Auth schemes: none, bearer token, basic auth, custom header, HMAC SHA256 signature
+- Auth schemes: none, bearer token, basic auth, custom header, HMAC SHA256 signature, IP allowlist (single addresses and CIDR ranges)
+- Per-endpoint inbound rate limiting, enforced ahead of authentication, with 429 + `Retry-After` and `X-RateLimit-*` headers
 - Queue-first delivery with configurable retry policy (linear / exponential / none)
 - Delivery snapshots with full request/response, error classification and attempts
 - Replay failed deliveries individually or in batches, optionally re-rendered against current data
@@ -80,10 +81,12 @@ Integrations · Automation · Workflow · Developer Tools · Utility
 
 ## Suggested Pricing Tiers
 
+> **Not implemented.** The addon declares no `extra.statamic.editions` and contains no `Addon::edition()` check, so everything below ships to everyone. This table is a pricing proposal, not a description of the package. Nothing may be sold as tier-exclusive until the edition gate exists — a paid tier whose headline feature is already in the free one is a rejectable listing.
+
 | Tier | Price | Includes |
 |---|---|---|
-| **Webhook Manager Core** | $79–129 | Outbound + inbound webhooks, deliveries, retries, replays, rules, templates, full CP |
-| **Pro** | +$50 | Advanced auth schemes, rate limiting, extended audit retention, priority support |
+| **Webhook Manager Core** | $79–129 | Outbound + inbound webhooks, deliveries, retries, replays, rules, templates, all auth schemes, inbound rate limiting, full CP |
+| **Pro** | +$50 | Extended audit retention, priority support |
 | **Business Bundle** | $149–199 | Webhook Manager + LeadHub |
 
 ## Installation (for the listing)

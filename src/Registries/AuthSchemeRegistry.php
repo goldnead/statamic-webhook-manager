@@ -5,6 +5,7 @@ namespace Goldnead\WebhookManager\Registries;
 use Goldnead\WebhookManager\Auth\Verifiers\BasicAuthVerifier;
 use Goldnead\WebhookManager\Auth\Verifiers\BearerTokenVerifier;
 use Goldnead\WebhookManager\Auth\Verifiers\HmacSignatureVerifier;
+use Goldnead\WebhookManager\Auth\Verifiers\IpAllowlistVerifier;
 use Goldnead\WebhookManager\Auth\Verifiers\NoAuthVerifier;
 use Goldnead\WebhookManager\Auth\Verifiers\StaticHeaderVerifier;
 use Goldnead\WebhookManager\Contracts\AuthVerifierInterface;
@@ -47,5 +48,11 @@ class AuthSchemeRegistry
         $this->register(new BearerTokenVerifier());
         $this->register(new BasicAuthVerifier());
         $this->register(new HmacSignatureVerifier());
+        // Selectable in SaveInboundEndpointRequest, given a badge colour on the
+        // inbound index and an example config on the edit screen since 1.0 —
+        // but never registered here, so `AuthSchemeRegistry::get()` answered
+        // null and InboundAuthVerifier failed the request closed. An operator
+        // who picked "IP allowlist" got an endpoint that 401s everything.
+        $this->register(new IpAllowlistVerifier());
     }
 }

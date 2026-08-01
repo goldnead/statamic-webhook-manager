@@ -17,9 +17,23 @@ class IpAllowlistVerifier implements AuthVerifierInterface
         return 'IP allowlist';
     }
 
+    /**
+     * Fails closed: an empty or missing allowlist rejects everything, because
+     * the alternative is an endpoint the operator believes is IP-restricted and
+     * is not.
+     *
+     * Both key names are read. The CP's own example config on the inbound edit
+     * screen has always shown `{"ips": [...]}` while this class only ever read
+     * `allow`, so whichever an operator copied, one of the two was silently
+     * ignored.
+     */
     public function verify(Request $request, array $config): bool
     {
-        $allow = (array) ($config['allow'] ?? []);
+        $allow = array_values(array_filter(array_merge(
+            (array) ($config['ips'] ?? []),
+            (array) ($config['allow'] ?? []),
+        ), fn ($entry) => is_string($entry) && $entry !== ''));
+
         if (empty($allow)) {
             return false;
         }

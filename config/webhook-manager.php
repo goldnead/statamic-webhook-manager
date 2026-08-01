@@ -179,7 +179,23 @@ return [
         'middleware' => \Goldnead\WebhookManager\WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE,
 
         'max_payload_kb' => 512,
+
+        /*
+         * Requests per minute PER ENDPOINT, enforced as the first step of
+         * InboundRequestProcessor — before the method allowlist, before auth,
+         * before anything that costs work. Exceeding it answers 429 with
+         * Retry-After; every other response carries X-RateLimit-Limit and
+         * X-RateLimit-Remaining so a well-behaved sender can back off first.
+         *
+         * The counter is keyed by endpoint id, so the legacy `!/` prefix shares
+         * the bucket with the canonical URL and cannot be used to route around
+         * the limit. A single endpoint can override this with
+         * `rate_limit_config: {"per_minute": N}`.
+         *
+         * 0 disables throttling entirely.
+         */
         'rate_limit_per_minute' => 60,
+
         'replay_protection_ttl_seconds' => 600,
     ],
 
