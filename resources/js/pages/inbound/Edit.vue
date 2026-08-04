@@ -488,7 +488,7 @@ async function runTest() {
                             {{ testResult.message || (testResult.ok ? __('Test successful.') : __('Test failed.')) }}
                         </Alert>
 
-                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="mt-4 grid md:grid-cols-2 gap-4 *:min-w-0">
                             <Panel :heading="__('Mapped Payload')">
                                 <CodeEditor
                                     :model-value="JSON.stringify(testResult.mapped ?? {}, null, 2)"

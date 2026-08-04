@@ -236,7 +236,7 @@ function copyCurl() {
              get their own panel.
         -->
         <Panel :heading="__('Delivery')" class="mt-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 *:min-w-0">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Trigger') }}
@@ -287,7 +287,7 @@ function copyCurl() {
             lg+ → 2-column grid (request | response)
             < lg → single column (stacked)
         -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div class="grid lg:grid-cols-2 gap-4 mt-4 *:min-w-0">
 
             <!-- Request panel -->
             <Panel :heading="__('Request')">
