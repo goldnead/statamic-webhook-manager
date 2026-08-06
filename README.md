@@ -389,4 +389,4 @@ success.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Commercial license. See [LICENSE](LICENSE).
