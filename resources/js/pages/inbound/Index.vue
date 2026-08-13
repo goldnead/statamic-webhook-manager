@@ -70,12 +70,11 @@ const actionColor = (type) => {
     }
 };
 
-// Same shape as Edit.vue — see the comment there for why the brand segment is
-// mandatory and why this reads `handle` rather than `path`.
+// Built in PHP (WebhookManagerServiceProvider::inboundPath) and printed here.
+// Not assembled in the browser: this is the string an operator pastes into a
+// sender's webhook field, and it has to be the one the router matches.
 function fullUrl(endpoint) {
-    const base = props.routePrefix ? `/${props.routePrefix}` : '';
-    const brand = props.brandSegment ? `/${props.brandSegment}` : '';
-    return `${base}${brand}/${endpoint.handle}`;
+    return endpoint.public_path ?? '';
 }
 
 function toggle(endpoint) {

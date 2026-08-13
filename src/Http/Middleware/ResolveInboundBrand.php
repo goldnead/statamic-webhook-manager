@@ -6,6 +6,7 @@ use Closure;
 use Goldnead\BrandContext\Models\Brand;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -61,9 +62,24 @@ use Symfony\Component\HttpFoundation\Response;
  * The previous value is restored on the way out. The manager is a singleton, so
  * in a long-lived process (Octane, a queue worker serving requests) a leftover
  * brand would be inherited by whatever ran next.
+ *
+ * ## `{brand}` is read raw, and stays unbound
+ *
+ * This reads the route parameter as the string the sender put in the URL. It is
+ * never resolved through `Route::bind()`, and no inbound route may have a bound
+ * parameter — a binding registered under a generic name applies to every addon
+ * installed alongside, and one that aborts when it resolves nothing would end
+ * the delivery before this addon ever saw it. That is not theory: it is why
+ * `SubstituteBindings` was taken out of the inbound stack in 2.1.0 (see
+ * `WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE`), and
+ * `InboundEndpointDefaultsAndRouteOrderTest` provokes exactly that binding to
+ * keep it out.
  */
 class ResolveInboundBrand
 {
+    /** How long one of this middleware's log lines silences its own repeats. */
+    protected const LOG_THROTTLE_SECONDS = 3600;
+
     public function __construct(protected SystemLogger $logger) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -111,11 +127,12 @@ class ResolveInboundBrand
         $named = $request->route('brand');
 
         if ($named === null || $named === '') {
-            $this->logger->info('inbound_brand_defaulted',
+            $this->once('defaulted:'.$request->route('handle'), fn () => $this->logger->info(
+                'inbound_brand_defaulted',
                 'Inbound delivery arrived without a brand segment; resolved to the default brand.', [
                     'handle' => (string) $request->route('handle'),
                     'canonical_url_shape' => '{prefix}/{brand}/{handle}',
-                ]);
+                ]));
 
             return $manager->default();
         }
@@ -125,16 +142,43 @@ class ResolveInboundBrand
         if (! $brand) {
             // Same response as an unknown endpoint handle: the URL must not
             // tell an outsider which brands exist on this installation.
-            $this->logger->warning('inbound_brand_not_found',
+            $this->once('unknown:'.$named, fn () => $this->logger->warning(
+                'inbound_brand_not_found',
                 "Inbound delivery named unknown brand '{$named}'.", [
                     'brand' => $named,
                     'handle' => (string) $request->route('handle'),
-                ]);
+                ]));
 
             return null;
         }
 
         return $brand;
+    }
+
+    /**
+     * Write this line at most once per key and window.
+     *
+     * Both lines this middleware writes happen **before** the endpoint is
+     * looked up, and therefore before the rate limiter, which lives in
+     * `InboundRequestProcessor` and needs an endpoint to know its budget.
+     * `SystemLogger` writes a database row. Ungated, anyone who can reach the
+     * site could turn `POST /webhooks/inbound/anything/atall` into one INSERT
+     * per request without a signature, without an endpoint, without a brand.
+     *
+     * The other line is the mirror image: `inbound_brand_defaulted` fires on
+     * the documented backwards-compatible URL, so a legitimate sender would
+     * write an extra row per delivery, for ever, about a fact that does not
+     * change.
+     *
+     * A log line exists to be read by a person. Once an hour is enough for
+     * both, and a cache miss on a hostile key costs a cache write instead of a
+     * table row.
+     */
+    protected function once(string $key, callable $write): void
+    {
+        if (Cache::add('webhook-manager:inbound-brand:'.sha1($key), true, self::LOG_THROTTLE_SECONDS)) {
+            $write();
+        }
     }
 
     protected function notFound(): Response

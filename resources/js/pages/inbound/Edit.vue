@@ -65,7 +65,7 @@ const form = useForm({
     auth_config_json: '',
     expected_content_type: props.endpoint.expected_content_type ?? 'application/json',
     max_payload_kb: props.endpoint.max_payload_kb ?? 512,
-    replay_protection_enabled: props.endpoint.replay_protection_enabled ?? false,
+    replay_protection_enabled: props.endpoint.replay_protection_enabled ?? true,
     logging_mode: props.endpoint.logging_mode ?? 'partial',
     mapping_config_json: jsonOrEmpty(props.endpoint.mapping_config),
     action_type: props.endpoint.action_type ?? 'noop',

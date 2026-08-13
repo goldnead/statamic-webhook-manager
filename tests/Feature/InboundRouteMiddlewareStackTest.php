@@ -216,22 +216,23 @@ class InboundRouteMiddlewareStackTest extends TestCase
     }
 
     /**
-     * ResolveInboundBrand is in the stack, first, and is not removable.
+     * ResolveInboundBrand is in the stack, first, and cannot be configured out.
      *
-     * First, because it reads `{brand}` as the raw string the sender put in the
-     * URL. Behind SubstituteBindings a `Route::bind('brand')` registered by the
-     * host app or any sibling addon would have replaced that string with
-     * whatever that binding resolves — and a binding that aborts 404 on an
-     * unknown value would answer deliveries before this addon sees them.
+     * Without it the brand-scoped endpoint lookup runs with no current brand,
+     * fails closed, and every delivery on a multi-brand install is answered
+     * 404. An install that published `config/webhook-manager.php` before this
+     * middleware existed has the old list frozen in its own file and would
+     * otherwise upgrade straight back into that outage; `inboundMiddleware()`
+     * prepends regardless, which is what this asserts.
      *
-     * Not removable, because without it the brand-scoped endpoint lookup runs
-     * with no current brand, fails closed, and every delivery on a multi-brand
-     * install is answered 404. An install that published `config/webhook-manager.php`
-     * before this middleware existed has the old list frozen in its own file;
-     * `inboundMiddleware()` prepends regardless, which is what this asserts.
+     * That it runs *before* whatever else the stack contains is a claim about
+     * runtime, not about an array, and is proved where it can be:
+     * `InboundEndpointDefaultsAndRouteOrderTest` registers a hostile
+     * `Route::bind('brand')` and sends a real delivery through.
      */
     public function test_the_brand_resolver_leads_the_stack_and_survives_a_stale_published_config(): void
     {
+        // What a config file published before 2.1.0 still contains.
         config()->set('webhook-manager.inbound.middleware', [SubstituteBindings::class]);
 
         $stack = WebhookManagerServiceProvider::inboundMiddleware();
@@ -241,6 +242,13 @@ class InboundRouteMiddlewareStackTest extends TestCase
 
         // Even an operator who empties the list entirely keeps it.
         config()->set('webhook-manager.inbound.middleware', []);
+        $this->assertSame([ResolveInboundBrand::class], WebhookManagerServiceProvider::inboundMiddleware());
+    }
+
+    /** The shipped stack carries the brand resolver and nothing else. */
+    public function test_the_shipped_stack_is_the_brand_resolver_alone(): void
+    {
+        $this->assertSame([], WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE);
         $this->assertSame([ResolveInboundBrand::class], WebhookManagerServiceProvider::inboundMiddleware());
     }
 

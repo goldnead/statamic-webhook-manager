@@ -83,7 +83,12 @@ class InboundController extends CpController
             'auth_type' => 'static_header',
             'expected_content_type' => 'application/json',
             'max_payload_kb' => 512,
-            'replay_protection_enabled' => false,
+            // Der Standard eines NEUEN Endpunkts, und der Grund steht in
+            // CreateInboundEndpointAction: ein Absender wiederholt, was er nicht
+            // bestaetigt bekommen hat. Diese Vorlage ist der einzige Weg, auf
+            // dem ein Mensch einen Endpunkt anlegt — stuende hier weiter
+            // `false`, waere der Standard in der Action tote Schrift.
+            'replay_protection_enabled' => true,
             'logging_mode' => 'partial',
             'action_type' => 'noop',
         ]);
@@ -237,6 +242,10 @@ class InboundController extends CpController
             'can_edit' => $canManage,
             'can_toggle' => $canManage,
             'can_delete' => $canManage,
+
+            // Die oeffentliche URL wird hier gebaut, nicht im Browser: sie
+            // muss die sein, die der Router matcht.
+            'public_path' => WebhookManagerServiceProvider::inboundPath((string) $endpoint->handle),
 
             'edit_url' => cp_route('webhook-manager.inbound.edit', $endpoint),
             'toggle_url' => cp_route('webhook-manager.inbound.toggle', $endpoint),

@@ -44,28 +44,79 @@ cannot be used to enumerate an installation's brands.
 `inboundMiddleware()` and is not part of the configurable list. An install that
 published `config/webhook-manager.php` before this release has the old array
 frozen in its own file and would otherwise have upgraded into the same outage
-without a single line of warning. It also runs **before** `SubstituteBindings`,
-so it reads `{brand}` as the raw string the sender sent — a `Route::bind('brand')`
-from the host app or a sibling addon cannot change what the endpoint resolves.
+without a single line of warning.
 
 **Are you affected?** Only with `brand-context.multi_brand` on. Single-brand
 installs — every install before brands, and the overwhelming majority since —
 were never affected: the scope is a no-op there and the short URL behaves
-exactly as it always did.
+exactly as it always did. One cosmetic change does reach them: the Control
+Panel now prints the brand-qualified URL everywhere, so an endpoint that used
+to be shown as `/webhooks/inbound/orders` is shown as
+`/webhooks/inbound/default/orders`. Both work. There is no reason to go and
+reconfigure a sender.
 
 **Why no test caught it.** Every inbound test ran single-brand, where the scope
 does nothing, and every brand-isolation test asserted at the model layer without
 making a request. The outage sat in the gap between them.
 `InboundEndpointIsReachableUnderMultiBrandTest` is that gap, closed.
 
+### Removed — `SubstituteBindings` is no longer in the inbound stack
+
+It was there "so that a future bound route parameter resolves". There is no
+bound parameter on any inbound route: `{brand}` and `{handle}` are generic
+names, deliberately unbound, and `RouteParameterCollisionTest` keeps them that
+way. So it resolved nothing, and it was not free — a `Route::bind('brand')`
+registered by the host app or any sibling addon applies to every route with
+that parameter name, this one included, and a binding that aborts when it finds
+nothing (which is what a model binding does) ended the delivery. Measured, not
+reasoned: with it in the stack, a hostile binding turned a correctly signed
+delivery into a 404. `InboundEndpointDefaultsAndRouteOrderTest` registers that
+binding and sends a real delivery through it.
+
+**If you published `config/webhook-manager.php`** before this release, your own
+copy still lists `SubstituteBindings` under `inbound.middleware` and keeps that
+exposure. Removing the line is the whole fix.
+
 ### Fixed — the Control Panel printed a URL that was not the one being routed
 
 Two independent reasons, both of which handed the operator a URL that 404s. The
 listing and the edit page built the URL from `path`, a free-text field, while
 the router has always matched on `handle` — equal until someone edits `path`.
-And neither knew about the brand segment. One place builds this string now
-(`WebhookManagerServiceProvider::inboundPath()`), and the pages print what it
-returns.
+And neither knew about the brand segment.
+
+The URL on the listing — the one with the copy button, the one that gets pasted
+into a sender's webhook field — is now built in PHP by
+`WebhookManagerServiceProvider::inboundPath()` and printed as it arrives. The
+edit page still composes the same shape in the browser, because it previews the
+URL live while the handle is being typed and there is no saved endpoint to ask
+about yet.
+
+`inboundPath()` also refuses to print a brand segment the router could not
+match. Nothing validates a brand handle on the way in — the model is unguarded
+and the column carries only a unique index — so a brand called `Chor.de` is
+possible, and printing it would have recreated this exact bug one level up.
+
+### Fixed — an unauthenticated request could write a log row per attempt
+
+`ResolveInboundBrand` writes its two log lines *before* the endpoint is looked
+up, and therefore before the rate limiter, which lives in the pipeline and needs
+an endpoint to know its budget. `SystemLogger` writes a database row. Ungated,
+`POST /webhooks/inbound/anything/atall` was one INSERT per request, from any
+address, with no signature, no endpoint and no brand. Both lines are now written
+at most once per key per hour — a log line exists to be read by a person, and a
+cache miss on a hostile key costs a cache write instead of a table row. The same
+gate keeps `inbound_brand_defaulted` from writing a row for every legitimate
+delivery on the backwards-compatible short URL.
+
+### Fixed — the replay guard could be beaten by the case it exists for
+
+`ReplayProtectionService::check()` was `seen()` followed by `remember()`, with a
+window between the two. The delivery that lands in that window is precisely the
+one this class is for: a sender that did not get its answer in time and sends
+the same delivery again immediately. Both requests read "not seen", both
+proceeded, and the configured action ran twice — under concurrency the guard did
+nothing at all, and no sequential test could ever show it. It is one atomic
+`Cache::add()` now.
 
 ### Changed — new inbound endpoints have replay protection on
 
@@ -78,7 +129,10 @@ where the action is genuinely idempotent.
 
 ### Added — an HMAC endpoint that does not require a timestamp now says so
 
-`inbound_signature_without_timestamp`, once per delivery, in the CP log.
+`inbound_signature_without_timestamp`, at most once an hour per endpoint, in the
+CP log. Not once per delivery: the condition is a property of the endpoint's
+configuration and does not change between deliveries, and a line per delivery
+would bury the log an operator uses to find actual trouble.
 
 Without `require_timestamp` an HMAC signature covers a body and nothing else,
 and a signature that says nothing about when it was made never expires: anyone

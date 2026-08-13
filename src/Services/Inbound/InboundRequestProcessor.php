@@ -8,6 +8,7 @@ use Goldnead\WebhookManager\Services\Logging\SystemLogger;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -219,15 +220,6 @@ class InboundRequestProcessor
     }
 
     /**
-     * Replay key: prefer an explicit idempotency header, then the HMAC
-     * signature header (also unique per request), otherwise hash the body.
-     *
-     * The header names are fixed on purpose. Making them configurable per
-     * endpoint would be a new public config key, i.e. semver-locked for the
-     * whole major, and the body-hash fallback already covers every sender that
-     * uses neither header.
-     */
-    /**
      * An HMAC endpoint without `require_timestamp` accepts signatures that
      * never expire.
      *
@@ -264,6 +256,14 @@ class InboundRequestProcessor
         $tsHeader = (string) ($config['timestamp_header']
             ?? config('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp'));
 
+        // Once an hour per endpoint. The condition is a property of the
+        // endpoint's configuration and does not change between deliveries, so a
+        // line per delivery would bury the CP log — the place an operator goes
+        // to find actual trouble — under a fact that is true all day.
+        if (! Cache::add('webhook-manager:timeless-hmac:'.$endpoint->id, true, 3600)) {
+            return;
+        }
+
         $this->logger->warning('inbound_signature_without_timestamp',
             "HMAC on {$endpoint->handle} does not require a timestamp, so its signatures never expire.",
             $logCtx + [
@@ -272,6 +272,23 @@ class InboundRequestProcessor
             ]);
     }
 
+    /**
+     * Replay key: prefer an explicit idempotency header, then the HMAC
+     * signature header (also unique per request), otherwise hash the body.
+     *
+     * The header names are fixed on purpose. Making them configurable per
+     * endpoint would be a new public config key, i.e. semver-locked for the
+     * whole major, and the body-hash fallback already covers every sender that
+     * uses neither header.
+     *
+     * Know what the last fallback costs: with neither header, two deliveries
+     * that carry the same bytes are the same delivery to this method, even when
+     * they are two real events. A heartbeat posting `{"event":"ping"}` every
+     * minute to an endpoint with replay protection on gets a 409 for every
+     * repeat inside the TTL. That is the price of a sender that says nothing
+     * about identity, and it is why the switch stays per endpoint: an action
+     * that is genuinely idempotent should turn it off.
+     */
     protected function replayKey(Request $request, array $payload, InboundEndpoint $endpoint): string
     {
         $idempotency = (string) $request->header('Idempotency-Key', '');

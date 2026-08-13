@@ -3,12 +3,16 @@
 namespace Goldnead\WebhookManager\Tests\Feature;
 
 use Goldnead\BrandContext\Facades\BrandContext;
+use Goldnead\BrandContext\Scopes\BrandScope;
 use Goldnead\WebhookManager\Auth\Support\SignatureGenerator;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Actions\CreateInboundEndpointAction;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
+use Goldnead\WebhookManager\Domain\Log\Models\LogEntry;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
 /**
@@ -225,6 +229,70 @@ class InboundEndpointIsReachableUnderMultiBrandTest extends TestCase
         // The manager is a singleton. In a long-lived process the next thing to
         // run must not inherit this delivery's brand.
         $this->assertFalse(app('brand-context')->hasCurrent());
+    }
+
+    /**
+     * The rows the delivery writes carry the addressed brand.
+     *
+     * This is the half of the bug that would not have announced itself with a
+     * 404. `SystemLogger` writes through a branded model and is stamped with
+     * whatever brand is current at write time, so resolving the endpoint under
+     * one brand and letting the pipeline write under another would have moved
+     * the leak from "cannot see it" to "wrote it into the wrong tenant".
+     */
+    public function test_what_the_delivery_writes_belongs_to_the_addressed_brand(): void
+    {
+        $a = $this->makeBrand('brand-a', 'Brand A');
+        $this->makeBrand('brand-b', 'Brand B');
+        $this->makeEndpoint($a, 'events');
+
+        $this->deliver('/webhooks/inbound/brand-a/events')->assertStatus(200);
+
+        $zeilen = LogEntry::withoutGlobalScope(BrandScope::class)
+            ->whereIn('type', ['inbound_received', 'inbound_action_succeeded'])
+            ->get();
+
+        $this->assertNotEmpty($zeilen, 'the delivery is expected to leave log rows behind');
+
+        foreach ($zeilen as $zeile) {
+            $this->assertSame($a, (int) $zeile->brand_id, "log row [{$zeile->type}] landed on the wrong brand");
+        }
+    }
+
+    /**
+     * The flat-file driver goes through the same brand resolution.
+     *
+     * It does not use Eloquent and therefore never sees `BrandScope`; its
+     * isolation comes from `BrandSegments`, which maps the current brand to a
+     * directory and answers "read nothing" when there is none. Same cause, same
+     * cure — but a different mechanism, so it is asserted rather than assumed.
+     */
+    public function test_the_flat_file_driver_is_reachable_and_isolated_the_same_way(): void
+    {
+        config()->set('webhook-manager.storage.driver', 'flat');
+        config()->set('webhook-manager.storage.flat.path', $pfad = sys_get_temp_dir().'/wm-flat-'.Str::random(8));
+
+        $a = $this->makeBrand('brand-a', 'Brand A');
+        $this->makeBrand('brand-b', 'Brand B');
+
+        BrandContext::runFor($a, fn () => app(CreateInboundEndpointAction::class)([
+            'name' => 'Flat endpoint',
+            'handle' => 'flat-events',
+            'auth_type' => 'hmac',
+            'auth_config' => ['secret' => self::SECRET, 'algorithm' => 'sha256'],
+            'expected_content_type' => 'application/json',
+            'action_type' => 'noop',
+        ]));
+
+        try {
+            $this->deliver('/webhooks/inbound/brand-a/flat-events')->assertStatus(200);
+
+            $this->deliver('/webhooks/inbound/brand-b/flat-events')
+                ->assertStatus(404)
+                ->assertJson(['ok' => false]);
+        } finally {
+            File::deleteDirectory($pfad);
+        }
     }
 
     public function test_new_endpoints_default_to_replay_protection_on(): void

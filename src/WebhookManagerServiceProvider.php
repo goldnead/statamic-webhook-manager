@@ -49,7 +49,6 @@ use Goldnead\WebhookManager\Storage\ModelHydrator;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
@@ -79,15 +78,26 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     public const LEGACY_INBOUND_PREFIX = '!/webhooks/inbound';
 
     /**
-     * Everything the inbound endpoint needs and nothing else.
+     * Everything the inbound endpoint needs and nothing else — which, as of
+     * 2.1.0, is nothing beyond the brand resolver `inboundMiddleware()` puts in
+     * front. Explicitly absent: the whole `web` group.
      *
-     * SubstituteBindings is present so that a future bound route parameter
-     * resolves; it touches neither session nor cookies. Explicitly absent:
-     * the whole `web` group.
+     * `SubstituteBindings` used to sit here "so that a future bound route
+     * parameter resolves". No inbound route has a bound parameter: `{brand}`
+     * and `{handle}` are generic names, deliberately unbound, and
+     * `RouteParameterCollisionTest` keeps them that way. So it resolved nothing
+     * — while doing one thing that was not free. A `Route::bind('brand')`
+     * registered by the host app or any sibling addon applies to every route
+     * with that parameter name, including this one, and a binding that aborts
+     * when it resolves nothing (which is what a model binding does) killed the
+     * delivery here. Measured, not reasoned: with it in the stack a foreign
+     * binding turned a correctly signed delivery into a 404.
+     *
+     * An install that published `config/webhook-manager.php` before 2.1.0 keeps
+     * `SubstituteBindings` in its own copy of this list, and with it that
+     * exposure. Removing it there is one line and worth doing.
      */
-    public const DEFAULT_INBOUND_MIDDLEWARE = [
-        SubstituteBindings::class,
-    ];
+    public const DEFAULT_INBOUND_MIDDLEWARE = [];
 
     /** Guards against bootAddon() running twice on the same instance. */
     protected bool $inboundRoutesBooted = false;
@@ -245,11 +255,28 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      * ResolveInboundBrand accepts the default brand's handle in single-brand
      * mode precisely so this holds.
      */
+    public const INBOUND_SEGMENT_PATTERN = '[a-z0-9_-]+';
+
     public static function inboundPath(string $handle, ?string $brandHandle = null): string
     {
         $brandHandle ??= app('brand-context')->current()->handle;
 
-        return '/'.static::inboundRoutePrefix().'/'.$brandHandle.'/'.$handle;
+        $prefix = '/'.static::inboundRoutePrefix();
+
+        // A brand handle is not validated against anything on the way in — the
+        // model is unguarded and the column carries only a unique index — so a
+        // brand called `Chor.de` would produce a URL the router cannot match
+        // (`->where('brand', …)`) while the CP printed it as if it worked. That
+        // is the same fault this release fixes one level down, where the CP
+        // built the URL from `path` and the router matched `handle`. So the
+        // segment is dropped rather than printed wrong: the short URL is
+        // truthful for the default brand and visibly incomplete for any other,
+        // which is a question an operator can act on.
+        if (! preg_match('/^'.self::INBOUND_SEGMENT_PATTERN.'$/', $brandHandle)) {
+            return $prefix.'/'.$handle;
+        }
+
+        return $prefix.'/'.$brandHandle.'/'.$handle;
     }
 
     /**

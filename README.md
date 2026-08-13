@@ -140,6 +140,12 @@ A brand segment naming a brand that does not exist gets the same `404` as an
 unknown endpoint handle, so the URL cannot be used to find out which brands an
 installation has.
 
+Endpoint **handles** are a different matter and always have been: a known handle
+with a bad signature answers `401`, an unknown one answers `404`, so someone who
+already knows a brand can tell one from the other. Nothing behind the handle is
+reachable without the endpoint's own credential; treat a handle as a name, not
+as a secret.
+
 ### Signature and replay
 
 An inbound endpoint is a public URL. Two things keep it from being an open door,
@@ -153,9 +159,19 @@ and both are worth setting deliberately:
 - **Replay protection** (`replay_protection_enabled`) rejects a delivery that
   has already been seen inside the TTL window with `409`. It keys on
   `Idempotency-Key`, else the signature header, else a hash of the body, always
-  per endpoint. **New endpoints have it on since 2.1.0** — every serious sender
-  retries on a timeout it cannot tell apart from a failure, and without this the
-  action runs twice. Existing endpoints keep what they were saved with.
+  per endpoint, and the claim is one atomic cache write, so two deliveries
+  arriving at the same moment cannot both pass. **New endpoints have it on since
+  2.1.0** — every serious sender retries on a timeout it cannot tell apart from
+  a failure, and without this the action runs twice. Existing endpoints keep
+  what they were saved with.
+
+  Know what the last fallback costs. With neither an `Idempotency-Key` nor a
+  signature header, two deliveries carrying the same bytes are the same delivery
+  to this guard, even when they are two real events — a heartbeat posting
+  `{"event":"ping"}` every minute gets a `409` for every repeat inside the TTL.
+  That is the price of a sender that says nothing about identity, and it is why
+  the switch stays per endpoint: turn it off for an action that is genuinely
+  idempotent.
 
 One thing the defaults cannot do for you: `require_timestamp` in an HMAC
 endpoint's `auth_config`. Without it the signature covers a body and nothing
@@ -163,9 +179,9 @@ else, and a signature that says nothing about *when* it was made never expires �
 anyone who has ever seen one valid delivery can send it again next year. The
 replay cache closes its own window (ten minutes by default) and not a second
 more. It is not switched on for you because a sender that does not send the
-timestamp header would start failing on upgrade; instead every delivery to an
-HMAC endpoint without it is logged as `inbound_signature_without_timestamp`.
-Turn it on as soon as the sender is known to send the header:
+timestamp header would start failing on upgrade; instead such an endpoint is
+logged as `inbound_signature_without_timestamp`, at most once an hour. Turn it
+on as soon as the sender is known to send the header:
 
 ```json
 { "secret": "…", "algorithm": "sha256", "require_timestamp": true, "timestamp_tolerance_seconds": 300 }
