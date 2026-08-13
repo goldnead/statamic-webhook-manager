@@ -123,6 +123,45 @@ class InboundEndpointDefaultsAndRouteOrderTest extends CpTestCase
     }
 
     /**
+     * The listing hands the browser a finished URL.
+     *
+     * `Index.vue` prints `endpoint.public_path` and composes nothing of its
+     * own any more, which is the point — but it also means a missing key is a
+     * blank URL next to a copy button rather than an error anyone would notice.
+     */
+    public function test_the_listing_payload_carries_the_public_url(): void
+    {
+        InboundEndpoint::create([
+            'name' => 'Scaleway events',
+            'handle' => 'scaleway-events',
+            'enabled' => true,
+            'path' => 'ein-anderer-pfad-als-der-handle',
+            'allowed_methods' => ['POST'],
+            'auth_type' => 'hmac',
+            'auth_config' => ['secret' => 'shared-secret'],
+            'action_type' => 'noop',
+        ]);
+
+        $antwort = $this->actingAs($this->superUser())
+            ->getJson(cp_route('webhook-manager.inbound.index'));
+
+        $antwort->assertOk();
+
+        $zeile = $antwort->json('data.0');
+
+        $this->assertNotNull($zeile, 'the listing is expected to return the endpoint');
+        $this->assertSame(
+            WebhookManagerServiceProvider::inboundPath('scaleway-events'),
+            $zeile['public_path'] ?? null,
+        );
+
+        // And it is built from the handle, not from `path` — that split is how
+        // the CP used to print a URL the router never matched.
+        $this->assertStringEndsWith('/scaleway-events', (string) ($zeile['public_path'] ?? ''));
+        $this->assertStringNotContainsString('ein-anderer-pfad-als-der-handle', (string) ($zeile['public_path'] ?? ''));
+    }
+
+    /**
      * A brand handle the router cannot match must not be printed as if it
      * could. `Brand` is unguarded and its handle column carries only a unique
      * index, so nothing stops `Chor.de` from existing.
