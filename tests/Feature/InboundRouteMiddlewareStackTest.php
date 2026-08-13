@@ -4,11 +4,13 @@ namespace Goldnead\WebhookManager\Tests\Feature;
 
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Domain\Log\Models\LogEntry;
+use Goldnead\WebhookManager\Http\Middleware\ResolveInboundBrand;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
@@ -181,7 +183,7 @@ class InboundRouteMiddlewareStackTest extends TestCase
         Route::getRoutes()->refreshNameLookups();
 
         $exempt = collect(Route::getRoutes()->getRoutes())
-            ->filter(fn ($r) => array_values($r->gatherMiddleware()) === WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE);
+            ->filter(fn ($r) => array_values($r->gatherMiddleware()) === WebhookManagerServiceProvider::inboundMiddleware());
 
         $this->assertGreaterThan(0, $exempt->count(), 'the inbound routes exist');
 
@@ -208,9 +210,38 @@ class InboundRouteMiddlewareStackTest extends TestCase
 
         // And it is the declared stack, not an accident.
         $this->assertSame(
-            WebhookManagerServiceProvider::DEFAULT_INBOUND_MIDDLEWARE,
+            WebhookManagerServiceProvider::inboundMiddleware(),
             array_values($middleware),
         );
+    }
+
+    /**
+     * ResolveInboundBrand is in the stack, first, and is not removable.
+     *
+     * First, because it reads `{brand}` as the raw string the sender put in the
+     * URL. Behind SubstituteBindings a `Route::bind('brand')` registered by the
+     * host app or any sibling addon would have replaced that string with
+     * whatever that binding resolves — and a binding that aborts 404 on an
+     * unknown value would answer deliveries before this addon sees them.
+     *
+     * Not removable, because without it the brand-scoped endpoint lookup runs
+     * with no current brand, fails closed, and every delivery on a multi-brand
+     * install is answered 404. An install that published `config/webhook-manager.php`
+     * before this middleware existed has the old list frozen in its own file;
+     * `inboundMiddleware()` prepends regardless, which is what this asserts.
+     */
+    public function test_the_brand_resolver_leads_the_stack_and_survives_a_stale_published_config(): void
+    {
+        config()->set('webhook-manager.inbound.middleware', [SubstituteBindings::class]);
+
+        $stack = WebhookManagerServiceProvider::inboundMiddleware();
+
+        $this->assertSame(ResolveInboundBrand::class, $stack[0] ?? null);
+        $this->assertContains(SubstituteBindings::class, $stack);
+
+        // Even an operator who empties the list entirely keeps it.
+        config()->set('webhook-manager.inbound.middleware', []);
+        $this->assertSame([ResolveInboundBrand::class], WebhookManagerServiceProvider::inboundMiddleware());
     }
 
     /**

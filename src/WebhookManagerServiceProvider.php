@@ -17,6 +17,7 @@ use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
 use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Events\TriggerDetected;
+use Goldnead\WebhookManager\Http\Middleware\ResolveInboundBrand;
 use Goldnead\WebhookManager\Listeners\DispatchTriggerListener;
 use Goldnead\WebhookManager\Listeners\HandleAssetSavedListener;
 use Goldnead\WebhookManager\Listeners\HandleEntryDeletedListener;
@@ -232,6 +233,26 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     }
 
     /**
+     * The public path of one inbound endpoint, brand segment included.
+     *
+     * One place builds this string. The CP prints what this returns, the README
+     * documents it, and `routes/inbound.php` matches it — the previous split,
+     * where the CP assembled a URL of its own from `path` while the router
+     * matched on `handle`, is how an operator ended up copying a URL that 404s.
+     *
+     * The brand segment is always present, on single-brand installs too: one
+     * URL shape everywhere is worth more than four characters saved, and
+     * ResolveInboundBrand accepts the default brand's handle in single-brand
+     * mode precisely so this holds.
+     */
+    public static function inboundPath(string $handle, ?string $brandHandle = null): string
+    {
+        $brandHandle ??= app('brand-context')->current()->handle;
+
+        return '/'.static::inboundRoutePrefix().'/'.$brandHandle.'/'.$handle;
+    }
+
+    /**
      * The complete middleware stack the inbound endpoint runs.
      *
      * Deliberately not the `web` group. A webhook sender has no session and no
@@ -243,13 +264,25 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      * The endpoint is not left unprotected by this: authentication is the
      * endpoint's own configured verifier, enforced in InboundRequestProcessor
      * before parsing, mapping or action dispatch.
+     *
+     * `ResolveInboundBrand` is prepended and is deliberately **not** part of
+     * the configurable list. Without it a multi-brand install answers every
+     * delivery with 404 (the brand-scoped lookup fails closed), so it is not a
+     * stack an operator can meaningfully choose to drop — and the installs that
+     * would silently drop it are exactly the ones that published this config
+     * file before the middleware existed and would never notice it missing.
      */
     public static function inboundMiddleware(): array
     {
-        return array_values((array) config(
+        $configured = array_values((array) config(
             'webhook-manager.inbound.middleware',
             self::DEFAULT_INBOUND_MIDDLEWARE,
         ));
+
+        return array_values(array_unique(array_merge(
+            [ResolveInboundBrand::class],
+            $configured,
+        )));
     }
 
     /**

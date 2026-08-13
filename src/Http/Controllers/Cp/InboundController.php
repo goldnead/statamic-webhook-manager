@@ -66,6 +66,7 @@ class InboundController extends CpController
             'searchTerm' => $search,
             'actionOptions' => $actions->options(),
             'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'brandSegment' => app('brand-context')->current()->handle,
         ]);
     }
 
@@ -96,6 +97,7 @@ class InboundController extends CpController
             'saveUrl' => cp_route('webhook-manager.inbound.store'),
             'indexUrl' => cp_route('webhook-manager.inbound.index'),
             'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'brandSegment' => app('brand-context')->current()->handle,
         ]);
     }
 
@@ -138,6 +140,7 @@ class InboundController extends CpController
             'testUrl' => cp_route('webhook-manager.actions.test-inbound', $webhookInbound),
             'indexUrl' => cp_route('webhook-manager.inbound.index'),
             'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
+            'brandSegment' => app('brand-context')->current()->handle,
         ]);
     }
 

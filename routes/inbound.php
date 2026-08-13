@@ -48,6 +48,22 @@ $register = function (string $prefix, string $name) use ($middleware): void {
             // is enforced by the configured verifier (static header, bearer,
             // basic, HMAC) inside InboundRequestProcessor, before any parsing,
             // mapping or action dispatch happens.
+            //
+            // Two shapes, and the brand-qualified one is registered first
+            // because `{handle}` would otherwise swallow a brand segment and
+            // look for an endpoint by that name.
+            //
+            // The brand belongs in the path because there is nowhere else it
+            // can come from: the sender is Scaleway or Stripe or n8n, it holds
+            // a URL and nothing else, and `InboundEndpoint` is brand-scoped
+            // with a fail-closed global scope. See ResolveInboundBrand — before
+            // it existed, every inbound delivery on a multi-brand install was
+            // answered with 404 while the endpoint sat in the table.
+            Route::any('{brand}/{handle}', InboundWebhookController::class)
+                ->where('brand', '[a-z0-9_-]+')
+                ->where('handle', '[a-z0-9_-]+')
+                ->name('branded');
+
             Route::any('{handle}', InboundWebhookController::class)
                 ->where('handle', '[a-z0-9_-]+')
                 ->name('handle');

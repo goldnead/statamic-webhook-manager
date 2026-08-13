@@ -1,5 +1,96 @@
 # Changelog
 
+## 2.1.0 — 2026-08-13
+
+### Fixed — a multi-brand install answered every inbound delivery with 404
+
+The endpoint was there, enabled, with the right handle and the right secret.
+Nothing could see it.
+
+`InboundEndpoint` is brand-scoped, and the brand scope fails closed: with no
+current brand a query returns no rows. Every other route in this family gets its
+brand from something the caller carries — a Control Panel session, a bearer
+token, a link token. A webhook sender carries none of those. It is Scaleway or
+Stripe or n8n, and it holds a URL. So the lookup in `InboundWebhookController`
+ran with no brand, the scope excluded every row before the query was made, and
+the controller answered `404 Endpoint not found or disabled` — the same answer a
+misspelt handle gets, which is why it read like an operator mistake rather than
+a total outage of the feature.
+
+The brand now comes out of the URL, which is the only thing the sender holds:
+
+```
+https://your-site.test/webhooks/inbound/{brand}/{handle}
+```
+
+`ResolveInboundBrand` sets it for the **whole** request, not just around the
+lookup. The action at the end of the pipeline writes rows, and those are stamped
+with the current brand at write time; resolving the endpoint under one brand and
+writing its results under another would have been the same bug in a more
+expensive form. The previous value is restored on the way out, so a long-lived
+process cannot hand one delivery's brand to whatever runs next.
+
+**The short URL keeps working** and resolves to the **default** brand — where
+the brand-scoping migration put every endpoint that predates brands, so an
+install that switches `multi_brand` on keeps the senders that worked before it
+switched. It deliberately does not search the other brands for a matching
+handle: `handle` is unique per brand, not globally, so that search would have to
+guess the moment two brands pick the same name, and a webhook config is a
+destination plus the credential that authenticates it. A brand segment naming a
+brand that does not exist gets the same 404 as an unknown handle, so the URL
+cannot be used to enumerate an installation's brands.
+
+`ResolveInboundBrand` is prepended to the inbound stack by
+`inboundMiddleware()` and is not part of the configurable list. An install that
+published `config/webhook-manager.php` before this release has the old array
+frozen in its own file and would otherwise have upgraded into the same outage
+without a single line of warning. It also runs **before** `SubstituteBindings`,
+so it reads `{brand}` as the raw string the sender sent — a `Route::bind('brand')`
+from the host app or a sibling addon cannot change what the endpoint resolves.
+
+**Are you affected?** Only with `brand-context.multi_brand` on. Single-brand
+installs — every install before brands, and the overwhelming majority since —
+were never affected: the scope is a no-op there and the short URL behaves
+exactly as it always did.
+
+**Why no test caught it.** Every inbound test ran single-brand, where the scope
+does nothing, and every brand-isolation test asserted at the model layer without
+making a request. The outage sat in the gap between them.
+`InboundEndpointIsReachableUnderMultiBrandTest` is that gap, closed.
+
+### Fixed — the Control Panel printed a URL that was not the one being routed
+
+Two independent reasons, both of which handed the operator a URL that 404s. The
+listing and the edit page built the URL from `path`, a free-text field, while
+the router has always matched on `handle` — equal until someone edits `path`.
+And neither knew about the brand segment. One place builds this string now
+(`WebhookManagerServiceProvider::inboundPath()`), and the pages print what it
+returns.
+
+### Changed — new inbound endpoints have replay protection on
+
+`replay_protection_enabled` defaults to `true` for endpoints created from 2.1.0
+onwards. Every serious sender retries a delivery it could not confirm, and a
+timeout looks exactly like a failure from the outside; without the duplicate
+guard the configured action simply runs twice. Existing endpoints keep whatever
+they were saved with, and the switch is still in the Control Panel for the cases
+where the action is genuinely idempotent.
+
+### Added — an HMAC endpoint that does not require a timestamp now says so
+
+`inbound_signature_without_timestamp`, once per delivery, in the CP log.
+
+Without `require_timestamp` an HMAC signature covers a body and nothing else,
+and a signature that says nothing about when it was made never expires: anyone
+who has ever seen one valid delivery can send it again next year and it
+verifies. The replay cache closes its own window — ten minutes by default — and
+not one second more; it is a duplicate guard, not an expiry.
+
+It is not switched on for you. A sender that does not send the timestamp header
+would start failing on upgrade, and this package does not get to make that
+decision for a running integration. So it is said out loud instead, where the
+operator reads the rest of that endpoint's traffic.
+
 ## 2.0.0 — 2026-08-09
 
 ### Changed — the licence is now proprietary

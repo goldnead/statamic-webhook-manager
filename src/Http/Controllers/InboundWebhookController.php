@@ -17,6 +17,12 @@ use Illuminate\Routing\Controller;
  * `InboundRequestProcessor`. Errors are produced uniformly by the
  * processor — this controller never builds bespoke responses except
  * for the lookup-failure case (404).
+ *
+ * The lookup is brand-scoped and fails closed, so the brand must already be
+ * current when this runs. `ResolveInboundBrand` puts it there, out of the URL.
+ * The `{brand}` segment is therefore not a parameter of this method: Laravel
+ * matches controller arguments to route parameters by name, so `$handle` is
+ * filled from `{handle}` under both the one- and the two-segment route.
  */
 class InboundWebhookController extends Controller
 {
@@ -26,8 +32,16 @@ class InboundWebhookController extends Controller
         protected SystemLogger $logger,
     ) {}
 
-    public function __invoke(Request $request, string $handle): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
+        // Read by name, not as a method argument. Laravel resolves *class*-typed
+        // controller arguments by type and hands every remaining scalar the
+        // route parameters **in order** — so `string $handle` silently received
+        // `{brand}` the moment the two-segment route was added, and every
+        // delivery went looking for an endpoint named after its brand. The
+        // signature looked correct and the tests said 404.
+        $handle = (string) $request->route('handle');
+
         $endpoint = $this->endpoints->findByHandle($handle);
 
         if (! $endpoint || ! $endpoint->enabled) {

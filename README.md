@@ -102,6 +102,75 @@ Without that cron, deliveries will sit at "next retry in …" forever. If you wo
 
 A retry is claimed before it runs, so two overlapping scheduler runs cannot turn one planned attempt into two. Once a delivery is out of attempts it stops being scheduled, the circuit breaker records the failure and the failure alert goes out.
 
+### The inbound endpoint URL
+
+```
+https://your-site.test/webhooks/inbound/{brand}/{handle}
+```
+
+The brand segment is part of the URL on every install, single-brand ones
+included. It is what the Control Panel prints on the endpoint's page, and it is
+what you paste into the sender's webhook field.
+
+**Why the brand is in the path.** Inbound endpoints are brand-scoped like
+everything else in this addon, and the brand scope fails closed: with no current
+brand a query returns no rows. Every other route resolves the brand from
+something the caller carries — a CP session, a bearer token, a link token. A
+webhook sender carries none of those. It is Scaleway or Stripe or n8n, and it
+holds a URL. So the URL has to say it. Until 2.1.0 it did not, and a multi-brand
+install answered **every** inbound delivery with `404 Endpoint not found or
+disabled` while the endpoint sat there, enabled.
+
+The short form stays routable:
+
+```
+https://your-site.test/webhooks/inbound/{handle}
+```
+
+It resolves to the **default** brand, which is where the brand-scoping migration
+put every endpoint that existed before brands did — so a site that switches
+`brand-context.multi_brand` on keeps the senders that worked before it switched.
+It deliberately does not search the other brands: `handle` is unique per brand,
+not globally, so that search would have to guess as soon as two brands pick the
+same name, and a webhook config is a destination plus the credential that
+authenticates it. An endpoint belonging to any other brand is reachable only
+through its brand-qualified URL.
+
+A brand segment naming a brand that does not exist gets the same `404` as an
+unknown endpoint handle, so the URL cannot be used to find out which brands an
+installation has.
+
+### Signature and replay
+
+An inbound endpoint is a public URL. Two things keep it from being an open door,
+and both are worth setting deliberately:
+
+- **Authentication** runs before parsing, mapping or any action — step 4 of the
+  pipeline, right after the rate limit and the size check. `hmac` is the scheme
+  to want; `static_header`, `bearer`, `basic` and `ip_allowlist` are there for
+  senders that offer nothing better. A rejected request gets `401` and is logged
+  as `inbound_auth_failed`.
+- **Replay protection** (`replay_protection_enabled`) rejects a delivery that
+  has already been seen inside the TTL window with `409`. It keys on
+  `Idempotency-Key`, else the signature header, else a hash of the body, always
+  per endpoint. **New endpoints have it on since 2.1.0** — every serious sender
+  retries on a timeout it cannot tell apart from a failure, and without this the
+  action runs twice. Existing endpoints keep what they were saved with.
+
+One thing the defaults cannot do for you: `require_timestamp` in an HMAC
+endpoint's `auth_config`. Without it the signature covers a body and nothing
+else, and a signature that says nothing about *when* it was made never expires —
+anyone who has ever seen one valid delivery can send it again next year. The
+replay cache closes its own window (ten minutes by default) and not a second
+more. It is not switched on for you because a sender that does not send the
+timestamp header would start failing on upgrade; instead every delivery to an
+HMAC endpoint without it is logged as `inbound_signature_without_timestamp`.
+Turn it on as soon as the sender is known to send the header:
+
+```json
+{ "secret": "…", "algorithm": "sha256", "require_timestamp": true, "timestamp_tolerance_seconds": 300 }
+```
+
 ### Inbound rate limiting
 
 An inbound endpoint accepts a fixed number of requests per minute. The limit is checked first, before the method allowlist and before authentication, so a flood cannot be used to make the site do work.

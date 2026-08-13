@@ -51,6 +51,7 @@ const props = defineProps({
     testUrl: { type: String, default: null },
     indexUrl: { type: String, required: true },
     routePrefix: { type: String, default: '' },
+    brandSegment: { type: String, default: '' },
 });
 
 const form = useForm({
@@ -83,9 +84,16 @@ const pageTitle = computed(() =>
 );
 const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
 
+// The URL the router actually matches: prefix, brand, handle. `handle` and
+// not `path` — the route is `{prefix}/{brand}/{handle}` and `path` is a free
+// text field, so an endpoint whose path was edited used to be shown a URL that
+// 404s. The brand segment is what makes the endpoint findable at all: the
+// lookup is brand-scoped and fails closed, and a webhook sender carries no
+// session, no token and no brand.
 const fullUrl = computed(() => {
     const base = props.routePrefix ? `/${props.routePrefix}` : '';
-    return `${base}/${form.path || form.handle || ':handle'}`;
+    const brand = props.brandSegment ? `/${props.brandSegment}` : '';
+    return `${base}${brand}/${form.handle || ':handle'}`;
 });
 
 // Surface server-side validation errors on the right tab.

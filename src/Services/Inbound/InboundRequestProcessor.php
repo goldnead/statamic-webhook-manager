@@ -122,6 +122,8 @@ class InboundRequestProcessor
             return $this->error($endpoint, 'Unauthorized.', 401);
         }
 
+        $this->warnAboutTimelessSignature($request, $endpoint, $logCtx);
+
         // 5. Parse
         $contentType = (string) ($endpoint->expected_content_type ?? 'application/json');
         $parsed = $this->parser->parse($request, $contentType);
@@ -225,6 +227,51 @@ class InboundRequestProcessor
      * whole major, and the body-hash fallback already covers every sender that
      * uses neither header.
      */
+    /**
+     * An HMAC endpoint without `require_timestamp` accepts signatures that
+     * never expire.
+     *
+     * Whoever once saw a valid delivery — a proxy log, a mirrored request, an
+     * exported HAR — can send it again next year and it verifies. Either the
+     * signature covers the body alone, or it covers a timestamp whose age is
+     * never compared against anything: `HmacSignatureVerifier` only enforces
+     * the tolerance when `require_timestamp` is set. The replay cache
+     * closes the window it holds (ten minutes by default) and not one second
+     * more; it is a duplicate guard, not an expiry.
+     *
+     * The fix is on the endpoint, not here: `require_timestamp` in its
+     * `auth_config`, which folds `{timestamp}.{body}` into the signature and
+     * rejects anything outside the tolerance. It is not switched on for you —
+     * a sender that does not send the timestamp header would start failing on
+     * upgrade, and this package does not get to decide that for a running
+     * integration. So it says so, once per delivery, where the operator reads
+     * the rest of the endpoint's traffic.
+     *
+     * @param  array<string, mixed>  $logCtx
+     */
+    protected function warnAboutTimelessSignature(Request $request, InboundEndpoint $endpoint, array $logCtx): void
+    {
+        if (($endpoint->auth_type ?? null) !== 'hmac') {
+            return;
+        }
+
+        $config = (array) ($endpoint->auth_config ?? []);
+
+        if (! empty($config['require_timestamp'])) {
+            return;
+        }
+
+        $tsHeader = (string) ($config['timestamp_header']
+            ?? config('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp'));
+
+        $this->logger->warning('inbound_signature_without_timestamp',
+            "HMAC on {$endpoint->handle} does not require a timestamp, so its signatures never expire.",
+            $logCtx + [
+                'timestamp_header' => $tsHeader,
+                'remedy' => 'set auth_config.require_timestamp = true once the sender sends the timestamp header',
+            ]);
+    }
+
     protected function replayKey(Request $request, array $payload, InboundEndpoint $endpoint): string
     {
         $idempotency = (string) $request->header('Idempotency-Key', '');

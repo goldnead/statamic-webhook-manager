@@ -41,7 +41,13 @@ class CreateInboundEndpointAction
         $attributes['auth_type'] = $attributes['auth_type'] ?? 'static_header';
         $attributes['expected_content_type'] = $attributes['expected_content_type'] ?? 'application/json';
         $attributes['max_payload_kb'] = (int) ($attributes['max_payload_kb'] ?? 512);
-        $attributes['replay_protection_enabled'] = (bool) ($attributes['replay_protection_enabled'] ?? false);
+        // On by default since 2.1.0. A public URL that a sender may retry — and
+        // every serious sender retries on a timeout it cannot distinguish from
+        // a failure — needs the duplicate to be recognised, or the action runs
+        // twice. Existing endpoints keep whatever they were saved with; this
+        // only decides what a new one starts as, and the CP still lets it be
+        // switched off for a genuinely idempotent action.
+        $attributes['replay_protection_enabled'] = (bool) ($attributes['replay_protection_enabled'] ?? true);
         $attributes['logging_mode'] = $attributes['logging_mode'] ?? 'partial';
         $attributes['action_type'] = $attributes['action_type'] ?? 'noop';
 

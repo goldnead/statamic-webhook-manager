@@ -185,7 +185,12 @@ class RouteParameterCollisionTest extends CpTestCase
      * The two halves have to agree: everything bound appears in the routes, and
      * everything in the routes that is generic is genuinely unbound.
      *
-     * `{preset}` and `{handle}` are the generic ones that remain, deliberately.
+     * `{preset}`, `{handle}` and `{brand}` are the generic ones that remain,
+     * deliberately. `{brand}` is the most tempting of the three to bind, and it
+     * must not be: `ResolveInboundBrand` runs **before** `SubstituteBindings`
+     * and reads the raw string, so a `Route::bind('brand')` from a sibling
+     * addon or the host app cannot change what the inbound endpoint resolves.
+     * That ordering is asserted in InboundRouteMiddlewareStackTest.
      * `{delivery}` is generic-ish and also unbound here — it resolves through
      * Laravel's *implicit* binding, which matches a route parameter to a typed
      * controller argument and is therefore scoped to that one route. Only
@@ -205,7 +210,7 @@ class RouteParameterCollisionTest extends CpTestCase
         sort($unbound);
 
         $this->assertSame(
-            ['delivery', 'handle', 'preset'],
+            ['brand', 'delivery', 'handle', 'preset'],
             $unbound,
             'The unbound parameter names changed. Unbound is where generic names are allowed to '
             .'live: nothing resolves them, so nothing can be taken from anyone. Keep it that way — '

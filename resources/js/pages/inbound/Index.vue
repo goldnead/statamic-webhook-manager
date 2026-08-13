@@ -34,6 +34,7 @@ const props = defineProps({
     canCreate: { type: Boolean, default: false },
     actionOptions: { type: Object, default: () => ({}) },
     routePrefix: { type: String, default: '' },
+    brandSegment: { type: String, default: '' },
 });
 
 const isEmpty = computed(
@@ -69,9 +70,12 @@ const actionColor = (type) => {
     }
 };
 
+// Same shape as Edit.vue — see the comment there for why the brand segment is
+// mandatory and why this reads `handle` rather than `path`.
 function fullUrl(endpoint) {
     const base = props.routePrefix ? `/${props.routePrefix}` : '';
-    return `${base}/${endpoint.path || endpoint.handle}`;
+    const brand = props.brandSegment ? `/${props.brandSegment}` : '';
+    return `${base}${brand}/${endpoint.handle}`;
 }
 
 function toggle(endpoint) {
