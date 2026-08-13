@@ -115,8 +115,15 @@ window between the two. The delivery that lands in that window is precisely the
 one this class is for: a sender that did not get its answer in time and sends
 the same delivery again immediately. Both requests read "not seen", both
 proceeded, and the configured action ran twice — under concurrency the guard did
-nothing at all, and no sequential test could ever show it. It is one atomic
-`Cache::add()` now.
+nothing at all, and no sequential test could ever show it. The claim is one
+conditional `Cache::add()` now, so exclusivity is the store's (`SET NX` on
+Redis, `add` on Memcached, a unique key in the database store).
+
+A `false` from `add()` means one of two things, and they are not the same: the
+key is already there, or the store keeps nothing at all. On the `null` driver
+only the second is ever true, so answering `409` to every `false` would have
+turned a cache setting into a permanently dead endpoint — a worse failure than
+the missing guard. One read on the rejection path tells them apart.
 
 ### Changed — new inbound endpoints have replay protection on
 
