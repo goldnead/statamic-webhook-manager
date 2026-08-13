@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.1.1 — 2026-08-13
+
+### Fixed — on the `null` cache driver, 2.1.0 answered every delivery with 409
+
+2.1.0 made the replay claim a single conditional `Cache::add()`, which is right
+for the race it fixes and wrong about one thing: a `false` from `add()` means
+either "the key is already there" or "this store keeps nothing at all", and on
+the `null` driver only the second is ever true. Every delivery to an endpoint
+with replay protection on was therefore rejected as a duplicate of nothing — a
+cache setting turning a working endpoint off, which is worse than the missing
+guard, and more likely now that new endpoints have the guard on by default.
+
+One read on the rejection path tells the two apart. Stores that actually
+remember are unaffected, and the claim is still one conditional write.
+
+**Affected:** 2.1.0 only, and only with `CACHE_STORE=null`.
+
 ## 2.1.0 — 2026-08-13
 
 ### Fixed — a multi-brand install answered every inbound delivery with 404
