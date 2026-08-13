@@ -5,10 +5,11 @@ namespace Goldnead\WebhookManager\Services\Inbound;
 use Goldnead\WebhookManager\Auth\Support\ReplayProtectionService;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
+use Goldnead\WebhookManager\Support\CacheClaim;
 use Illuminate\Cache\RateLimiter;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -46,6 +47,7 @@ class InboundRequestProcessor
         protected ReplayProtectionService $replay,
         protected SystemLogger $logger,
         protected RateLimiter $limiter,
+        protected CacheRepository $cache,
     ) {}
 
     public function process(Request $request, InboundEndpoint $endpoint): JsonResponse
@@ -236,8 +238,9 @@ class InboundRequestProcessor
      * rejects anything outside the tolerance. It is not switched on for you —
      * a sender that does not send the timestamp header would start failing on
      * upgrade, and this package does not get to decide that for a running
-     * integration. So it says so, once per delivery, where the operator reads
-     * the rest of the endpoint's traffic.
+     * integration. So it says so, at most once an hour per endpoint, where the
+     * operator reads the rest of that endpoint's traffic. The gate keys on the
+     * endpoint id, which is ours — nothing a caller sends can vary it.
      *
      * @param  array<string, mixed>  $logCtx
      */
@@ -256,11 +259,13 @@ class InboundRequestProcessor
         $tsHeader = (string) ($config['timestamp_header']
             ?? config('webhook-manager.security.timestamp_header', 'X-Webhook-Timestamp'));
 
-        // Once an hour per endpoint. The condition is a property of the
-        // endpoint's configuration and does not change between deliveries, so a
-        // line per delivery would bury the CP log — the place an operator goes
-        // to find actual trouble — under a fact that is true all day.
-        if (! Cache::add('webhook-manager:timeless-hmac:'.$endpoint->id, true, 3600)) {
+        // Once an hour per endpoint — the endpoint id is ours, not the
+        // caller's, so this key cannot be varied from outside. The condition is
+        // a property of the endpoint's configuration and does not change
+        // between deliveries, so a line per delivery would bury the CP log —
+        // the place an operator goes to find actual trouble — under a fact that
+        // is true all day.
+        if (! CacheClaim::first($this->cache, 'webhook-manager:timeless-hmac:'.$endpoint->id, 3600)) {
             return;
         }
 

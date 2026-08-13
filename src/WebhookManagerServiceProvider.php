@@ -257,6 +257,13 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      */
     public const INBOUND_SEGMENT_PATTERN = '[a-z0-9_-]+';
 
+    public static function inboundPathIsRoutable(?string $brandHandle = null): bool
+    {
+        $brandHandle ??= app('brand-context')->current()->handle;
+
+        return (bool) preg_match('/^'.self::INBOUND_SEGMENT_PATTERN.'$/', $brandHandle);
+    }
+
     public static function inboundPath(string $handle, ?string $brandHandle = null): string
     {
         $brandHandle ??= app('brand-context')->current()->handle;
@@ -265,17 +272,17 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
         // A brand handle is not validated against anything on the way in — the
         // model is unguarded and the column carries only a unique index — so a
-        // brand called `Chor.de` would produce a URL the router cannot match
-        // (`->where('brand', …)`) while the CP printed it as if it worked. That
-        // is the same fault this release fixes one level down, where the CP
-        // built the URL from `path` and the router matched `handle`. So the
-        // segment is dropped rather than printed wrong: the short URL is
-        // truthful for the default brand and visibly incomplete for any other,
-        // which is a question an operator can act on.
-        if (! preg_match('/^'.self::INBOUND_SEGMENT_PATTERN.'$/', $brandHandle)) {
-            return $prefix.'/'.$handle;
-        }
-
+        // brand called `Chor.de` is possible, and the router (`->where('brand',
+        // …)`) cannot match it.
+        //
+        // Dropping the segment in that case was the first attempt and it was
+        // worse than the problem: `{prefix}/{handle}` is a perfectly routable
+        // URL that resolves to the **default** brand, so the operator got no
+        // sign of trouble at all — just a URL quietly pointing at the wrong
+        // tenant. A URL carrying `Chor.de` is at least visibly the handle of
+        // the brand being looked at, and it fails loudly at the first delivery.
+        //
+        // `inboundPathIsRoutable()` is how a caller finds out before then.
         return $prefix.'/'.$brandHandle.'/'.$handle;
     }
 

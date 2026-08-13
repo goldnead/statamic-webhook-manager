@@ -295,6 +295,87 @@ class InboundEndpointIsReachableUnderMultiBrandTest extends TestCase
         }
     }
 
+    /**
+     * The log lines this middleware writes, and the fact that they are gated.
+     *
+     * Both are written **before** the endpoint is looked up and therefore
+     * before the rate limiter, and `SystemLogger` writes a database row. The
+     * gate keys on a constant, not on the segment the caller chose: keying on
+     * the input would mean a fresh key — and a fresh row — for every variation,
+     * which costs an attacker nothing.
+     */
+    public function test_an_unknown_brand_is_logged_once_however_many_names_are_tried(): void
+    {
+        $this->makeEndpoint($this->makeBrand('brand-a', 'Brand A'), 'events');
+
+        foreach (['nicht-a', 'nicht-b', 'nicht-c', 'nicht-d', 'nicht-e'] as $erfunden) {
+            $this->deliver("/webhooks/inbound/{$erfunden}/events")->assertStatus(404);
+        }
+
+        $zeilen = LogEntry::withoutGlobalScope(BrandScope::class)
+            ->where('type', 'inbound_brand_not_found')
+            ->count();
+
+        $this->assertSame(1, $zeilen,
+            'five made-up brand segments must not buy five database rows');
+    }
+
+    public function test_the_short_url_reports_itself_once_not_once_per_delivery(): void
+    {
+        $default = (int) DB::table('brands')->where('is_default', true)->value('id');
+        $this->makeEndpoint($default, 'legacy-sender');
+
+        $this->deliver('/webhooks/inbound/legacy-sender')->assertStatus(200);
+        $this->deliver('/webhooks/inbound/legacy-sender', ['n' => 2])->assertStatus(200);
+        $this->deliver('/webhooks/inbound/legacy-sender', ['n' => 3])->assertStatus(200);
+
+        $this->assertSame(1, LogEntry::withoutGlobalScope(BrandScope::class)
+            ->where('type', 'inbound_brand_defaulted')->count());
+    }
+
+    /**
+     * A cache that keeps nothing must not silence the line.
+     *
+     * The gate is a conditional write, and on the `null` driver that write
+     * always reports failure. Read naively, every delivery would look like a
+     * repeat and the operator would never hear that a sender is pointing at a
+     * brand that does not exist — a real problem, hidden behind a cache
+     * setting. See CacheClaim.
+     */
+    public function test_a_cache_that_remembers_nothing_does_not_swallow_the_warning(): void
+    {
+        config()->set('cache.default', 'null');
+
+        $this->makeEndpoint($this->makeBrand('brand-a', 'Brand A'), 'events');
+
+        $this->deliver('/webhooks/inbound/nicht-da/events')->assertStatus(404);
+
+        $this->assertSame(1, LogEntry::withoutGlobalScope(BrandScope::class)
+            ->where('type', 'inbound_brand_not_found')->count());
+    }
+
+    /**
+     * The brand-qualified URL is what the CP prints on **every** install,
+     * single-brand ones included, so it has to answer there too.
+     */
+    public function test_the_brand_qualified_url_works_in_single_brand_mode(): void
+    {
+        config()->set('brand-context.multi_brand', false);
+        app('brand-context')->forget();
+
+        $default = (int) DB::table('brands')->where('is_default', true)->value('id');
+        $handle = (string) DB::table('brands')->where('id', $default)->value('handle');
+
+        $this->makeEndpoint($default, 'orders');
+
+        $this->deliver("/webhooks/inbound/{$handle}/orders")->assertStatus(200);
+        $this->deliver('/webhooks/inbound/orders', ['n' => 2])->assertStatus(200);
+
+        // And a segment naming some other brand is not a second working URL for
+        // the same endpoint.
+        $this->deliver('/webhooks/inbound/irgendwas/orders', ['n' => 3])->assertStatus(404);
+    }
+
     public function test_new_endpoints_default_to_replay_protection_on(): void
     {
         $brand = $this->makeBrand('brand-a', 'Brand A');

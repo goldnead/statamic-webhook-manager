@@ -5,12 +5,12 @@ namespace Goldnead\WebhookManager\Tests\Feature;
 use Goldnead\BrandContext\Models\Brand;
 use Goldnead\WebhookManager\Auth\Support\SignatureGenerator;
 use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
-use Goldnead\WebhookManager\Http\Controllers\Cp\InboundController;
 use Goldnead\WebhookManager\Http\Middleware\ResolveInboundBrand;
 use Goldnead\WebhookManager\Tests\CpTestCase;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 
 /**
  * Two claims that a test on the layer below cannot make.
@@ -33,46 +33,82 @@ class InboundEndpointDefaultsAndRouteOrderTest extends CpTestCase
 {
     use RefreshDatabase;
 
+    /**
+     * The form the CP renders for a new endpoint offers the guard ticked.
+     *
+     * This is the assertion that guards the fix, and the first attempt at it did
+     * not: a POST body that leaves `replay_protection_enabled` out lets the
+     * action's own default answer, so the test stayed green with the CP
+     * template back on `false`. The template is what a human sees and submits,
+     * so the template is what gets asserted.
+     */
+    public function test_the_create_form_offers_replay_protection_ticked(): void
+    {
+        $antwort = $this->createFormAnfragen();
+
+        $antwort->assertOk();
+
+        $this->assertTrue(
+            (bool) $this->inertiaProp($antwort, 'endpoint.replay_protection_enabled'),
+            'the create form decides what a human submits — the action default never sees this field',
+        );
+    }
+
+    /**
+     * And the value survives the round trip: nothing between the form and the
+     * stored row turns it back off.
+     */
     public function test_an_endpoint_created_through_the_control_panel_has_replay_protection_on(): void
     {
+        $vorlage = (array) $this->inertiaProp($this->createFormAnfragen(), 'endpoint');
+
+        // Exactly what the form posts back: the fields it was handed.
         $this->actingAs($this->superUser())
             ->post(cp_route('webhook-manager.inbound.store'), [
                 'name' => 'Scaleway events',
                 'handle' => 'scaleway-events',
                 'path' => 'scaleway-events',
-                'enabled' => true,
-                'allowed_methods' => ['POST'],
+                'enabled' => $vorlage['enabled'],
+                'allowed_methods' => $vorlage['allowed_methods'],
                 'auth_type' => 'hmac',
                 'auth_config_json' => json_encode(['secret' => 'shared-secret', 'algorithm' => 'sha256']),
-                'expected_content_type' => 'application/json',
-                'max_payload_kb' => 512,
-                'logging_mode' => 'partial',
-                'action_type' => 'noop',
+                'expected_content_type' => $vorlage['expected_content_type'],
+                'max_payload_kb' => $vorlage['max_payload_kb'],
+                'replay_protection_enabled' => $vorlage['replay_protection_enabled'],
+                'logging_mode' => $vorlage['logging_mode'],
+                'action_type' => $vorlage['action_type'],
             ]);
 
         $endpoint = InboundEndpoint::query()->where('handle', 'scaleway-events')->firstOrFail();
 
-        $this->assertTrue(
-            (bool) $endpoint->replay_protection_enabled,
-            'the form template decides this, not the action default',
-        );
+        $this->assertTrue((bool) $endpoint->replay_protection_enabled);
     }
 
     /**
-     * The form the CP renders for a new endpoint must offer the same default,
-     * or the checkbox arrives unticked and the value above is a fluke of the
-     * request body this test happens to send.
+     * The create page, asked for as Inertia asks for it.
+     *
+     * With the `X-Inertia` header the response is the page object as JSON
+     * rather than the host application's root view — which the package test bed
+     * does not have, and which is not what is being asserted anyway.
      */
-    public function test_the_create_form_offers_replay_protection_ticked(): void
+    private function createFormAnfragen(): TestResponse
     {
-        $vorlage = (new \ReflectionMethod(
-            InboundController::class, 'create'
-        ))->getFileName();
+        return $this->actingAs($this->superUser())
+            ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => ''])
+            ->get(cp_route('webhook-manager.inbound.create'));
+    }
 
-        $quelle = file_get_contents((string) $vorlage);
+    /** @return mixed */
+    private function inertiaProp($antwort, string $pfad)
+    {
+        $seite = json_decode((string) $antwort->getContent(), true);
+        $wert = $seite['props'] ?? [];
 
-        $this->assertStringContainsString("'replay_protection_enabled' => true,", $quelle);
-        $this->assertStringNotContainsString("'replay_protection_enabled' => false,", $quelle);
+        foreach (explode('.', $pfad) as $teil) {
+            $wert = is_array($wert) ? ($wert[$teil] ?? null) : null;
+        }
+
+        return $wert;
     }
 
     public function test_a_foreign_route_binding_on_brand_cannot_intercept_a_delivery(): void
@@ -115,7 +151,7 @@ class InboundEndpointDefaultsAndRouteOrderTest extends CpTestCase
         ], $body)->assertStatus(200);
     }
 
-    public function test_the_brand_resolver_leads_the_stack(): void
+    public function test_the_brand_resolver_is_the_first_middleware_declared(): void
     {
         $stack = WebhookManagerServiceProvider::inboundMiddleware();
 
@@ -162,20 +198,28 @@ class InboundEndpointDefaultsAndRouteOrderTest extends CpTestCase
     }
 
     /**
-     * A brand handle the router cannot match must not be printed as if it
-     * could. `Brand` is unguarded and its handle column carries only a unique
-     * index, so nothing stops `Chor.de` from existing.
+     * A brand handle the router cannot match still appears in the URL, and is
+     * reported as unroutable rather than quietly dropped.
+     *
+     * Dropping it produced `{prefix}/{handle}` — not a broken URL at all: it
+     * routes, to the **default** brand. The operator would have been handed a
+     * working link pointing at the wrong tenant with nothing to notice. Nothing
+     * stops such a handle from existing; `Brand` is unguarded and its column
+     * carries only a unique index.
      */
-    public function test_a_brand_handle_the_router_cannot_match_is_not_printed_into_the_url(): void
+    public function test_an_unroutable_brand_handle_is_reported_not_hidden(): void
     {
         $this->assertSame(
             '/webhooks/inbound/chorgesucht/events',
             WebhookManagerServiceProvider::inboundPath('events', 'chorgesucht'),
         );
+        $this->assertTrue(WebhookManagerServiceProvider::inboundPathIsRoutable('chorgesucht'));
 
         $this->assertSame(
-            '/webhooks/inbound/events',
+            '/webhooks/inbound/Chor.de/events',
             WebhookManagerServiceProvider::inboundPath('events', 'Chor.de'),
+            'the segment stays visible; a shortened URL would silently resolve to the default brand',
         );
+        $this->assertFalse(WebhookManagerServiceProvider::inboundPathIsRoutable('Chor.de'));
     }
 }

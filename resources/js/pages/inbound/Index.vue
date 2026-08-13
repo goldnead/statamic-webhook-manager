@@ -33,8 +33,6 @@ const props = defineProps({
     createUrl: { type: String, required: true },
     canCreate: { type: Boolean, default: false },
     actionOptions: { type: Object, default: () => ({}) },
-    routePrefix: { type: String, default: '' },
-    brandSegment: { type: String, default: '' },
 });
 
 const isEmpty = computed(

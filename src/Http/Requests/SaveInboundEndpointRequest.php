@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Http\Requests;
 
+use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,12 @@ class SaveInboundEndpointRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'handle' => [
-                'required', 'string', 'max:120', 'regex:/^[a-z0-9_-]+$/',
+                // Same pattern the router matches — see
+                // WebhookManagerServiceProvider::INBOUND_SEGMENT_PATTERN. A
+                // handle that validates here but cannot be routed would be an
+                // endpoint nobody can reach.
+                'required', 'string', 'max:120',
+                'regex:/^'.WebhookManagerServiceProvider::INBOUND_SEGMENT_PATTERN.'$/',
                 Rule::unique('webhook_inbounds', 'handle')
                     ->where('brand_id', $brandId)
                     ->ignore($endpointId),

@@ -159,8 +159,13 @@ and both are worth setting deliberately:
 - **Replay protection** (`replay_protection_enabled`) rejects a delivery that
   has already been seen inside the TTL window with `409`. It keys on
   `Idempotency-Key`, else the signature header, else a hash of the body, always
-  per endpoint, and the claim is one atomic cache write, so two deliveries
-  arriving at the same moment cannot both pass. **New endpoints have it on since
+  per endpoint, and the claim is one conditional cache write, so two deliveries
+  arriving at the same moment cannot both pass — exclusivity is the cache
+  store's (`SET NX` on Redis, `add` on Memcached, a unique key in the database
+  store). Two stores cannot provide it and are handled rather than trusted: the
+  `array` store falls back to read-then-write, harmless because it is one
+  process, and the `null` store keeps nothing at all, so the guard steps aside
+  instead of rejecting every delivery as a duplicate of nothing. **New endpoints have it on since
   2.1.0** — every serious sender retries on a timeout it cannot tell apart from
   a failure, and without this the action runs twice. Existing endpoints keep
   what they were saved with.

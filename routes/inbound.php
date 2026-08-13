@@ -1,6 +1,7 @@
 <?php
 
 use Goldnead\WebhookManager\Http\Controllers\InboundWebhookController;
+use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,13 +60,19 @@ $register = function (string $prefix, string $name) use ($middleware): void {
             // with a fail-closed global scope. See ResolveInboundBrand — before
             // it existed, every inbound delivery on a multi-brand install was
             // answered with 404 while the endpoint sat in the table.
+            // One pattern, one place. `inboundPath()` decides from the same
+            // constant whether the URL it prints can be matched; two literals
+            // would drift, and a printed URL that the router rejects is the
+            // fault this release exists to end.
+            $segment = WebhookManagerServiceProvider::INBOUND_SEGMENT_PATTERN;
+
             Route::any('{brand}/{handle}', InboundWebhookController::class)
-                ->where('brand', '[a-z0-9_-]+')
-                ->where('handle', '[a-z0-9_-]+')
+                ->where('brand', $segment)
+                ->where('handle', $segment)
                 ->name('branded');
 
             Route::any('{handle}', InboundWebhookController::class)
-                ->where('handle', '[a-z0-9_-]+')
+                ->where('handle', $segment)
                 ->name('handle');
         });
 };

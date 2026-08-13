@@ -1,5 +1,74 @@
 # Changelog
 
+## 2.1.2 — 2026-08-13
+
+A second critic round over 2.1.0/2.1.1. Nothing here is a new feature; all of it
+is a claim from those two releases that did not hold as written.
+
+### Fixed — the log gate could be stepped around by varying the URL
+
+2.1.0 stopped an unauthenticated request from writing a database row per
+attempt — by keying the gate on the brand segment, which is the caller's own
+input. Vary the segment and every request is a fresh key again: one log row
+each, plus one unbounded cache entry each, which on the `database` cache store
+is the same INSERT problem moved one table over. Five made-up brand names bought
+five rows; measured.
+
+The key is a constant now, one per line type. What varies belongs in the message
+and the context, where a person reads it, not in the key that decides whether to
+write at all. The cost is stated rather than hidden: several senders pointing at
+different wrong brands inside the same hour produce one line, not one each — and
+the first line is the one that tells an operator something is misaddressed.
+
+### Fixed — a cache that keeps nothing silenced the warnings entirely
+
+The same conditional-write trap as 2.1.1, in the other direction. On the `null`
+driver the gate's write always reports failure, which read naively means "already
+said this" — so `inbound_brand_not_found` and
+`inbound_signature_without_timestamp` were never written at all. A sender
+pointing at a brand that does not exist is a real operator problem, and it was
+being hidden behind a cache setting.
+
+Both call sites and the replay guard now go through one place, `Support\CacheClaim`,
+which is where the three ways `Cache::add()` can answer `false` — key present,
+store keeps nothing, TTL zero or less — are told apart once instead of in each
+caller.
+
+### Fixed — an unroutable brand handle produced a URL pointing at the wrong tenant
+
+2.1.0 dropped a brand segment the router could not match, on the reasoning that a
+visibly incomplete URL is better than a wrong one. It is not incomplete:
+`{prefix}/{handle}` routes perfectly well, to the **default** brand. The operator
+was handed a working link pointing at another tenant, with nothing to notice.
+
+The segment stays in the URL now, so it fails loudly at the first delivery rather
+than quietly succeeding against the wrong brand, and
+`WebhookManagerServiceProvider::inboundPathIsRoutable()` answers the question
+before then. Nothing validates a brand handle on the way in — `Brand` is
+unguarded and its column carries only a unique index — so this case is real.
+
+### Fixed — the test guarding the replay default did not guard it
+
+`test_an_endpoint_created_through_the_control_panel_has_replay_protection_on`
+posted a body that left `replay_protection_enabled` out, so the action's own
+default answered and the test stayed green with the CP template back on `false`.
+That is the exact substitution the previous round was about, repeated one level
+up. It reads the create form's own Inertia payload now and submits that; put the
+template back on `false` and both tests go red.
+
+### Changed — one pattern for a route segment, in one place
+
+`routes/inbound.php` and `SaveInboundEndpointRequest` carried `[a-z0-9_-]+` as
+literals while `inboundPath()` decided from a constant whether the URL it prints
+can be matched. Two copies of the rule that says what a URL may contain is how
+this release's original bug happened. They all read
+`WebhookManagerServiceProvider::INBOUND_SEGMENT_PATTERN` now.
+
+### Deprecated — `ReplayProtectionService::seen()` / `remember()`
+
+They are the read-then-write pair whose race `check()` was changed to avoid.
+Nothing in this package calls them; they remain only because they are public.
+
 ## 2.1.1 — 2026-08-13
 
 ### Fixed — on the `null` cache driver, 2.1.0 answered every delivery with 409

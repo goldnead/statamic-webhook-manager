@@ -5,8 +5,9 @@ namespace Goldnead\WebhookManager\Http\Middleware;
 use Closure;
 use Goldnead\BrandContext\Models\Brand;
 use Goldnead\WebhookManager\Services\Logging\SystemLogger;
+use Goldnead\WebhookManager\Support\CacheClaim;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -80,7 +81,16 @@ class ResolveInboundBrand
     /** How long one of this middleware's log lines silences its own repeats. */
     protected const LOG_THROTTLE_SECONDS = 3600;
 
-    public function __construct(protected SystemLogger $logger) {}
+    /**
+     * The cache comes from the container (`cache.store`), not from the `Cache`
+     * facade. The facade resolves whatever `cache.default` happens to say at
+     * the moment of the call; the binding is the one store this application
+     * decided on, which is also what `ReplayProtectionService` is handed.
+     */
+    public function __construct(
+        protected SystemLogger $logger,
+        protected CacheRepository $cache,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -127,7 +137,7 @@ class ResolveInboundBrand
         $named = $request->route('brand');
 
         if ($named === null || $named === '') {
-            $this->once('defaulted:'.$request->route('handle'), fn () => $this->logger->info(
+            $this->once('defaulted', fn () => $this->logger->info(
                 'inbound_brand_defaulted',
                 'Inbound delivery arrived without a brand segment; resolved to the default brand.', [
                     'handle' => (string) $request->route('handle'),
@@ -142,7 +152,7 @@ class ResolveInboundBrand
         if (! $brand) {
             // Same response as an unknown endpoint handle: the URL must not
             // tell an outsider which brands exist on this installation.
-            $this->once('unknown:'.$named, fn () => $this->logger->warning(
+            $this->once('unknown', fn () => $this->logger->warning(
                 'inbound_brand_not_found',
                 "Inbound delivery named unknown brand '{$named}'.", [
                     'brand' => $named,
@@ -156,27 +166,39 @@ class ResolveInboundBrand
     }
 
     /**
-     * Write this line at most once per key and window.
+     * Write this line at most once per window.
      *
      * Both lines this middleware writes happen **before** the endpoint is
      * looked up, and therefore before the rate limiter, which lives in
      * `InboundRequestProcessor` and needs an endpoint to know its budget.
      * `SystemLogger` writes a database row. Ungated, anyone who can reach the
      * site could turn `POST /webhooks/inbound/anything/atall` into one INSERT
-     * per request without a signature, without an endpoint, without a brand.
+     * per request, with no signature, no endpoint and no brand.
      *
-     * The other line is the mirror image: `inbound_brand_defaulted` fires on
-     * the documented backwards-compatible URL, so a legitimate sender would
-     * write an extra row per delivery, for ever, about a fact that does not
-     * change.
+     * **The key is a constant, and that is the whole point.** Keying on the
+     * brand segment — the obvious thing, and what this did first — puts the
+     * caller's own input into the key: vary the segment and every request is a
+     * fresh key again, one log row each, plus one cache entry each. That is the
+     * unbounded write it was meant to stop, moved one table over. What varies
+     * belongs in the message and the context, where a person reads it, not in
+     * the key that decides whether to write at all.
      *
-     * A log line exists to be read by a person. Once an hour is enough for
-     * both, and a cache miss on a hostile key costs a cache write instead of a
-     * table row.
+     * The cost is honest: several senders pointing at different wrong brands
+     * inside the same hour produce one line, not one each. A log line exists to
+     * tell an operator that something is misaddressed, and the first one does
+     * that.
+     *
+     * The mirror image is `inbound_brand_defaulted`, which fires on the
+     * documented backwards-compatible URL — a legitimate sender would otherwise
+     * write a row per delivery, for ever, about a fact that does not change.
+     *
+     * A store that cannot remember must not silence either of them; see
+     * {@see CacheClaim}. Losing the row would hide a real operator problem
+     * behind a cache setting.
      */
     protected function once(string $key, callable $write): void
     {
-        if (Cache::add('webhook-manager:inbound-brand:'.sha1($key), true, self::LOG_THROTTLE_SECONDS)) {
+        if (CacheClaim::first($this->cache, 'webhook-manager:inbound-brand:'.$key, self::LOG_THROTTLE_SECONDS)) {
             $write();
         }
     }
