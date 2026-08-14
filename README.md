@@ -62,6 +62,19 @@ The Webhook Manager appears in the CP sidebar as **Webhooks**.
 
 See `config/webhook-manager.php` after publishing — feature toggles, retry policy, logging mode, masking rules, route prefixes, alerting/circuit-breaker, storage driver, etc.
 
+### Settings in the Control Panel
+
+Most of that file can also be changed under **Settings** in the Control Panel (permission: `manage webhook settings`): modules, retry policy, HTTP defaults, inbound limits, signature headers, logging and retention.
+
+Only the **difference** to the config file is stored, one row per changed key in `webhook_settings`. A value set back to what the file says deletes its row again, so the config file stays the default and a later release can still move it. An install that never opens the screen behaves exactly as before.
+
+Not editable there, on purpose:
+
+- anything resolved from `env()` — queue connection and name, failure alerts, circuit breaker. The deployment owns them, and `WEBHOOK_MANAGER_ALERT_SLACK_URL` is a credential that has no business in a database backup. They are shown on the screen read-only, so you can still see what is active.
+- `inbound.route_prefix`, its legacy prefixes and its middleware — read while routes are registered and frozen by `route:cache`.
+- `retry.schedule` — read before the addon boots, so a control for it would only take effect after the next deploy.
+- `storage.driver` — switched through the storage panel below, which moves the stored configuration with it.
+
 ### Storage driver
 
 Webhook **configuration** (outbound webhooks, inbound endpoints, rules, templates) can be stored two ways. Delivery records and logs are runtime telemetry and always live in the database.

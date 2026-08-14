@@ -48,6 +48,7 @@ use Goldnead\WebhookManager\Storage\FileStore;
 use Goldnead\WebhookManager\Storage\ModelHydrator;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
+use Goldnead\WebhookManager\Support\Settings;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 use Statamic\Facades\CP\Nav;
@@ -181,6 +182,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     public function bootAddon(): void
     {
         $this->bootWebhookConfig();
+        $this->bootSettingsOverrides();
         $this->bootMigrations();
         $this->bootBindings();
         $this->bootWebhookPublishables();
@@ -407,6 +409,26 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/../config/webhook-manager.php' => config_path('webhook-manager.php'),
         ], 'webhook-manager-config');
+    }
+
+    /**
+     * Put the settings changed in the Control Panel onto the live config.
+     *
+     * Directly after the config file is merged and before anything reads it:
+     * the feature toggles gate navigation and inbound route registration, both
+     * of which happen further down this same method, and a queue worker booting
+     * this addon has to see the operator's retry and HTTP values without any
+     * Control-Panel middleware having run.
+     *
+     * Not everything can be reached from here. `bootSchedule()` runs *before*
+     * `bootAddon()` in Statamic's AddonServiceProvider, which is why
+     * `retry.schedule` is deliberately not an editable setting.
+     */
+    protected function bootSettingsOverrides(): void
+    {
+        $this->app->singleton(Settings::class);
+
+        $this->app->make(Settings::class)->apply();
     }
 
     protected function bootMigrations(): void

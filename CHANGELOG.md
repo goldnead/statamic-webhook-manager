@@ -1,5 +1,96 @@
 # Changelog
 
+## 2.2.0 — 2026-08-15
+
+### Added — the settings screen writes
+
+Settings printed `config/webhook-manager.php` and told the operator to go and
+edit a file on the server. It is a form now: modules, retry policy, HTTP
+defaults, inbound limits, signature headers, logging and retention are editable
+from the Control Panel with the `manage webhook settings` permission.
+
+Only the **difference** to the config file is stored — one row per changed key
+in the new `webhook_settings` table, applied over the config at boot. A value
+set back to what the file says deletes its row again, so the shipped defaults
+keep moving with the package instead of being frozen the day somebody first
+opened the screen, and an install that never opens it is indistinguishable from
+one running an earlier release.
+
+The screen, the validation and the boot-time override all read one definition
+(`Support\Settings`). That is the point of the rewrite: the read-only version
+kept its own list of labels **and its own copy of every default**, so it was a
+second description of the config file that could disagree with it — and did, on
+`debug.expose_full_response_in_dev`, where the screen's fallback was `false`
+against a file that ships `true`.
+
+Deliberately not editable, each for a reason the screen states: everything from
+`env()` (queue, alerts, circuit breaker — the deployment owns those, and the
+chat webhook is a credential), `inbound.route_prefix` and its middleware (read
+while routes are registered, frozen by `route:cache`), `retry.schedule` (read
+before the addon boots), and `storage.driver` (switched through the storage
+panel, which moves the stored configuration with it). The env-provided values
+are still shown, read-only, so nobody has to guess what is active.
+
+The table is not brand-scoped, unlike everything else in this addon. A timeout
+or a feature toggle that differed per brand would mean one queue worker applying
+different rules depending on whose delivery it picked up.
+
+### Fixed — die Alarm-URL stand im Klartext auf dem Schirm
+
+Der Diagnose-Block am Fuß der Seite druckt den aufgelösten Config-Baum, damit
+ein Betreiber sehen kann, was seine Installation tatsächlich geladen hat. Darin
+stand `WEBHOOK_MANAGER_ALERT_SLACK_URL` ungeschwärzt — und diese URL **ist** das
+Passwort: wer sie hat, schreibt in den Kanal. Sie landete damit in
+Bildschirmfotos, in geteilten Bildschirmen und in jedem Frontend-Fehlerbericht.
+
+Geschwärzt wird jetzt serverseitig, nach Schlüsselnamen statt nach Pfad, damit
+ein Schlüssel namens `secret`, der nächstes Jahr dazukommt, ohne Zutun mitgeht.
+Die Schwärzung vererbt sich nach unten: `webhook_urls => [a, b]` ist genauso
+gedeckt wie ein einzelner Wert. Es bleiben die ersten und letzten vier Zeichen
+stehen, genug um zwei Zugangsdaten zu unterscheiden und zu wenig um eine zu
+benutzen. Der Test prüft die **ganze** Antwort, nicht die eine Prop — ein
+Geheimnis, das anderswo wieder auftaucht, ist dasselbe Leck.
+
+### Fixed — zwei Felder zeigten ihren Übersetzungsschlüssel statt ihres Namens
+
+`Settings::field()` flacht `retry.retry_on_status` zum Sprachschlüssel
+`retry_retry_on_status` ab, die Sprachdateien hatten ihn ohne das Präfix. Das
+ergibt keinen Rückfall und kein leeres Label: Laravel liefert den Schlüssel
+selbst zurück, also stand `webhook-manager::settings.fields.retry_retry_on_status.label`
+auf dem Schirm, in beiden Sprachen, und die Fehlermeldung dieser Felder las sich
+genauso. 285 grüne Tests haben nie ein Label angesehen; jetzt tut es einer, für
+jede Gruppe, jedes Feld und jede Auswahloption in beiden Sprachen.
+
+### Fixed — `config:cache` fror die Overrides ein
+
+`config:cache` bootet die Anwendung vollständig und schreibt danach den
+aufgelösten Config-Baum auf die Platte. Die Overrides landeten mit darin, und
+ein eingebackener Override überlebt die Zeile, aus der er stammt: eine gelöschte
+Einstellung hatte danach bis zum nächsten `config:clear` keinerlei Wirkung.
+Schlimmer noch, der nächste Boot las die eingebackene Datei als „ausgelieferten
+Default" — ein auf den Dateiwert zurückgesetzter Wert galt dann als Abweichung
+und wurde als Zeile gespeichert, statt gelöscht zu werden. Genau die Regel, die
+diese Klasse verspricht, kippte damit dauerhaft.
+
+Während des Cache-Baus wird jetzt nichts angewendet. Die gecachte Datei trägt
+die Dateiwerte, und jeder Prozess legt seine Overrides beim eigenen Boot
+darüber.
+
+### Fixed — kleinere Schärfungen aus der Kritiker-Runde
+
+- Das Schreiben läuft in einer Transaktion. Ein Fehler auf halbem Weg hinterließ
+  einen Satz, den die Antwort danach als Wahrheit zurückmeldete.
+- Der Zweig für einen Nur-Lese-Modus ist weg. Der Controller bricht vorher mit
+  403 ab, also gab es diesen Zustand nie — eine Prop, die einen unerreichbaren
+  Zustand beschreibt, ist ein Ast, den niemand je betritt.
+- `CpValidationVisibilityTest` kennt jetzt auch das größte Formular des Addons.
+  Der Wächter liest sonst literale `'key' =>`-Paare aus einem FormRequest, und
+  dieser baut seine Regeln aus `Settings::fields()` — er saß im toten Winkel des
+  Tests, der genau für diesen Fehler geschrieben wurde.
+- `InboundEndpoint` hat seine Spalten dokumentiert. Damit fallen 22 Einträge aus
+  der phpstan-Baseline, die nur dort standen, weil ein `$guarded = []`-Model für
+  die Analyse keine Eigenschaften hat.
+
 ## 2.1.2 — 2026-08-13
 
 A second critic round over 2.1.0/2.1.1. Nothing here is a new feature; all of it

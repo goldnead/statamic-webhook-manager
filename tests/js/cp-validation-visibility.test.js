@@ -150,14 +150,26 @@ const pages = {
     'settings/Index': {
         component: SettingsIndex,
         props: {
-            // Shape mirrors SettingsController::extractConfig(); the page reads
-            // every group unguarded, so an empty object never renders.
-            config: {
-                general: {}, defaults: {}, reliability: {}, security: {}, logging: {},
-            },
+            // Shape mirrors SettingsController::index(); the form is generated
+            // from `groups`, so one group with one field is enough to render it.
+            groups: [{
+                title: 'Retry defaults',
+                description: 'What happens after a delivery fails.',
+                fields: [{
+                    key: 'retry.max_attempts',
+                    type: 'integer',
+                    label: 'Maximum attempts',
+                    description: '',
+                    nullable: false,
+                    min: 1,
+                }],
+            }],
+            values: { 'retry.max_attempts': 3 },
+            updateUrl: '/cp/webhook-manager/settings',
+            canEdit: true,
+            environment: [],
             rawConfig: '{}',
             configFilePath: '/app/config/webhook-manager.php',
-            isEditable: false,
             storage: {
                 driver: 'flat',
                 target: 'eloquent',

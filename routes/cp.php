@@ -79,6 +79,11 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
     });
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    // JSON, not an Inertia redirect: the page takes the saved state back from
+    // the answer (an integer as an integer, a value returned to its default as
+    // the default), and a `back()` would only re-render whatever the next GET
+    // happened to resolve.
+    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/storage', [SettingsController::class, 'switchStorage'])->name('settings.storage');
     Route::get('/debug', [DebugController::class, 'index'])->name('debug');
 

@@ -2,6 +2,8 @@
 
 namespace Goldnead\WebhookManager\Tests\Feature;
 
+use Goldnead\WebhookManager\Http\Requests\UpdateSettingsRequest;
+use Goldnead\WebhookManager\Support\Settings;
 use Goldnead\WebhookManager\Tests\TestCase;
 use Symfony\Component\Finder\Finder;
 
@@ -229,6 +231,45 @@ class CpValidationVisibilityTest extends TestCase
         }
 
         $this->assertSame([], $unrendered, 'The CP rejects these but no page renders their error: '.implode(', ', $unrendered));
+    }
+
+    public function test_every_setting_the_cp_validates_has_somewhere_to_show_its_error(): void
+    {
+        // The guard above parses literal `'key' =>` pairs out of a FormRequest.
+        // `UpdateSettingsRequest` has none: it builds its rules by walking
+        // `Settings::fields()`, so the largest form in the addon sat in the
+        // blind spot of the very test written for this failure mode.
+        //
+        // The chain that has to hold is: the validator addresses `settings.<key>`,
+        // and the page looks up an error under that same string. The dots are
+        // the interesting part — `retry.max_attempts` carries real dots, and to
+        // the validator a dot is a path separator, so an unescaped rule would
+        // address a nested structure that does not exist and the message would
+        // arrive under a key nothing on the page reads.
+        $fields = Settings::fields();
+        $this->assertNotEmpty($fields, 'Settings::fields() is empty — the settings form validates nothing.');
+
+        // Constructed rather than resolved: resolving a FormRequest through the
+        // container runs its authorization, and this test is about the rules.
+        $rules = (new UpdateSettingsRequest)->rules();
+
+        $missing = [];
+
+        foreach (array_keys($fields) as $key) {
+            if (! isset($rules['settings.'.str_replace('.', '\\.', $key)])) {
+                $missing[] = $key;
+            }
+        }
+
+        $this->assertSame([], $missing, 'These settings are on the form but nothing validates them: '.implode(', ', $missing));
+
+        // And the page reads the bag under the same prefix, per field and for
+        // anything left over.
+        $page = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/settings/Index.vue');
+
+        $this->assertStringContainsString('fieldErrors.value[`settings.${field.key}`]', $page);
+        $this->assertStringContainsString('data-settings-field-error', $page);
+        $this->assertStringContainsString('generalErrors', $page);
     }
 
     public function test_the_storage_switch_refuses_with_an_error_bag_rather_than_a_bare_status(): void

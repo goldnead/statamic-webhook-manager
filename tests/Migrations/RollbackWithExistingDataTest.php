@@ -170,9 +170,19 @@ class RollbackWithExistingDataTest extends MigrationPathTestCase
         $this->isolated()->table('webhook_outbounds')->insert($existing);
     }
 
+    /** The migration under test here, by name rather than by position. */
+    private const BRAND_MIGRATION = '2026_07_24_100003_add_brand_id_to_webhook_manager_tables';
+
     /**
-     * Roll back the last migration only — the brand-scoping one — and hand back
+     * Roll back to and including the brand-scoping migration, and hand back
      * whatever it threw, or null.
+     *
+     * The step count is computed from the migration folder rather than being
+     * `1`. It was `1` while brand scoping happened to be the newest migration,
+     * and the moment a later one was added (`create_webhook_settings_table`)
+     * that `1` silently pointed at the new migration instead — these tests then
+     * asserted about a rollback that never touched brand scoping at all, and
+     * failed for a reason that had nothing to do with what they are named after.
      */
     private function rollbackBrandScoping(): ?\Throwable
     {
@@ -182,13 +192,30 @@ class RollbackWithExistingDataTest extends MigrationPathTestCase
                 '--path' => $this->currentMigrations(),
                 '--realpath' => true,
                 '--force' => true,
-                '--step' => 1,
+                '--step' => $this->stepsBackToBrandScoping(),
             ]);
         } catch (\Throwable $e) {
             return $e;
         }
 
         return null;
+    }
+
+    /** How many migrations sit at or after the brand-scoping one. */
+    private function stepsBackToBrandScoping(): int
+    {
+        $names = array_map(
+            fn (string $file) => basename($file, '.php'),
+            glob($this->currentMigrations().'/*.php') ?: [],
+        );
+
+        sort($names);
+
+        $position = array_search(self::BRAND_MIGRATION, $names, true);
+
+        $this->assertNotFalse($position, 'the brand-scoping migration was renamed; this whole file points at it by name.');
+
+        return count($names) - (int) $position;
     }
 
     private function defaultBrandId(): int

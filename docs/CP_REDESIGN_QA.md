@@ -138,10 +138,18 @@ linked into a Statamic 6 dev site.
 
 ## Settings (`/cp/webhook-manager/settings`)
 
-- [ ] Read-only PublishForm-style page; banner "These settings are managed in `config/webhook-manager.php`" with Copy-path button
-- [ ] 4 Tabs: General / Defaults / Security / Logging — every field disabled
-- [ ] Raw config CodeEditor (json read-only) at the bottom
-- [ ] Permission `manage webhook settings` is required (otherwise 403)
+Rendered and checked 2026-08-15 against the local hub (`/cp/webhook-manager/settings`).
+
+- [x] Editable form, generated from `Support\Settings` — one panel per group, one control per field
+- [x] Save is disabled until something changes, and stores only the difference to `config/webhook-manager.php`
+- [x] A value set back to the shipped default deletes its row and shows the default again immediately
+- [x] A rejected value shows its message at its own field, not only in the banner
+- [x] "Managed by the deployment" panel lists the env-provided settings read-only (queue, alerts, circuit breaker, inbound prefix)
+- [x] Storage panel still switches the driver and migrates the config with it
+- [x] Raw config CodeEditor (json read-only) at the bottom, **with credentials masked** — checked against a real
+      `WEBHOOK_MANAGER_ALERT_SLACK_URL`: the panel prints `http••••1234`, and the token appears nowhere in the response
+- [x] Permission `manage webhook settings` is required (otherwise 403), for reading the page and for saving it.
+      There is no read-only view: the page prints the resolved config, so read access is the same access as write access
 
 ## Debug (`/cp/webhook-manager/debug`)
 
@@ -169,6 +177,5 @@ These are out of scope for this PR (tracked as v2 candidates):
 - Bulk actions on listings — `<Listing>` exposes the bulk-action UI but the addon has no `actions` endpoints yet, so the bulk dropdown shows an empty state
 - Visual mapping builder for Inbound (PRD §43) — JSON CodeEditor for now
 - Per-action form generators in Rules — JSON-only for now
-- Editable settings via UI — read-only in v1, DB-settings layer is v2
 - Drag-handle reorder for Rules order_index — number input only
 - error_type as filter on Deliveries / Logs UI is wired up but no UI dropdown yet (URL-based for now)

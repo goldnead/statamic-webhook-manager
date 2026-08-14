@@ -1,7 +1,30 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Head } from '@statamic/cms/inertia';
-import { useForm } from '@statamic/cms/inertia';
+/**
+ * Webhook Manager settings — a form, not a printout.
+ *
+ * Every control in the form is generated from `groups`, which the server built
+ * from `Support\Settings`: the same definition the validation and the boot-time
+ * config override read. That is deliberate. The read-only version this replaced
+ * kept its own list of labels, instructions and defaults in JavaScript, so the
+ * screen was a second description of `config/webhook-manager.php` that could
+ * disagree with it and never say so.
+ *
+ * Saving writes only what changed and answers with the settings as they now
+ * stand, which is not always what was typed: a number typed into a text box
+ * comes back a number, a list comes back without the blank line the textarea
+ * left behind, and a value set back to the shipped default comes back as that
+ * default with the stored override deleted. The form takes the answer, so the
+ * screen and the installation cannot drift.
+ *
+ * Two panels are deliberately still read-only. `environment` holds what the
+ * deployment owns (env vars, and the inbound prefix that route caching freezes)
+ * — shown so it can be checked, not offered so it can be half-changed. Storage
+ * is an action rather than a value: switching the driver has to move the stored
+ * configuration first, which is what the button below does.
+ */
+import { ref, computed, watch } from 'vue';
+import axios from 'axios';
+import { Head, useForm } from '@statamic/cms/inertia';
 import {
     Header,
     Alert,
@@ -19,33 +42,130 @@ import {
     ConfirmationModal,
 } from '@statamic/cms/ui';
 
-/**
- * Settings page — read-only v1.
- *
- * Config is sourced from config/webhook-manager.php (a static PHP file).
- * In v1 there is no DB-Settings-layer yet, so the form is intentionally
- * read-only. The Alert informs the user where to make changes.
- *
- * Tab layout mirrors the config file sections:
- *   General  — features flags, queue
- *   Defaults — retry, http
- *   Security — inbound security, signature headers
- *   Logging  — delivery logging, pruning
- */
 const props = defineProps({
-    /** Structured config split per tab (from SettingsController::extractConfig()) */
-    config: { type: Object, required: true },
-    /** JSON-encoded full config tree for the raw-config panel */
+    /** Groups + fields, from Support\Settings::groups() */
+    groups: { type: Array, required: true },
+    /** Current value per dotted config path */
+    values: { type: Object, required: true },
+    /** PATCH endpoint that writes the form */
+    updateUrl: { type: String, required: true },
+    /** Deployment-owned settings, shown read-only */
+    environment: { type: Array, required: true },
+    /** JSON-encoded resolved config tree for the raw-config panel */
     rawConfig: { type: String, required: true },
     /** Absolute path to the config file on disk */
     configFilePath: { type: String, required: true },
-    /** v1: always false; flip to true once a DB-settings-layer exists */
-    isEditable: { type: Boolean, default: false },
-    /** Active storage driver + record counts + switch URL (SettingsController) */
+    /** Active storage driver + record counts + switch URL */
     storage: { type: Object, required: true },
 });
 
 const copied = ref(false);
+
+function copyPath() {
+    navigator.clipboard.writeText(props.configFilePath).then(() => {
+        copied.value = true;
+        setTimeout(() => (copied.value = false), 2000);
+    });
+}
+
+// ----- the form -------------------------------------------------------
+
+/**
+ * A `list` is edited as one textarea of lines, because that is how a set of
+ * header or key names is read and pasted. The conversion lives here rather than
+ * on the server so the server keeps receiving an array and nothing has to guess
+ * at a separator.
+ */
+function toForm(values) {
+    const form = {};
+
+    for (const group of props.groups) {
+        for (const field of group.fields) {
+            const value = values[field.key];
+            form[field.key] = field.type === 'list'
+                ? (value ?? []).join('\n')
+                : (value ?? (field.type === 'boolean' ? false : ''));
+        }
+    }
+
+    return form;
+}
+
+function fromForm(form) {
+    const out = {};
+
+    for (const group of props.groups) {
+        for (const field of group.fields) {
+            const value = form[field.key];
+            out[field.key] = field.type === 'list'
+                ? String(value ?? '').split('\n').map((line) => line.trim()).filter(Boolean)
+                : value;
+        }
+    }
+
+    return out;
+}
+
+const form = ref(toForm(props.values));
+const saved = ref(JSON.stringify(form.value));
+const saving = ref(false);
+const savedNotice = ref(false);
+const fieldErrors = ref({});
+
+const dirty = computed(() => JSON.stringify(form.value) !== saved.value);
+
+// An Inertia visit that re-renders this page (a storage switch, a back button)
+// hands new props to the same component instance. Without this the form would
+// keep showing the values from the visit before it.
+watch(() => props.values, (values) => {
+    form.value = toForm(values);
+    saved.value = JSON.stringify(form.value);
+    fieldErrors.value = {};
+});
+
+/**
+ * Errors that belong to no control on this page. There should be none — every
+ * validated key has a field here — but a rule added on the server and not here
+ * would otherwise be rejected in silence.
+ */
+const generalErrors = computed(() => {
+    const known = new Set(props.groups.flatMap((g) => g.fields.map((f) => `settings.${f.key}`)));
+
+    return Object.entries(fieldErrors.value)
+        .filter(([key]) => !known.has(key))
+        .map(([, messages]) => (Array.isArray(messages) ? messages[0] : messages));
+});
+
+function errorFor(field) {
+    const messages = fieldErrors.value[`settings.${field.key}`];
+
+    return Array.isArray(messages) ? messages[0] : messages;
+}
+
+async function save() {
+    if (saving.value) return;
+
+    saving.value = true;
+    savedNotice.value = false;
+    fieldErrors.value = {};
+
+    try {
+        const { data } = await axios.patch(props.updateUrl, { settings: fromForm(form.value) });
+        form.value = toForm(data.data);
+        saved.value = JSON.stringify(form.value);
+        savedNotice.value = true;
+    } catch (e) {
+        fieldErrors.value = e?.response?.data?.errors ?? {};
+        // A rejection with no error bag (500, network) still has to say
+        // something; an empty banner is how a failed save looks like a
+        // successful one.
+        if (!Object.keys(fieldErrors.value).length) {
+            fieldErrors.value = { 'settings.__failed': [__('webhook-manager::settings.save_failed')] };
+        }
+    } finally {
+        saving.value = false;
+    }
+}
 
 // ----- storage driver switch -----------------------------------------
 
@@ -73,31 +193,9 @@ function switchStorage() {
     });
 }
 
-// The driver switch is the one thing this page sends. It is also the one thing
-// that can be refused, and the page is otherwise read-only, so a rejection had
-// no field and no banner to appear in: the modal closed and nothing happened.
+// The driver switch is the one thing on this page that is not the settings
+// form. It can be refused too, and its rejection has no field to appear in.
 const switchErrors = computed(() => switchForm.errors ?? {});
-
-function copyPath() {
-    navigator.clipboard.writeText(props.configFilePath).then(() => {
-        copied.value = true;
-        setTimeout(() => (copied.value = false), 2000);
-    });
-}
-
-// ----- helpers --------------------------------------------------------
-
-/** Turn an array like ['sha256', 'sha512'] into a readable string */
-const arrayToString = (val) => {
-    if (Array.isArray(val)) return val.join(', ');
-    return val ?? '';
-};
-
-/** Render a status-code array as a compact string */
-const statusCodesToString = (val) => {
-    if (Array.isArray(val)) return val.join(', ');
-    return val ?? '';
-};
 </script>
 
 <template>
@@ -106,7 +204,25 @@ const statusCodesToString = (val) => {
     <div class="max-w-page mx-auto">
 
         <!-- ── Page header ──────────────────────────────────────────── -->
-        <Header :title="__('Webhook Manager Settings')" icon="sliders-horizontal" />
+        <Header :title="__('webhook-manager::settings.title')" icon="sliders-horizontal">
+            <Button
+                variant="primary"
+                :text="saving ? __('webhook-manager::settings.saving') : __('webhook-manager::settings.save')"
+                :disabled="saving || !dirty"
+                data-settings-save
+                @click="save"
+            />
+        </Header>
+
+        <Alert v-if="savedNotice" variant="success" class="mb-6" data-settings-saved>
+            {{ __('webhook-manager::settings.saved') }}
+        </Alert>
+
+        <Alert v-if="generalErrors.length" variant="error" class="mb-6" data-settings-form-errors>
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(message, i) in generalErrors" :key="i">{{ message }}</li>
+            </ul>
+        </Alert>
 
         <!-- ── What the server said when the driver switch was refused ─ -->
         <Alert
@@ -120,14 +236,10 @@ const statusCodesToString = (val) => {
             </ul>
         </Alert>
 
-        <!-- ── Config-file notice ───────────────────────────────────── -->
+        <!-- ── Where the untouched values come from ─────────────────── -->
         <Alert variant="info" class="mb-6">
             <template #default>
-                <span>
-                    {{ __('These settings are managed in') }}
-                    <code class="font-mono text-sm bg-gray-100 dark:bg-gray-800 rounded px-1">{{ configFilePath }}</code>.
-                    {{ __('Edit that file to change retry policy, logging mode, masking rules, route prefixes, etc.') }}
-                </span>
+                <span>{{ __('webhook-manager::settings.intro', { path: configFilePath }) }}</span>
                 <Button
                     size="sm"
                     variant="default"
@@ -144,463 +256,148 @@ const statusCodesToString = (val) => {
 
         <div class="space-y-6">
 
-            <!-- ── Storage driver (interactive) ─────────────────────── -->
-                <Panel :heading="__('webhook-manager::messages.storage_heading')" :subheading="__('webhook-manager::messages.storage_sub')">
-                    <Card>
-                        <Field inline
-                            :label="__('webhook-manager::messages.storage_active_driver')"
-                        >
-                            <div class="flex items-center gap-2">
-                                <Badge
-                                    :color="storage.driver === 'flat' ? 'green' : 'blue'"
-                                    :text="storage.driver_label"
-                                />
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ storage.source === 'control_panel'
-                                        ? __('webhook-manager::messages.storage_source_control_panel')
-                                        : __('webhook-manager::messages.storage_source_config') }}
-                                </span>
-                            </div>
-                        </Field>
+            <!-- ── The form ─────────────────────────────────────────── -->
+            <Panel
+                v-for="group in groups"
+                :key="group.title"
+                :heading="group.title"
+            >
+                <Card>
+                    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ group.description }}</p>
 
-                        <Field v-if="storage.driver === 'flat'" inline
-                            :label="__('webhook-manager::messages.storage_flat_path_label')"
+                    <!-- The marker sits on a wrapper, not on `Field`: Field
+                         renders its own root and does not pass stray attributes
+                         through, so the hook a test reaches for would not exist
+                         in the DOM. -->
+                    <div
+                        v-for="field in group.fields"
+                        :key="field.key"
+                        class="mb-5 last:mb-0"
+                        :data-settings-field="field.key"
+                    >
+                        <Field
+                            :label="field.label"
+                            :instructions="field.description"
                         >
-                            <Input :model-value="storage.flat_path" read-only class="font-mono text-sm" />
-                        </Field>
-
-                        <Field inline
-                            :label="__('webhook-manager::messages.storage_records')"
-                        >
-                            <span class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ storageCountsLine }}</span>
-                        </Field>
-
-                        <Field inline
-                            :label="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
-                            :instructions="__('webhook-manager::messages.storage_switch_hint', { driver: storage.target_label })"
-                        >
-                            <Button
-                                :text="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
-                                :disabled="switchForm.processing"
-                                @click="showSwitch = true"
+                            <Switch
+                                v-if="field.type === 'boolean'"
+                                :model-value="form[field.key]"
+                                @update:model-value="form[field.key] = $event"
                             />
+                            <Select
+                                v-else-if="field.type === 'select'"
+                                :model-value="form[field.key]"
+                                :options="field.options"
+                                @update:model-value="form[field.key] = $event"
+                            />
+                            <Textarea
+                                v-else-if="field.type === 'list'"
+                                :model-value="form[field.key]"
+                                :rows="6"
+                                class="font-mono text-sm"
+                                @update:model-value="form[field.key] = $event"
+                            />
+                            <Input
+                                v-else
+                                :model-value="form[field.key]"
+                                :type="field.type === 'integer' ? 'number' : 'text'"
+                                :input-attrs="field.min !== undefined ? { min: field.min } : {}"
+                                :placeholder="field.nullable ? __('webhook-manager::settings.default_placeholder') : ''"
+                                @update:model-value="form[field.key] = $event"
+                            />
+
+                            <p
+                                v-if="errorFor(field)"
+                                class="mt-1 text-sm text-red-600 dark:text-red-400"
+                                :data-settings-field-error="field.key"
+                            >{{ errorFor(field) }}</p>
                         </Field>
-                    </Card>
-                </Panel>
+                    </div>
+                </Card>
+            </Panel>
 
-            <!-- ── General ──────────────────────────────────────────── -->
-                <Panel :heading="__('Features')">
-                    <Card>
-                    <Field inline
-                        :label="__('Outbound webhooks')"
-                        :instructions="__('Enable the outbound webhook engine.')"
+            <!-- ── Deployment-owned, shown but not editable ─────────── -->
+            <Panel :heading="__('webhook-manager::settings.environment.heading')">
+                <Card>
+                    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                        {{ __('webhook-manager::settings.environment.description') }}
+                    </p>
+
+                    <div
+                        v-for="entry in environment"
+                        :key="entry.env + entry.label"
+                        class="flex items-start justify-between gap-4 border-t border-gray-200 py-3 first:border-t-0 dark:border-gray-800"
+                        :data-settings-environment="entry.env"
                     >
-                        <Switch
-                            :model-value="config.general.features_outbound"
-                            :disabled="true"
-                        />
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ entry.label }}</span>
+                            <span class="block font-mono text-xs text-gray-500 dark:text-gray-400">{{ entry.env }}</span>
+                        </div>
+                        <span class="text-sm text-right text-gray-900 dark:text-gray-100">{{ entry.value }}</span>
+                    </div>
+                </Card>
+            </Panel>
+
+            <!-- ── Storage driver (an action, not a value) ──────────── -->
+            <Panel :heading="__('webhook-manager::messages.storage_heading')" :subheading="__('webhook-manager::messages.storage_sub')">
+                <Card>
+                    <Field inline
+                        :label="__('webhook-manager::messages.storage_active_driver')"
+                    >
+                        <div class="flex items-center gap-2">
+                            <Badge
+                                :color="storage.driver === 'flat' ? 'green' : 'blue'"
+                                :text="storage.driver_label"
+                            />
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ storage.source === 'control_panel'
+                                    ? __('webhook-manager::messages.storage_source_control_panel')
+                                    : __('webhook-manager::messages.storage_source_config') }}
+                            </span>
+                        </div>
+                    </Field>
+
+                    <Field v-if="storage.driver === 'flat'" inline
+                        :label="__('webhook-manager::messages.storage_flat_path_label')"
+                    >
+                        <Input :model-value="storage.flat_path" read-only class="font-mono text-sm" />
                     </Field>
 
                     <Field inline
-                        :label="__('Inbound webhooks')"
-                        :instructions="__('Enable the inbound webhook receiver.')"
+                        :label="__('webhook-manager::messages.storage_records')"
                     >
-                        <Switch
-                            :model-value="config.general.features_inbound"
-                            :disabled="true"
-                        />
+                        <span class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ storageCountsLine }}</span>
                     </Field>
 
                     <Field inline
-                        :label="__('Rules engine')"
-                        :instructions="__('Enable the rule/routing engine.')"
+                        :label="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+                        :instructions="__('webhook-manager::messages.storage_switch_hint', { driver: storage.target_label })"
                     >
-                        <Switch
-                            :model-value="config.general.features_rules"
-                            :disabled="true"
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Templates')"
-                        :instructions="__('Enable payload template library.')"
-                    >
-                        <Switch
-                            :model-value="config.general.features_templates"
-                            :disabled="true"
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Debug tools')"
-                        :instructions="__('Enable the Debug section in the CP.')"
-                    >
-                        <Switch
-                            :model-value="config.general.features_debug_tools"
-                            :disabled="true"
+                        <Button
+                            :text="__('webhook-manager::messages.storage_switch_to', { driver: storage.target_label })"
+                            :disabled="switchForm.processing"
+                            @click="showSwitch = true"
                         />
                     </Field>
                 </Card>
-                </Panel>
-
-                <Panel :heading="__('Queue')">
-                    <Card>
-                    <Field inline
-                        :label="__('Queue connection')"
-                        :instructions="__('WEBHOOK_MANAGER_QUEUE_CONNECTION env var. Leave empty to use the default connection.')"
-                    >
-                        <Input
-                            :model-value="config.general.queue_connection ?? ''"
-                            :placeholder="__('(default connection)')"
-                            read-only
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Queue name')"
-                        :instructions="__('WEBHOOK_MANAGER_QUEUE_NAME env var.')"
-                    >
-                        <Input
-                            :model-value="config.general.queue_name"
-                            read-only
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Sync in console')"
-                        :instructions="__('Process jobs synchronously when running via CLI (testing only).')"
-                    >
-                        <Switch
-                            :model-value="config.general.queue_sync_in_console"
-                            :disabled="true"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-            <!-- ── Defaults ─────────────────────────────────────────── -->
-                <Panel :heading="__('Retry defaults')">
-                    <Card>
-                    <Field inline
-                        :label="__('Strategy')"
-                        :instructions="__('none | linear | exponential')"
-                    >
-                        <Input :model-value="config.defaults.retry_strategy" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Max attempts')"
-                        :instructions="__('Total delivery attempts including the first try.')"
-                    >
-                        <Input :model-value="String(config.defaults.retry_max_attempts)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Base delay (seconds)')"
-                        :instructions="__('Initial backoff delay for linear/exponential strategies.')"
-                    >
-                        <Input :model-value="String(config.defaults.retry_base_delay_seconds)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Max delay (seconds)')"
-                        :instructions="__('Upper cap for exponential backoff.')"
-                    >
-                        <Input :model-value="String(config.defaults.retry_max_delay_seconds)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Retry on HTTP status codes')"
-                        :instructions="__('Comma-separated list of status codes that trigger a retry.')"
-                    >
-                        <Input :model-value="statusCodesToString(config.defaults.retry_on_status)" read-only />
-                    </Field>
-
-                    <Field inline :label="__('Retry on network errors')">
-                        <Switch
-                            :model-value="config.defaults.retry_on_network_errors"
-                            :disabled="true"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-                <Panel :heading="__('HTTP defaults')">
-                    <Card>
-                    <Field inline
-                        :label="__('Timeout (seconds)')"
-                        :instructions="__('Total request timeout.')"
-                    >
-                        <Input :model-value="String(config.defaults.http_timeout_seconds)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Connect timeout (seconds)')"
-                        :instructions="__('TCP/TLS connection timeout.')"
-                    >
-                        <Input :model-value="String(config.defaults.http_connect_timeout_seconds)" read-only />
-                    </Field>
-
-                    <Field inline :label="__('Follow redirects')">
-                        <Switch
-                            :model-value="config.defaults.http_follow_redirects"
-                            :disabled="true"
-                        />
-                    </Field>
-
-                    <Field inline :label="__('Max redirects')">
-                        <Input :model-value="String(config.defaults.http_max_redirects)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('User agent')"
-                        :instructions="__('Sent in the User-Agent header of every outbound request.')"
-                    >
-                        <Input :model-value="config.defaults.http_user_agent" read-only />
-                    </Field>
-
-                    <Field inline :label="__('Verify SSL')">
-                        <Switch
-                            :model-value="config.defaults.http_verify_ssl"
-                            :disabled="true"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-            <!-- ── Reliability & alerts ─────────────────────────────── -->
-                <Panel :heading="__('Circuit breaker')">
-                    <Card>
-                    <Field inline
-                        :label="__('Enabled')"
-                        :instructions="__('Auto-disable a webhook after too many consecutive failures.')"
-                    >
-                        <Switch :model-value="config.reliability.circuit_breaker_enabled" :disabled="true" />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Failure threshold')"
-                        :instructions="__('Consecutive terminal failures before a webhook is auto-disabled. 0 = never.')"
-                    >
-                        <Input :model-value="String(config.reliability.circuit_breaker_threshold)" read-only />
-                    </Field>
-                </Card>
-                </Panel>
-
-                <Panel :heading="__('Failure alerts')">
-                    <Card>
-                    <Field inline
-                        :label="__('Enabled')"
-                        :instructions="__('Notify an admin when a delivery fails after all retries.')"
-                    >
-                        <Switch :model-value="config.reliability.alerts_enabled" :disabled="true" />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Throttle (minutes)')"
-                        :instructions="__('Minimum minutes between alerts for the same webhook.')"
-                    >
-                        <Input :model-value="String(config.reliability.alerts_throttle_minutes)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Email alerts')"
-                        :instructions="__('WEBHOOK_MANAGER_ALERT_EMAILS env var (comma-separated).')"
-                    >
-                        <Switch :model-value="config.reliability.alerts_mail_enabled" :disabled="true" />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Recipients')"
-                        :instructions="__('Email addresses that receive failure alerts.')"
-                    >
-                        <Input
-                            :model-value="config.reliability.alerts_mail_recipients"
-                            :placeholder="__('(none configured)')"
-                            read-only
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Slack/Discord alert webhook')"
-                        :instructions="__('WEBHOOK_MANAGER_ALERT_SLACK_URL env var. Posts failure alerts to a chat channel.')"
-                    >
-                        <Badge
-                            :color="config.reliability.alerts_slack_configured ? 'green' : 'default'"
-                            :text="config.reliability.alerts_slack_configured ? __('Configured') : __('Not set')"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-            <!-- ── Security ─────────────────────────────────────────── -->
-                <Panel :heading="__('Inbound route')">
-                    <Card>
-                    <Field inline
-                        :label="__('Route prefix')"
-                        :instructions="__('URL prefix for all inbound webhook endpoints.')"
-                    >
-                        <Input :model-value="config.security.inbound_route_prefix" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Max payload (KB)')"
-                        :instructions="__('Requests larger than this value are rejected with 413.')"
-                    >
-                        <Input :model-value="String(config.security.inbound_max_payload_kb)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Rate limit (per minute)')"
-                        :instructions="__('Per-endpoint rate limit. 0 = unlimited.')"
-                    >
-                        <Input :model-value="String(config.security.inbound_rate_limit_per_minute)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Replay protection TTL (seconds)')"
-                        :instructions="__('Inbound requests with a timestamp older than this are rejected.')"
-                    >
-                        <Input :model-value="String(config.security.inbound_replay_protection_ttl_seconds)" read-only />
-                    </Field>
-                </Card>
-                </Panel>
-
-                <Panel :heading="__('Signature &amp; HMAC')">
-                    <Card>
-                    <Field inline
-                        :label="__('Allowed hash algorithms')"
-                        :instructions="__('Algorithms available when generating or verifying signatures.')"
-                    >
-                        <Input :model-value="arrayToString(config.security.hash_algorithms)" read-only />
-                    </Field>
-
-                    <Field inline :label="__('Default hash algorithm')">
-                        <Input :model-value="config.security.default_hash_algorithm" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Signature header')"
-                        :instructions="__('HTTP header name used to transmit the HMAC signature.')"
-                    >
-                        <Input :model-value="config.security.signature_header" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Timestamp header')"
-                        :instructions="__('HTTP header name used to transmit the request timestamp.')"
-                    >
-                        <Input :model-value="config.security.timestamp_header" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Timestamp tolerance (seconds)')"
-                        :instructions="__('Outbound: how far the remote clock may drift before the signature is rejected.')"
-                    >
-                        <Input :model-value="String(config.security.timestamp_tolerance_seconds)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Mask secrets in UI')"
-                        :instructions="__('Replaces secret values with *** in the CP.')"
-                    >
-                        <Switch
-                            :model-value="config.security.mask_secrets_in_ui"
-                            :disabled="true"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-            <!-- ── Logging ──────────────────────────────────────────── -->
-                <Panel :heading="__('Delivery logging')">
-                    <Card>
-                    <Field inline
-                        :label="__('Log body mode')"
-                        :instructions="__('full — store entire body · partial — store first N bytes · none — skip body storage.')"
-                    >
-                        <Input :model-value="config.logging.mode" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Partial bytes')"
-                        :instructions="__('When mode = partial, store this many bytes of the body.')"
-                    >
-                        <Input :model-value="String(config.logging.partial_bytes)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Masked request headers')"
-                        :instructions="__('Header names whose values are replaced with *** in stored logs.')"
-                    >
-                        <Textarea
-                            :model-value="arrayToString(config.logging.mask_headers)"
-                            :rows="3"
-                            read-only
-                        />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Masked payload keys')"
-                        :instructions="__('Top-level JSON body keys whose values are replaced with *** in stored logs.')"
-                    >
-                        <Textarea
-                            :model-value="arrayToString(config.logging.mask_payload_keys)"
-                            :rows="3"
-                            read-only
-                        />
-                    </Field>
-                </Card>
-                </Panel>
-
-                <Panel :heading="__('Pruning')">
-                    <Card>
-                    <Field inline
-                        :label="__('Prune deliveries after (days)')"
-                        :instructions="__('Deliveries older than this are removed by the webhook-manager:prune command. 0 = never.')"
-                    >
-                        <Input :model-value="String(config.logging.deliveries_after_days)" read-only />
-                    </Field>
-
-                    <Field inline
-                        :label="__('Prune logs after (days)')"
-                        :instructions="__('Log records older than this are removed. 0 = never.')"
-                    >
-                        <Input :model-value="String(config.logging.logs_after_days)" read-only />
-                    </Field>
-                </Card>
-                </Panel>
-
-                <Panel :heading="__('Debug')">
-                    <Card>
-                    <Field inline
-                        :label="__('Expose full response in dev')"
-                        :instructions="__('When enabled, full response bodies are surfaced in the CP even in partial mode.')"
-                    >
-                        <Switch
-                            :model-value="config.logging.expose_full_response_in_dev"
-                            :disabled="true"
-                        />
-                    </Field>
-                </Card>
-                </Panel>
+            </Panel>
         </div>
 
         <!-- ── Raw config panel ─────────────────────────────────────── -->
         <Panel :heading="__('Raw configuration')" class="mt-6">
-                    <Card>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
-            </p>
-            <CodeEditor
-                :model-value="rawConfig"
-                mode="json"
-                :read-only="true"
-                :line-numbers="true"
-                class="font-mono text-sm"
-            />
-        </Card>
-                </Panel>
+            <Card>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
+                </p>
+                <CodeEditor
+                    :model-value="rawConfig"
+                    mode="json"
+                    :read-only="true"
+                    :line-numbers="true"
+                    class="font-mono text-sm"
+                />
+            </Card>
+        </Panel>
 
         <ConfirmationModal
             :open="showSwitch"

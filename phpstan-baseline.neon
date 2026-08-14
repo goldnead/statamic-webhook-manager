@@ -37,54 +37,6 @@ parameters:
 			path: src/Domain/Delivery/Actions/ReplayDeliveryAction.php
 
 		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$brand_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/CreateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Domain/InboundEndpoint/Actions/ToggleInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$brand_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Actions/UpdateInboundEndpointAction.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Domain/InboundEndpoint/Handlers/AuditLogHandler.php
-
-		-
 			message: '#^Call to an undefined method Statamic\\Contracts\\Entries\\Entry\:\:collection\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -119,12 +71,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: src/Domain/InboundEndpoint/Handlers/UpsertEntryHandler.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$uuid\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Domain/InboundEndpoint/Models/InboundEndpoint.php
 
 		-
 			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\OutboundWebhook\\Models\\OutboundWebhook\:\:\$brand_id\.$#'
@@ -203,54 +149,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: src/Http/Controllers/Cp/DeliveryController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$action_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$path\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Http/Controllers/Cp/InboundController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$uuid\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Http/Controllers/Cp/InboundController.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
@@ -395,12 +293,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: src/Http/Controllers/Cp/TemplateController.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$enabled\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Http/Controllers/InboundWebhookController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -713,30 +605,6 @@ parameters:
 			identifier: property.notFound
 			count: 2
 			path: src/Services/Http/HttpRequestFactory.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$action_type\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Services/Inbound/InboundRequestProcessor.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$auth_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Services/Inbound/InboundRequestProcessor.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$handle\.$#'
-			identifier: property.notFound
-			count: 7
-			path: src/Services/Inbound/InboundRequestProcessor.php
-
-		-
-			message: '#^Access to an undefined property Goldnead\\WebhookManager\\Domain\\InboundEndpoint\\Models\\InboundEndpoint\:\:\$replay_protection_enabled\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Services/Inbound/InboundRequestProcessor.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$handle\.$#'

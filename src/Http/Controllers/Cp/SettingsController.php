@@ -2,9 +2,13 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Auth\Support\SecretMasker;
+use Goldnead\WebhookManager\Http\Requests\UpdateSettingsRequest;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
+use Goldnead\WebhookManager\Support\Settings;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -16,23 +20,52 @@ class SettingsController extends CpController
     /**
      * Display the Settings page.
      *
-     * v1: always read-only — config lives in config/webhook-manager.php.
-     *     Set $isEditable = true once a DB-settings-layer exists.
+     * The form is drawn from {@see Settings::groups()} — the same definition the
+     * validation and the boot-time config override read — so a field cannot
+     * exist on screen without a rule behind it, or the other way round. What
+     * this controller still assembles by hand is only what is *not* a setting:
+     * the storage driver (an action, not a value), and the deployment-owned keys
+     * that are shown so an operator can see them without being invited to edit
+     * a value the next deploy would take back.
      */
-    public function index(Request $request, StorageDriverManager $driver, StorageMigrator $migrator): Response
+    public function index(Request $request, StorageDriverManager $driver, StorageMigrator $migrator, Settings $settings): Response
     {
-        abort_unless(
-            $request->user()?->can('manage webhook settings'),
-            403
-        );
+        // One check, two uses: read access to this page is not widened past
+        // the people who may change it, and the form reads `canEdit` from the
+        // same answer rather than assuming that stays true.
+        // Not a `$canEdit` flag handed to the page: there is no read-only view
+        // of this screen. It prints the resolved config, so read access is the
+        // same access as write access, and a page prop describing a state the
+        // controller cannot reach is a branch nobody ever exercises.
+        abort_unless($request->user()?->can('manage webhook settings'), 403);
 
         return Inertia::render('webhook-manager::Settings/Index', [
-            'config' => $this->extractConfig(),
-            'rawConfig' => json_encode(config('webhook-manager'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            'groups' => Settings::groups(),
+            'values' => $this->current($settings),
+            'updateUrl' => cp_route('webhook-manager.settings.update'),
+            'environment' => $this->environmentPayload(),
+            'rawConfig' => json_encode($this->redacted((array) config('webhook-manager')), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             'configFilePath' => config_path('webhook-manager.php'),
-            'isEditable' => false, // v1: flip to true when DB-settings-layer lands
             'storage' => $this->storagePayload($driver, $migrator),
         ]);
+    }
+
+    /**
+     * Write the settings form.
+     *
+     * Answers with the values as they now stand rather than with the submitted
+     * ones. An integer arrives from a text input as a string and comes back an
+     * integer, a list arrives with the blank line the textarea left behind and
+     * comes back compacted, and a value equal to the default is dropped and
+     * comes back as whatever the config file says. Echoing the request instead
+     * would leave the screen agreeing with itself and disagreeing with the
+     * installation.
+     */
+    public function update(UpdateSettingsRequest $request, Settings $settings): JsonResponse
+    {
+        $settings->save($this->normalise($request->validated()['settings']));
+
+        return response()->json(['data' => $this->current($settings)]);
     }
 
     /**
@@ -70,6 +103,155 @@ class SettingsController extends CpController
     }
 
     /**
+     * Coerce the form's values into the types the config expects.
+     *
+     * HTML form controls hand back strings; `config('webhook-manager.retry.max_attempts')`
+     * is read into arithmetic and a `"3"` there is a bug waiting for a strict
+     * comparison — including the one that decides whether a value is back at its
+     * default and the row may go.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    protected function normalise(array $values): array
+    {
+        $fields = Settings::fields();
+        $out = [];
+
+        foreach ($values as $key => $value) {
+            $field = $fields[$key] ?? null;
+
+            if ($field === null) {
+                continue;
+            }
+
+            if (($field['nullable'] ?? false) && ($value === '' || $value === null)) {
+                $out[$key] = null;
+
+                continue;
+            }
+
+            $out[$key] = match ($field['type']) {
+                'boolean' => (bool) $value,
+                'integer' => (int) $value,
+                'list' => $this->normaliseList($value, (string) ($field['items'] ?? 'string')),
+                default => (string) $value,
+            };
+        }
+
+        return $out;
+    }
+
+    /**
+     * A list control is a textarea of lines, so blanks and stray whitespace are
+     * normal input, not errors: a trailing newline must not become a masking
+     * rule for the empty header name.
+     *
+     * @return array<int, string|int>
+     */
+    protected function normaliseList(mixed $value, string $items): array
+    {
+        $trimmed = array_filter(
+            array_map(fn ($item) => trim((string) $item), (array) $value),
+            fn (string $item) => $item !== '',
+        );
+
+        if ($items === 'integer') {
+            $trimmed = array_map(fn (string $item) => (int) $item, $trimmed);
+        }
+
+        return array_values($trimmed);
+    }
+
+    /**
+     * The current value of every editable setting, keyed by dotted path.
+     *
+     * Flat, not nested: the form indexes by the same path the definition uses,
+     * so the screen never has to know how the config file happens to be shaped.
+     *
+     * @return array<string, mixed>
+     */
+    protected function current(Settings $settings): array
+    {
+        $values = [];
+
+        foreach (array_keys(Settings::fields()) as $key) {
+            $values[$key] = $settings->value($key);
+        }
+
+        return $values;
+    }
+
+    /**
+     * Settings the deployment owns, shown but never editable.
+     *
+     * All of these resolve from `env()`. A database row that outranks an env
+     * var is a setting that changes back on the next deploy without anyone
+     * touching the screen, and `alerts.slack.webhook_url` is a credential on top
+     * of that — reported here as configured-or-not rather than printed.
+     *
+     * @return array<int, array{label: string, value: string, env: string}>
+     */
+    protected function environmentPayload(): array
+    {
+        $queue = config('webhook-manager.queue', []);
+        $alerts = config('webhook-manager.alerts', []);
+        $breaker = config('webhook-manager.circuit_breaker', []);
+
+        $yesNo = fn (mixed $value) => $value
+            ? __('webhook-manager::settings.environment.on')
+            : __('webhook-manager::settings.environment.off');
+
+        return [
+            [
+                'label' => __('webhook-manager::settings.environment.queue_connection'),
+                'value' => (string) ($queue['connection'] ?? __('webhook-manager::settings.environment.app_default')),
+                'env' => 'WEBHOOK_MANAGER_QUEUE_CONNECTION',
+            ],
+            [
+                'label' => __('webhook-manager::settings.environment.queue_name'),
+                'value' => (string) ($queue['name'] ?? 'default'),
+                'env' => 'WEBHOOK_MANAGER_QUEUE_NAME',
+            ],
+            [
+                'label' => __('webhook-manager::settings.environment.circuit_breaker'),
+                'value' => $yesNo($breaker['enabled'] ?? true).' · '.__('webhook-manager::settings.environment.threshold', [
+                    'count' => (int) ($breaker['threshold'] ?? 10),
+                ]),
+                'env' => 'WEBHOOK_MANAGER_CIRCUIT_BREAKER / WEBHOOK_MANAGER_CIRCUIT_THRESHOLD',
+            ],
+            [
+                'label' => __('webhook-manager::settings.environment.alerts'),
+                'value' => $yesNo($alerts['enabled'] ?? true).' · '.__('webhook-manager::settings.environment.throttle', [
+                    'count' => (int) ($alerts['throttle_minutes'] ?? 15),
+                ]),
+                'env' => 'WEBHOOK_MANAGER_ALERTS / WEBHOOK_MANAGER_ALERT_THROTTLE',
+            ],
+            [
+                'label' => __('webhook-manager::settings.environment.alert_recipients'),
+                'value' => implode(', ', (array) ($alerts['mail']['recipients'] ?? [])) ?: __('webhook-manager::settings.environment.none'),
+                'env' => 'WEBHOOK_MANAGER_ALERT_EMAILS',
+            ],
+            [
+                'label' => __('webhook-manager::settings.environment.alert_chat_webhook'),
+                'value' => ($alerts['slack']['webhook_url'] ?? null)
+                    ? __('webhook-manager::settings.environment.configured')
+                    : __('webhook-manager::settings.environment.not_set'),
+                'env' => 'WEBHOOK_MANAGER_ALERT_SLACK_URL',
+            ],
+            [
+                // Not env-backed, but routing wiring: the prefix is read while
+                // routes are registered and `route:cache` freezes it, so a value
+                // changed here would print URLs that answer 404 until somebody
+                // clears the cache.
+                'label' => __('webhook-manager::settings.environment.inbound_prefix'),
+                'value' => '/'.WebhookManagerServiceProvider::inboundRoutePrefix(),
+                'env' => 'config/webhook-manager.php',
+            ],
+        ];
+    }
+
+    /**
      * @return array<string,mixed>
      */
     protected function storagePayload(StorageDriverManager $driver, StorageMigrator $migrator): array
@@ -89,136 +271,75 @@ class SettingsController extends CpController
         ];
     }
 
+    /**
+     * The resolved config tree with its secrets blanked.
+     *
+     * The page prints this so an operator can see what the installation
+     * actually resolved to, deployment-owned values included. Printed
+     * verbatim it also hands the browser the alert webhook URL — a credential
+     * that grants posting rights to a chat channel — where it lands in
+     * screen shares, screenshots and any front-end error report.
+     *
+     * Masked by key name rather than by path, because the config tree grows:
+     * a key called `secret` added next year is covered without anybody
+     * remembering to come back here. A masked value keeps its first and last
+     * four characters, which is enough to tell two credentials apart and not
+     * enough to use one.
+     *
+     * The secret flag is inherited downwards. `webhook_urls => [a, b]` and
+     * `credentials => ['token' => …, 'note' => …]` are both things a host may
+     * put in its own config, and masking only the leaf whose *own* key matched
+     * would print every one of them.
+     *
+     * @param  array<string,mixed>  $config
+     * @return array<string,mixed>
+     */
+    protected function redacted(array $config, bool $inherited = false): array
+    {
+        $out = [];
+
+        foreach ($config as $key => $value) {
+            $secret = $inherited || (is_string($key) && $this->isSecretKey($key));
+
+            if (is_array($value)) {
+                $out[$key] = $this->redacted($value, $secret);
+
+                continue;
+            }
+
+            $out[$key] = $secret && $value !== null
+                ? SecretMasker::mask((string) $value)
+                : $value;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Whether a config key names something that must not be printed.
+     *
+     * Substring matching, deliberately generous: a false positive costs a
+     * masked value on a diagnostics panel, a false negative costs a
+     * credential. `webhook_url` is in here because the chat alert URL *is*
+     * the credential — there is nothing else to authenticate with.
+     */
+    protected function isSecretKey(string $key): bool
+    {
+        $key = strtolower($key);
+
+        foreach (['secret', 'token', 'password', 'passwd', 'api_key', 'apikey', 'webhook_url', 'private_key', 'credential'] as $needle) {
+            if (str_contains($key, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function driverLabel(string $driver): string
     {
         return $driver === 'flat'
             ? __('webhook-manager::messages.storage_flat')
             : __('webhook-manager::messages.storage_database');
-    }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Break the flat config() array into per-tab buckets so the Vue template
-     * only needs simple dot-access — no deep nesting in the template itself.
-     *
-     * Key naming convention: {tab}_{section}_{key}
-     */
-    protected function extractConfig(): array
-    {
-        return [
-            'general' => $this->extractGeneral(),
-            'defaults' => $this->extractDefaults(),
-            'reliability' => $this->extractReliability(),
-            'security' => $this->extractSecurity(),
-            'logging' => $this->extractLogging(),
-        ];
-    }
-
-    protected function extractReliability(): array
-    {
-        $alerts = config('webhook-manager.alerts', []);
-        $breaker = config('webhook-manager.circuit_breaker', []);
-
-        return [
-            'circuit_breaker_enabled' => (bool) ($breaker['enabled'] ?? true),
-            'circuit_breaker_threshold' => (int) ($breaker['threshold'] ?? 10),
-
-            'alerts_enabled' => (bool) ($alerts['enabled'] ?? true),
-            'alerts_throttle_minutes' => (int) ($alerts['throttle_minutes'] ?? 15),
-            'alerts_mail_enabled' => (bool) ($alerts['mail']['enabled'] ?? true),
-            'alerts_mail_recipients' => implode(', ', (array) ($alerts['mail']['recipients'] ?? [])),
-            'alerts_slack_configured' => ! empty($alerts['slack']['webhook_url'] ?? null),
-        ];
-    }
-
-    protected function extractGeneral(): array
-    {
-        $features = config('webhook-manager.features', []);
-        $queue = config('webhook-manager.queue', []);
-
-        return [
-            // Feature flags
-            'features_outbound' => (bool) ($features['outbound'] ?? true),
-            'features_inbound' => (bool) ($features['inbound'] ?? true),
-            'features_rules' => (bool) ($features['rules'] ?? true),
-            'features_templates' => (bool) ($features['templates'] ?? true),
-            'features_debug_tools' => (bool) ($features['debug_tools'] ?? true),
-
-            // Queue
-            'queue_connection' => $queue['connection'] ?? null,
-            'queue_name' => $queue['name'] ?? 'default',
-            'queue_sync_in_console' => (bool) ($queue['sync_in_console'] ?? false),
-        ];
-    }
-
-    protected function extractDefaults(): array
-    {
-        $retry = config('webhook-manager.retry', []);
-        $http = config('webhook-manager.http', []);
-
-        return [
-            // Retry
-            'retry_strategy' => $retry['strategy'] ?? 'exponential',
-            'retry_max_attempts' => (int) ($retry['max_attempts'] ?? 3),
-            'retry_base_delay_seconds' => (int) ($retry['base_delay_seconds'] ?? 30),
-            'retry_max_delay_seconds' => (int) ($retry['max_delay_seconds'] ?? 3600),
-            'retry_on_status' => $retry['retry_on_status'] ?? [],
-            'retry_on_network_errors' => (bool) ($retry['retry_on_network_errors'] ?? true),
-
-            // HTTP
-            'http_timeout_seconds' => (int) ($http['timeout_seconds'] ?? 15),
-            'http_connect_timeout_seconds' => (int) ($http['connect_timeout_seconds'] ?? 5),
-            'http_follow_redirects' => (bool) ($http['follow_redirects'] ?? true),
-            'http_max_redirects' => (int) ($http['max_redirects'] ?? 3),
-            'http_user_agent' => $http['user_agent'] ?? 'Statamic-Webhook-Manager/1.0',
-            'http_verify_ssl' => (bool) ($http['verify_ssl'] ?? true),
-        ];
-    }
-
-    protected function extractSecurity(): array
-    {
-        $inbound = config('webhook-manager.inbound', []);
-        $security = config('webhook-manager.security', []);
-
-        return [
-            // Inbound route
-            'inbound_route_prefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
-            'inbound_max_payload_kb' => (int) ($inbound['max_payload_kb'] ?? 512),
-            'inbound_rate_limit_per_minute' => (int) ($inbound['rate_limit_per_minute'] ?? 60),
-            'inbound_replay_protection_ttl_seconds' => (int) ($inbound['replay_protection_ttl_seconds'] ?? 600),
-
-            // HMAC / signature
-            'hash_algorithms' => $security['hash_algorithms'] ?? ['sha256', 'sha512'],
-            'default_hash_algorithm' => $security['default_hash_algorithm'] ?? 'sha256',
-            'signature_header' => $security['signature_header'] ?? 'X-Webhook-Signature',
-            'timestamp_header' => $security['timestamp_header'] ?? 'X-Webhook-Timestamp',
-            'timestamp_tolerance_seconds' => (int) ($security['timestamp_tolerance_seconds'] ?? 300),
-            'mask_secrets_in_ui' => (bool) ($security['mask_secrets_in_ui'] ?? true),
-        ];
-    }
-
-    protected function extractLogging(): array
-    {
-        $logging = config('webhook-manager.logging', []);
-        $pruning = config('webhook-manager.pruning', []);
-        $debug = config('webhook-manager.debug', []);
-
-        return [
-            // Delivery logging
-            'mode' => $logging['mode'] ?? 'partial',
-            'partial_bytes' => (int) ($logging['partial_bytes'] ?? 4096),
-            'mask_headers' => $logging['mask_headers'] ?? [],
-            'mask_payload_keys' => $logging['mask_payload_keys'] ?? [],
-
-            // Pruning
-            'deliveries_after_days' => (int) ($pruning['deliveries_after_days'] ?? 30),
-            'logs_after_days' => (int) ($pruning['logs_after_days'] ?? 60),
-
-            // Debug
-            'expose_full_response_in_dev' => (bool) ($debug['expose_full_response_in_dev'] ?? false),
-        ];
     }
 }
