@@ -3,9 +3,9 @@
 namespace Goldnead\WebhookManager\Actions;
 
 use Goldnead\WebhookManager\Contracts\ActionInterface;
+use Goldnead\WebhookManager\Sending\BrandMailer;
 use Goldnead\WebhookManager\ValueObjects\ExecutionContext;
 use Goldnead\WebhookManager\ValueObjects\ExecutionResult;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Send a plain-text email notification.
@@ -45,15 +45,40 @@ class SendEmailAction implements ActionInterface
 
         try {
             $recipients = is_array($to) ? $to : [$to];
-            Mail::raw($body, function ($message) use ($recipients, $subject, $config) {
-                foreach ($recipients as $recipient) {
-                    $message->to($recipient);
+
+            // Rules are brand-scoped (see Storage\BrandSegments); until now the
+            // mail they sent was not. On a host serving several brands from one
+            // process, Mail::raw() meant one brand's rule going out through
+            // another brand's relay — rejected there, or worse, accepted under
+            // the wrong identity.
+            //
+            // The brand comes from the ambient context, which is the same brand
+            // whose directory this rule was read from. config.from still applies
+            // where no brand declares a sender, which is every single-brand
+            // install; where one does, the brand wins and the rule cannot
+            // impersonate it.
+            $sent = app(BrandMailer::class)->sendRaw(
+                null,
+                null,
+                $body,
+                function ($message) use ($recipients, $subject, $config): void {
+                    foreach ($recipients as $recipient) {
+                        $message->to($recipient);
+                    }
+                    $message->subject($subject);
+                    if (! empty($config['from']) && is_string($config['from'])) {
+                        $message->from($config['from']);
+                    }
                 }
-                $message->subject($subject);
-                if (! empty($config['from']) && is_string($config['from'])) {
-                    $message->from($config['from']);
-                }
-            });
+            );
+
+            if (! $sent) {
+                // The refusal is already in the log with the reason. Failing the
+                // action rather than reporting success is the point: a rule that
+                // says "email sent" while nothing left the building is worse
+                // than one that says it could not send.
+                return ExecutionResult::fail('Email not sent: the brand refused the sender identity. See the log for the reason.');
+            }
 
             return ExecutionResult::ok('Email sent.', [
                 'to' => $recipients,

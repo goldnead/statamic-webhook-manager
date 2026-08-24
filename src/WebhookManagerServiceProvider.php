@@ -15,6 +15,7 @@ use Goldnead\WebhookManager\Contracts\Repositories\InboundEndpointRepositoryInte
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Goldnead\WebhookManager\Contracts\Repositories\TemplateRepositoryInterface;
+use Goldnead\WebhookManager\Contracts\SenderIdentityResolver;
 use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Http\Middleware\ResolveInboundBrand;
@@ -43,6 +44,8 @@ use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileInboundEndpointReposit
 use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileOutboundWebhookRepository;
 use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileRuleRepository;
 use Goldnead\WebhookManager\Repositories\FlatFile\FlatFileTemplateRepository;
+use Goldnead\WebhookManager\Sending\BrandMailer;
+use Goldnead\WebhookManager\Sending\BrandSenderIdentity;
 use Goldnead\WebhookManager\Storage\BrandSegments;
 use Goldnead\WebhookManager\Storage\FileStore;
 use Goldnead\WebhookManager\Storage\ModelHydrator;
@@ -442,6 +445,14 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      */
     protected function bootBindings(): void
     {
+        // Brand-scoped sending. The contract and the mechanism live in
+        // statamic-brand-context; this package binds only its own name, so a
+        // host rebinding the resolver here does not rebind it for marketing.
+        // The shipped implementation leaves a single-brand install sending
+        // exactly as before.
+        $this->app->singleton(SenderIdentityResolver::class, BrandSenderIdentity::class);
+        $this->app->singleton(BrandMailer::class);
+
         $this->app->singleton(TriggerRegistry::class);
         $this->app->singleton(AuthSchemeRegistry::class);
         $this->app->singleton(ConditionRegistry::class);
