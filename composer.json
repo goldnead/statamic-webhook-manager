@@ -32,6 +32,7 @@
         "statamic/cms": "^6.0"
     },
     "suggest": {
+        "goldnead/statamic-insights": "Report deliveries, failures, success rate and average response time on the shared Insights dashboard",
         "goldnead/statamic-leadhub": "Turn inbound webhook payloads into CRM contacts via the upsert_lead inbound action",
         "goldnead/statamic-automations": "Orchestrate multi-step workflows that send webhooks through Webhook Manager"
     },

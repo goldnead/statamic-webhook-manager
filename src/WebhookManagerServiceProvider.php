@@ -19,6 +19,10 @@ use Goldnead\WebhookManager\Contracts\SenderIdentityResolver;
 use Goldnead\WebhookManager\Events\DeliveryFailedTerminally;
 use Goldnead\WebhookManager\Events\TriggerDetected;
 use Goldnead\WebhookManager\Http\Middleware\ResolveInboundBrand;
+use Goldnead\WebhookManager\Integrations\Insights\Deliveries;
+use Goldnead\WebhookManager\Integrations\Insights\Failures;
+use Goldnead\WebhookManager\Integrations\Insights\LatencyAvg;
+use Goldnead\WebhookManager\Integrations\Insights\SuccessRate;
 use Goldnead\WebhookManager\Listeners\DispatchTriggerListener;
 use Goldnead\WebhookManager\Listeners\HandleAssetSavedListener;
 use Goldnead\WebhookManager\Listeners\HandleEntryDeletedListener;
@@ -53,10 +57,12 @@ use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
 use Goldnead\WebhookManager\Support\Settings;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
+use Throwable;
 
 /**
  * Service provider for the Statamic Webhook Manager addon.
@@ -194,6 +200,80 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->bootRegistries();
         $this->bootRouteBindings();
         $this->bootInboundRoutes();
+        $this->bootInsightsMetrics();
+    }
+
+    /**
+     * Die Handles, die dieses Addon beisteuert, und die Klassen dahinter.
+     *
+     * Beides, damit die Registry den Klassennamen ablegen kann, ohne ein Objekt
+     * zu bauen, nur um zu erfahren, wie es heisst. Den Handle zweimal zu
+     * schreiben ist der Preis dafuer und die guenstigere Haelfte des Tauschs:
+     * eine Installation mit zwanzig Addons wuerde sonst bei jedem Aufruf jede
+     * Kennzahl jedes Addons instanziieren, auch auf Seiten, die keine zeigen.
+     *
+     * Die Handles sind ab der Registrierung eingefroren — sie landen in
+     * gespeicherten Ansichten und in URLs. Einen umzubenennen ist ein Bruch.
+     *
+     * @var array<class-string, string>
+     */
+    protected const INSIGHTS_METRICS = [
+        Deliveries::class => 'webhooks.deliveries',
+        Failures::class => 'webhooks.failures',
+        SuccessRate::class => 'webhooks.success_rate',
+        LatencyAvg::class => 'webhooks.latency_avg',
+    ];
+
+    /**
+     * Die vier Kernzahlen dem Analytics-Addon anbieten, falls es da ist.
+     *
+     * Aus einem `app->booted()`-Rueckruf und nicht direkt aus `bootAddon()`:
+     * die Container-Bindungen des Geschwisters entstehen erst, wenn dessen
+     * eigener Provider gebootet hat, und dieser hier kann vorher dran sein. Wer
+     * frueher registriert, registriert ins Leere — ohne Fehler, mit einem
+     * leeren Schirm als einzigem Hinweis.
+     *
+     * **Hier wirft nichts, nie.** Ein fehlendes, halb installiertes oder gerade
+     * aktualisiertes Analytics-Addon darf ein paar Kacheln kosten, niemals eine
+     * Zustellung. Die drei Absicherungen sind je eine reale Spielart von
+     * „installiert, aber nicht ganz": die Klasse kann fehlen, der Container
+     * kann die Verwaltung nicht bauen, und eine aeltere Fassung des
+     * Geschwisters kann die Fassade ohne diese Methode haben.
+     *
+     * Die Kennzahl-Klassen nennen den fremden Vertrag in ihrem `extends`, was
+     * genau wegen der ersten Absicherung sicher ist: PHP laedt eine Klasse,
+     * wenn etwas sie anfasst, und nichts fasst diese an, solange die Fassade
+     * fehlt. Daher `suggest` in der composer.json und nicht `require`.
+     */
+    protected function bootInsightsMetrics(): void
+    {
+        $this->app->booted(function (): void {
+            $facade = '\Goldnead\StatamicInsights\Facades\Insights';
+
+            if (! class_exists($facade)) {
+                return;
+            }
+
+            try {
+                $manager = $facade::getFacadeRoot();
+
+                // Am Objekt gefragt, nie an der Fassade: eine Fassade reicht
+                // ueber `__callStatic` weiter und deklariert nichts von dem,
+                // was sie weiterreicht — die Probe an der Fassade selbst ist
+                // immer falsch.
+                if (! is_object($manager) || ! method_exists($manager, 'registerMetric')) {
+                    return;
+                }
+
+                foreach (self::INSIGHTS_METRICS as $class => $handle) {
+                    $manager->registerMetric($class, $handle);
+                }
+            } catch (Throwable $e) {
+                Log::warning('statamic-webhook-manager: the insights metrics could not be registered.', [
+                    'exception' => $e->getMessage(),
+                ]);
+            }
+        });
     }
 
     /**
