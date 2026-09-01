@@ -22,6 +22,7 @@ class DeliveryController extends CpController
      *   error_type   — network|timeout|auth|client|server|payload|configuration|internal
      *   webhook_id   — int ID of an outbound webhook
      *   from / to    — ISO-8601 date range bounds
+     *   subject_type / subject_id — the object the delivery was about
      */
     public function index(Request $request, DeliveryRepository $repository, TriggerRegistry $triggers)
     {
@@ -37,6 +38,8 @@ class DeliveryController extends CpController
             'webhook_id' => $request->get('webhook_id'),
             'from' => $request->get('from'),
             'to' => $request->get('to'),
+            'subject_type' => $request->get('subject_type'),
+            'subject_id' => $request->get('subject_id'),
         ], fn ($v) => $v !== null && $v !== '');
 
         $deliveries = $repository->paginate($perPage, $search, $filters);
@@ -67,7 +70,83 @@ class DeliveryController extends CpController
             'initialColumns' => $this->indexColumns(),
             'listingUrl' => cp_route('webhook-manager.deliveries.index'),
             'actionUrl' => cp_route('webhook-manager.deliveries.index'),
+            'subjectTypes' => $this->subjectTypeOptions($repository),
+            'subjectFilter' => [
+                'type' => $filters['subject_type'] ?? null,
+                'id' => isset($filters['subject_id']) ? (string) $filters['subject_id'] : null,
+            ],
         ]);
+    }
+
+    /**
+     * The deliveries recorded about one object, as JSON.
+     *
+     * Read by the `webhook-deliveries-for-subject` component that another
+     * addon embeds on its own page (a payment, an offer), so it answers with
+     * the same row shape as the listing and applies the same permission.
+     * Brand scope comes from the Delivery model's global scope.
+     */
+    public function forSubject(Request $request, DeliveryRepository $repository, TriggerRegistry $triggers)
+    {
+        abort_unless($request->user()?->can('view webhook deliveries'), 403);
+
+        // A JSON body on a GET is read before the query string, so an
+        // integrator sending `{"subject_id": 77}` would arrive with an int
+        // and fail the string rule for a valid id. The column is a string;
+        // compare it as one.
+        $request->merge(collect(['subject_type', 'subject_id'])
+            ->filter(fn (string $key) => is_scalar($request->input($key)))
+            ->mapWithKeys(fn (string $key) => [$key => (string) $request->input($key)])
+            ->all());
+
+        $validated = $request->validate([
+            'subject_type' => ['required', 'string', 'max:64'],
+            'subject_id' => ['required', 'string', 'max:64'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $limit = (int) ($validated['limit'] ?? 20);
+        $triggerLabels = $triggers->options();
+
+        $rows = $repository
+            ->forSubject($validated['subject_type'], $validated['subject_id'], $limit)
+            ->map(fn (Delivery $d) => $this->row($d, $request, $triggerLabels))
+            ->values();
+
+        return response()->json([
+            'data' => $rows,
+            'total' => $repository->countForSubject($validated['subject_type'], $validated['subject_id']),
+        ]);
+    }
+
+    /**
+     * Options for the subject-type filter: the configured types plus any
+     * type that is actually present in the log, so a type another addon
+     * wrote without registering it is still filterable.
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    protected function subjectTypeOptions(DeliveryRepository $repository): array
+    {
+        $configured = array_map('strval', array_keys((array) config('webhook-manager.subjects', [])));
+        $types = array_values(array_unique([...$configured, ...$repository->subjectTypesInUse()]));
+
+        return array_map(fn (string $type) => [
+            'value' => $type,
+            'label' => $this->subjectTypeLabel($type),
+        ], $types);
+    }
+
+    protected function subjectTypeLabel(?string $type): ?string
+    {
+        if ($type === null || $type === '') {
+            return null;
+        }
+
+        $key = 'webhook-manager::messages.subject_types.'.$type;
+        $translated = __($key);
+
+        return is_string($translated) && $translated !== $key ? $translated : ucfirst($type);
     }
 
     /**
@@ -107,13 +186,14 @@ class DeliveryController extends CpController
      * for the UI; the row() method maps the actual DB columns to those
      * aliases below.
      *
-     * @return array<int,array{handle:string,label:string,visible:bool,sortable:bool}>
+     * @return array<int,array{field:string,label:mixed,visible:bool,sortable:bool}>
      */
     protected function indexColumns(): array
     {
         return [
             ['field' => 'status',        'label' => __('Status'),    'visible' => true,  'sortable' => true],
             ['field' => 'outbound_name', 'label' => __('Trigger'),   'visible' => true,  'sortable' => false],
+            ['field' => 'subject',       'label' => __('webhook-manager::messages.subject'), 'visible' => true, 'sortable' => false],
             ['field' => 'url',           'label' => __('URL'),       'visible' => true,  'sortable' => false],
             ['field' => 'method',        'label' => __('Method'),    'visible' => true,  'sortable' => false],
             ['field' => 'response_code', 'label' => __('Code'),      'visible' => true,  'sortable' => true],
@@ -148,6 +228,14 @@ class DeliveryController extends CpController
             'trigger_label' => $triggerLabels[$delivery->trigger_type] ?? $delivery->trigger_type,
             // alias used by the `cell-outbound_name` slot in Vue
             'outbound_name' => $triggerLabels[$delivery->trigger_type] ?? $delivery->trigger_type,
+
+            // The object the delivery was about (null when unresolved).
+            'subject_type' => $delivery->subject_type,
+            'subject_id' => $delivery->subject_id,
+            'subject_label' => $this->subjectTypeLabel($delivery->subject_type),
+            'subject' => $delivery->subject_type !== null && $delivery->subject_id !== null
+                ? $delivery->subject_type.' #'.$delivery->subject_id
+                : null,
 
             // DB names + UI aliases
             'request_url' => $delivery->request_url,
@@ -199,6 +287,9 @@ class DeliveryController extends CpController
             'trigger_type' => $delivery->trigger_type,
             'trigger_label' => $triggerLabels[$delivery->trigger_type] ?? $delivery->trigger_type,
             'trigger_reference' => $delivery->trigger_reference,
+            'subject_type' => $delivery->subject_type,
+            'subject_id' => $delivery->subject_id,
+            'subject_label' => $this->subjectTypeLabel($delivery->subject_type),
             'correlation_id' => $delivery->correlation_id,
 
             'attempts' => (int) $delivery->attempts,

@@ -62,6 +62,8 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::prefix('deliveries')->name('deliveries.')->group(function () {
         Route::get('/', [DeliveryController::class, 'index'])->name('index');
+        // Before `{delivery}`, or the literal segment binds as a delivery id.
+        Route::get('/for-subject', [DeliveryController::class, 'forSubject'])->name('for-subject');
         Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show');
     });
 

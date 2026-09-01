@@ -236,7 +236,7 @@ function copyCurl() {
              get their own panel.
         -->
         <Panel :heading="__('Delivery')" class="mt-4">
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 *:min-w-0">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 *:min-w-0">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                         {{ __('Trigger') }}
@@ -248,6 +248,25 @@ function copyCurl() {
                     >
                         {{ delivery.trigger_reference }}
                     </p>
+                </div>
+
+                <!-- The object the delivery was about; links back to the
+                     listing filtered to that object. -->
+                <div data-testid="delivery-subject">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                        {{ __('webhook-manager::messages.subject') }}
+                    </p>
+                    <template v-if="delivery.subject_type && delivery.subject_id">
+                        <Badge
+                            color="default"
+                            :text="delivery.subject_label || delivery.subject_type"
+                            :href="`${indexUrl}?subject_type=${encodeURIComponent(delivery.subject_type)}&subject_id=${encodeURIComponent(delivery.subject_id)}`"
+                        />
+                        <p class="font-mono text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+                            {{ delivery.subject_id }}
+                        </p>
+                    </template>
+                    <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
                 </div>
 
                 <div>

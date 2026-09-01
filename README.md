@@ -361,6 +361,56 @@ When no `payload` mapper is given, the listener builds the payload from the
 event's `toArray()` if present, otherwise its public properties (and passes
 through an event that is already an array).
 
+### Deliveries on the object (subject)
+
+Every delivery row records which object it was about, in two columns on
+`webhook_deliveries`: `subject_type` (`payment`, `offer`, `entry`, …) and
+`subject_id`, indexed together. They are filled once, when the snapshot is
+written, by `SubjectResolver`, in this order: an explicit `subject_type` /
+`subject_id` pair in the payload; a key configured for a type
+(`payment_id`, `payment.id`); a trigger handle matching a configured pattern
+(`payments.*`) plus the event's source reference; and finally the event's own
+source type and reference, which is how the built-in entry, user, asset and
+form-submission triggers get a subject without configuration. The map lives
+in `config/webhook-manager.php` under `subjects`; add your own types there.
+
+Read the log from the object's side with the facade:
+
+```php
+use Goldnead\WebhookManager\Facades\WebhookLog;
+
+WebhookLog::forSubject('payment', $payment->id);        // Collection<Delivery>, newest first
+WebhookLog::forSubject('payment', $payment->id, 5);     // limit
+WebhookLog::countForSubject('payment', $payment->id);   // int
+WebhookLog::subjectTypes();                             // configured type handles
+```
+
+In the Control Panel the delivery listing has a subject filter above the
+table and a **Subject** column, and the detail screen shows the subject next
+to the trigger.
+
+To show the same log on your own addon's Inertia page, use the globally
+registered component. It fetches through the CP's `deliveries/for-subject`
+endpoint, so the viewer's `view webhook deliveries` permission and brand scope
+apply unchanged, and replay goes through the same route as the listing:
+
+```vue
+<webhook-deliveries-for-subject
+    v-if="hasWebhookLog"
+    subject-type="payment"
+    :subject-id="payment.id"
+    :limit="10"
+/>
+```
+
+```js
+const hasWebhookLog = Statamic.$components.has('webhook-deliveries-for-subject');
+```
+
+Guarding with `Statamic.$components.has()` keeps your page working when
+Webhook Manager is not installed. There is no Blade partial: the Statamic 6
+Control Panel has no Blade pages left, so the component is the only embed.
+
 ### Load order & overwriting
 
 Register from the `boot()` method of your own service provider. Statamic boots

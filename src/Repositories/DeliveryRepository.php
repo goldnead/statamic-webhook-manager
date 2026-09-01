@@ -26,7 +26,7 @@ class DeliveryRepository
      * The search/filters split mirrors LogRepository so both listings have
      * the same shape from the controller's perspective.
      *
-     * @param  array{status?:string, webhook_id?:int, trigger?:string, error_type?:string, from?:string, to?:string}  $filters
+     * @param  array{status?:string, webhook_id?:int, trigger?:string, error_type?:string, from?:string, to?:string, subject_type?:string, subject_id?:string|int}  $filters
      */
     public function paginate(int $perPage = 25, ?string $search = null, array $filters = []): LengthAwarePaginator
     {
@@ -37,11 +37,62 @@ class DeliveryRepository
             $q->where(function ($where) use ($needle) {
                 $where->where('request_url', 'like', $needle)
                     ->orWhere('correlation_id', 'like', $needle)
-                    ->orWhere('trigger_reference', 'like', $needle);
+                    ->orWhere('trigger_reference', 'like', $needle)
+                    ->orWhere('subject_id', 'like', $needle);
             });
         }
 
         return $q->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * Every delivery recorded about one object, newest first.
+     *
+     * `subject_id` is a string column: an integer id is compared as its
+     * string form, so `forSubject('payment', 77)` and `('payment', '77')`
+     * read the same rows.
+     *
+     * @return Collection<int, Delivery>
+     */
+    public function forSubject(string $type, int|string $id, int $limit = 50): Collection
+    {
+        return $this->subjectQuery($type, $id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function countForSubject(string $type, int|string $id): int
+    {
+        return $this->subjectQuery($type, $id)->count();
+    }
+
+    /**
+     * Distinct subject types present in the log, for the listing's filter.
+     *
+     * @return list<string>
+     */
+    public function subjectTypesInUse(): array
+    {
+        return Delivery::query()
+            ->whereNotNull('subject_type')
+            ->distinct()
+            ->orderBy('subject_type')
+            ->pluck('subject_type')
+            ->map(fn ($type) => (string) $type)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return Builder<Delivery>
+     */
+    protected function subjectQuery(string $type, int|string $id): Builder
+    {
+        return Delivery::query()
+            ->where('subject_type', $type)
+            ->where('subject_id', (string) $id);
     }
 
     /** @return Collection<int, Delivery> */
@@ -119,6 +170,12 @@ class DeliveryRepository
         }
         if (! empty($filters['to'])) {
             $q->where('created_at', '<=', $filters['to']);
+        }
+        if (! empty($filters['subject_type'])) {
+            $q->where('subject_type', (string) $filters['subject_type']);
+        }
+        if (isset($filters['subject_id']) && $filters['subject_id'] !== '') {
+            $q->where('subject_id', (string) $filters['subject_id']);
         }
 
         return $q;

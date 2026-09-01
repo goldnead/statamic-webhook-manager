@@ -103,6 +103,28 @@ return [
     'rules_edit_hint' => 'Pick a trigger, add optional conditions, then define the actions that run when it matches. This is how you connect an event to one or more webhook deliveries.',
     'templates_edit_hint' => 'Define a reusable payload body with template variables that get filled from the trigger payload at delivery time. Attach it to an outbound webhook so multiple webhooks can share one shape.',
 
+    // The object a delivery was about (subject_type / subject_id).
+    'subject' => 'Subject',
+    'subject_type_placeholder' => 'Subject type',
+    'subject_id_placeholder' => 'Subject ID',
+    'subject_apply' => 'Filter',
+    'subject_clear' => 'Clear filter',
+    'subject_filter_active' => 'Deliveries for :type :id',
+    'subject_deliveries_heading' => 'Webhook deliveries for this object',
+    'subject_deliveries_empty' => 'No webhook deliveries recorded for this object.',
+    'subject_deliveries_all' => 'All deliveries',
+
+    'subject_types' => [
+        'payment' => 'Payment',
+        'offer' => 'Offer',
+        'funnel' => 'Funnel',
+        'contact' => 'Contact',
+        'entry' => 'Entry',
+        'user' => 'User',
+        'asset' => 'Asset',
+        'form_submission' => 'Form submission',
+    ],
+
     'errors' => [
         'invalid_template' => 'Template syntax is invalid.',
         'invalid_url' => 'Destination URL is invalid.',

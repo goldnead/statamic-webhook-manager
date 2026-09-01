@@ -112,6 +112,28 @@ return [
     'rules_edit_hint' => 'Wähle einen Trigger, ergänze optionale Bedingungen und definiere die Aktionen, die bei einem Treffer laufen. So verbindest du ein Event mit einer oder mehreren Webhook-Auslieferungen.',
     'templates_edit_hint' => 'Definiere einen wiederverwendbaren Payload-Body mit Template-Variablen, die beim Versand aus dem Trigger-Payload gefüllt werden. Weise ihn einem ausgehenden Webhook zu, damit mehrere Webhooks dieselbe Struktur teilen.',
 
+    // Das Objekt, um das es bei einer Zustellung ging (subject_type / subject_id).
+    'subject' => 'Objekt',
+    'subject_type_placeholder' => 'Objekttyp',
+    'subject_id_placeholder' => 'Objekt-ID',
+    'subject_apply' => 'Filtern',
+    'subject_clear' => 'Filter aufheben',
+    'subject_filter_active' => 'Zustellungen zu :type :id',
+    'subject_deliveries_heading' => 'Webhook-Zustellungen zu diesem Objekt',
+    'subject_deliveries_empty' => 'Zu diesem Objekt wurden keine Webhook-Zustellungen aufgezeichnet.',
+    'subject_deliveries_all' => 'Alle Zustellungen',
+
+    'subject_types' => [
+        'payment' => 'Zahlung',
+        'offer' => 'Angebot',
+        'funnel' => 'Funnel',
+        'contact' => 'Kontakt',
+        'entry' => 'Eintrag',
+        'user' => 'Benutzer',
+        'asset' => 'Datei',
+        'form_submission' => 'Formulareingang',
+    ],
+
     'errors' => [
         'invalid_template' => 'Die Template-Syntax ist ungültig.',
         'invalid_url' => 'Die Ziel-URL ist ungültig.',

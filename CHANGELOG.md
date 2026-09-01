@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Neu: Zustellungen am Objekt
+
+Jede Zustellung weiß jetzt, um welches Objekt es ging. Zwei neue Spalten auf
+`webhook_deliveries`, `subject_type` und `subject_id`, werden beim Schreiben des Snapshots
+einmal aufgelöst: aus einem expliziten Paar im Payload, aus konfigurierten Schlüsseln wie
+`payment_id`, aus dem Trigger-Muster (`payments.*`) mit der Quellreferenz, oder zuletzt aus
+Quelltyp und Referenz des Events selbst. Die eingebauten Trigger für Einträge, Benutzer,
+Dateien und Formulareingänge bekommen damit ohne Konfiguration ein Objekt. Die Zuordnung
+steht in `config/webhook-manager.php` unter `subjects` und lässt sich um eigene Typen ergänzen.
+
+Lesbar ist das Protokoll von drei Seiten. Für PHP gibt es die Fassade `WebhookLog` mit
+`forSubject()`, `countForSubject()` und `subjectTypes()`. Im Control Panel hat die
+Zustellungsliste einen Objektfilter über der Tabelle, eine Spalte „Objekt“ und die
+Detailansicht zeigt das Objekt neben dem Trigger. Für andere Addons gibt es die global
+registrierte Vue-Komponente `webhook-deliveries-for-subject`, die über den neuen Endpunkt
+`deliveries/for-subject` liest; Berechtigung und Brand-Scope gelten dort unverändert.
+
+Die Migration ist wiederholbar: jeder Schritt prüft vorher, ob Spalte und Index schon da sind.
+
 ## 2.4.0 — 2026-08-29
 
 ### Neu: die Zahlen dieses Addons erscheinen in Insights

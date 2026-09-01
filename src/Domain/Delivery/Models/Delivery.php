@@ -21,6 +21,9 @@ use Illuminate\Support\Str;
  * @property int $outbound_webhook_id
  * @property ?int $rule_id
  * @property string $trigger_type
+ * @property ?string $trigger_reference
+ * @property ?string $subject_type
+ * @property ?string $subject_id
  * @property string $status
  * @property string $request_url
  * @property string $request_method

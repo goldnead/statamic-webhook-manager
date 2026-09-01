@@ -57,6 +57,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Subjects
+    |--------------------------------------------------------------------------
+    |
+    | Which object a delivery was about, so the delivery log can be read from
+    | the object's side (the "Webhook deliveries for this object" panel and
+    | the WebhookLog facade). Each key is a subject type; the resolver fills
+    | `subject_type` / `subject_id` on the delivery when the snapshot is
+    | written, first hit wins:
+    |
+    |   1. The payload carries `subject_type` and `subject_id` outright.
+    |   2. One of a type's `keys` is present in the payload (dotted paths
+    |      allowed, e.g. `payment.id`).
+    |   3. The trigger handle matches one of a type's `triggers` patterns and
+    |      the event has a source reference (else a top-level `id` in the
+    |      payload).
+    |   4. The event's own source type and reference — this is how the
+    |      built-in entry / user / asset / form_submission triggers get a
+    |      subject with no configuration at all.
+    |
+    | Add your own types here; the CP labels them through
+    | `webhook-manager::messages.subject_types.<type>` when a translation
+    | exists and falls back to the capitalised key otherwise.
+    */
+    'subjects' => [
+        'payment' => ['keys' => ['payment_id', 'payment.id'], 'triggers' => ['payment.*', 'payments.*']],
+        'offer' => ['keys' => ['offer_id', 'offer.id'], 'triggers' => ['offer.*', 'offers.*']],
+        'funnel' => ['keys' => ['funnel_id', 'funnel.id'], 'triggers' => ['funnel.*', 'funnels.*']],
+        'contact' => ['keys' => ['contact_id', 'contact.id'], 'triggers' => ['contact.*', 'contacts.*', 'leadhub.*']],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Storage Driver
     |--------------------------------------------------------------------------
     |

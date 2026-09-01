@@ -6,12 +6,15 @@ import {
     Header,
     Badge,
     Alert,
+    Button,
     DropdownItem,
     EmptyStateMenu,
     EmptyStateItem,
     DocsCallout,
+    Input,
     Listing,
     MiddleEllipsis,
+    Select,
 } from '@statamic/cms/ui';
 
 /**
@@ -29,10 +32,57 @@ const props = defineProps({
     initialColumns: { type: Array,  required: true },
     listingUrl:     { type: String, required: true },
     actionUrl:      { type: String, required: true },
+    subjectTypes:   { type: Array,  default: () => [] },
+    subjectFilter:  { type: Object, default: () => ({ type: null, id: null }) },
 });
 
+// ── Subject filter ──────────────────────────────────────────────────────────
+//
+// "Which deliveries were about payment 77?" is a question the generic
+// <Listing> filters cannot ask, so the two fields live above the listing and
+// are resolved server-side like every other filter. The active pair is also
+// handed to <Listing> as additional parameters, so its own AJAX refetches
+// (sort, page, search) keep the filter instead of silently widening it.
+const subjectType = ref(props.subjectFilter?.type ?? null);
+const subjectId = ref(props.subjectFilter?.id ?? '');
+
+const subjectFilterActive = computed(
+    () => !!(props.subjectFilter?.type || props.subjectFilter?.id),
+);
+
+const subjectParameters = computed(() => ({
+    subject_type: props.subjectFilter?.type || undefined,
+    subject_id: props.subjectFilter?.id || undefined,
+}));
+
+const activeSubjectLabel = computed(() => {
+    const type = props.subjectFilter?.type;
+    const match = props.subjectTypes.find((option) => option.value === type);
+
+    return __('webhook-manager::messages.subject_filter_active', {
+        type: match?.label ?? type ?? '',
+        id: props.subjectFilter?.id ? `#${props.subjectFilter.id}` : '',
+    }).trim();
+});
+
+function applySubjectFilter() {
+    const query = {};
+    if (subjectType.value) query.subject_type = subjectType.value;
+    if (String(subjectId.value ?? '').trim() !== '') query.subject_id = String(subjectId.value).trim();
+
+    router.get(props.listingUrl, query, { preserveScroll: true, replace: true });
+}
+
+function clearSubjectFilter() {
+    subjectType.value = null;
+    subjectId.value = '';
+    router.get(props.listingUrl);
+}
+
+// A filtered view with no hits is still the populated screen, not the
+// "nothing dispatched so far" onboarding state.
 const isEmpty = computed(
-    () => !props.deliveries?.data?.length && !props.deliveries?.meta?.total,
+    () => !props.deliveries?.data?.length && !props.deliveries?.meta?.total && !subjectFilterActive.value,
 );
 
 const reloadPage = () => router.reload({ only: ['deliveries'] });
@@ -141,11 +191,56 @@ function replay(row) {
                 </ul>
             </Alert>
 
+            <!-- Subject filter: which object the deliveries were about. -->
+            <div class="flex items-center gap-2 mb-4 flex-wrap" data-testid="subject-filter">
+                <!-- Both controls stretch to their parent, so the width sits
+                     on a wrapper — on the control itself it is overridden
+                     and the row breaks into three lines. -->
+                <div class="w-48 shrink-0">
+                    <Select
+                        v-model="subjectType"
+                        :options="subjectTypes"
+                        :placeholder="__('webhook-manager::messages.subject_type_placeholder')"
+                        clearable
+                        size="sm"
+                    />
+                </div>
+                <div class="w-48 shrink-0">
+                    <Input
+                        v-model="subjectId"
+                        :placeholder="__('webhook-manager::messages.subject_id_placeholder')"
+                        size="sm"
+                        input-class="font-mono"
+                        @keydown.enter="applySubjectFilter"
+                    />
+                </div>
+                <Button
+                    :text="__('webhook-manager::messages.subject_apply')"
+                    variant="primary"
+                    size="sm"
+                    @click="applySubjectFilter"
+                />
+                <Button
+                    v-if="subjectFilterActive"
+                    :text="__('webhook-manager::messages.subject_clear')"
+                    variant="ghost"
+                    size="sm"
+                    @click="clearSubjectFilter"
+                />
+                <Badge
+                    v-if="subjectFilterActive"
+                    color="blue"
+                    :text="activeSubjectLabel"
+                    data-testid="subject-filter-active"
+                />
+            </div>
+
             <Listing
                 :url="listingUrl"
                 :columns="initialColumns"
                 :action-url="actionUrl"
                 :data="deliveries"
+                :additional-parameters="subjectParameters"
                 preferences-prefix="webhook-manager.deliveries"
                 push-query
                 @updated="reloadPage"
@@ -153,6 +248,15 @@ function replay(row) {
                 <!-- status column -->
                 <template #cell-status="{ row }">
                     <Badge :color="statusColor(row.status)" :text="row.status" />
+                </template>
+
+                <!-- subject column — the object the delivery was about -->
+                <template #cell-subject="{ row }">
+                    <span v-if="row.subject_type && row.subject_id" class="inline-flex items-center gap-1.5 min-w-0">
+                        <Badge color="default" :text="row.subject_label || row.subject_type" />
+                        <span class="font-mono text-xs text-gray-600 dark:text-gray-400 truncate">{{ row.subject_id }}</span>
+                    </span>
+                    <span v-else class="text-gray-500 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- outbound / trigger name column — links to detail page -->

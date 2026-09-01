@@ -550,6 +550,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         });
 
         $this->app->singleton('webhook-manager', WebhookManager::class);
+        $this->app->singleton('webhook-manager.log', WebhookLog::class);
 
         $this->bindStorageRepositories();
     }

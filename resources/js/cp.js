@@ -23,8 +23,15 @@ import TemplatesEdit from './pages/templates/Edit.vue';
 import IntegrationsIndex from './pages/integrations/Index.vue';
 import IntegrationsSetup from './pages/integrations/Setup.vue';
 import InsightsIndex from './pages/insights/Index.vue';
+import SubjectDeliveries from './components/SubjectDeliveries.vue';
 
 Statamic.booting(() => {
+    // Global, so another addon's page can embed the delivery log for one of
+    // its objects (`<webhook-deliveries-for-subject>`) without importing
+    // anything from this package. Feature-detect it with
+    // `Statamic.$components.has('webhook-deliveries-for-subject')`.
+    Statamic.$components.register('webhook-deliveries-for-subject', SubjectDeliveries);
+
     Statamic.$inertia.register('webhook-manager::Overview/Index', OverviewIndex);
     Statamic.$inertia.register('webhook-manager::Outbound/Index', OutboundIndex);
     Statamic.$inertia.register('webhook-manager::Outbound/Edit', OutboundEdit);
