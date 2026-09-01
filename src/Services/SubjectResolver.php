@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Services;
 
 use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -50,7 +51,16 @@ class SubjectResolver
             return $this->make($payload['subject_type'], $payload['subject_id']);
         }
 
-        foreach ($this->subjects() as $type => $config) {
+        // The type whose trigger pattern matches the handle is asked first: a
+        // `leadhub.contact_updated` payload that also carries a `payment_id`
+        // is about the contact, and the payment id is context, not subject.
+        $subjects = $this->subjects();
+        $matching = array_filter(
+            $subjects,
+            fn (array $config) => $this->triggerMatches($config, $event->triggerHandle),
+        );
+
+        foreach ($matching + $subjects as $type => $config) {
             foreach ((array) ($config['keys'] ?? []) as $key) {
                 $value = Arr::get($payload, $key);
 
@@ -60,17 +70,11 @@ class SubjectResolver
             }
         }
 
-        foreach ($this->subjects() as $type => $config) {
-            foreach ((array) ($config['triggers'] ?? []) as $pattern) {
-                if (! Str::is($pattern, $event->triggerHandle)) {
-                    continue;
-                }
+        foreach ($matching as $type => $config) {
+            $reference = $event->sourceReference ?? ($payload['id'] ?? null);
 
-                $reference = $event->sourceReference ?? ($payload['id'] ?? null);
-
-                if ($this->isUsable($reference)) {
-                    return $this->make($type, $reference);
-                }
+            if ($this->isUsable($reference)) {
+                return $this->make($type, $reference);
             }
         }
 
@@ -89,15 +93,42 @@ class SubjectResolver
         return $this->subjects ??= (array) config('webhook-manager.subjects', []);
     }
 
-    /**
-     * @return array{type: string, id: string}
-     */
-    private function make(mixed $type, mixed $id): array
+    /** @param  array{keys?: list<string>, triggers?: list<string>}  $config */
+    private function triggerMatches(array $config, string $handle): bool
     {
-        return [
-            'type' => Str::limit(Str::lower(trim((string) $type)), self::MAX_LENGTH, ''),
-            'id' => Str::limit(trim((string) $id), self::MAX_LENGTH, ''),
-        ];
+        foreach ((array) ($config['triggers'] ?? []) as $pattern) {
+            if (Str::is($pattern, $handle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * A value that does not fit the column is not truncated to something that
+     * looks like an id but is not one: the subject stays empty and the log
+     * says why. Both columns are 64 characters wide.
+     *
+     * @return array{type: string, id: string}|null
+     */
+    private function make(mixed $type, mixed $id): ?array
+    {
+        $type = Str::lower(trim((string) $type));
+        $id = trim((string) $id);
+
+        if (mb_strlen($type) > self::MAX_LENGTH || mb_strlen($id) > self::MAX_LENGTH) {
+            if (app()->bound('log')) {
+                Log::notice('webhook-manager: subject left empty, type or id longer than '.self::MAX_LENGTH.' characters.', [
+                    'type' => Str::limit($type, 80),
+                    'id' => Str::limit($id, 80),
+                ]);
+            }
+
+            return null;
+        }
+
+        return ['type' => $type, 'id' => $id];
     }
 
     private function isUsable(mixed $value): bool

@@ -7,6 +7,7 @@ use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class DeliveryRepository
 {
@@ -75,14 +76,17 @@ class DeliveryRepository
      */
     public function subjectTypesInUse(): array
     {
-        return Delivery::query()
+        // A DISTINCT over the whole log on every listing request, for a list
+        // that changes when a new kind of object first fires a webhook. A
+        // minute of staleness costs nothing a user can see.
+        return Cache::remember('webhook-manager.subject-types', 60, fn () => Delivery::query()
             ->whereNotNull('subject_type')
             ->distinct()
             ->orderBy('subject_type')
             ->pluck('subject_type')
             ->map(fn ($type) => (string) $type)
             ->values()
-            ->all();
+            ->all());
     }
 
     /**

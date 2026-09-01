@@ -97,17 +97,43 @@ class SubjectResolverTest extends TestCase
         $this->assertNull($this->resolver->resolve($event));
     }
 
-    public function test_type_and_id_are_normalised_and_bounded(): void
+    public function test_type_is_normalised(): void
     {
         $event = $this->event('custom.event', 'event', null, [
             'subject_type' => '  PayMent ',
+            'subject_id' => ' 77 ',
+        ]);
+
+        $this->assertSame(['type' => 'payment', 'id' => '77'], $this->resolver->resolve($event));
+    }
+
+    public function test_a_value_that_does_not_fit_the_column_leaves_the_subject_empty(): void
+    {
+        // Not truncated: 64 characters of a longer id look like an id and
+        // are not one. Empty is honest; the notice in the log says why.
+        $event = $this->event('custom.event', 'event', null, [
+            'subject_type' => 'payment',
             'subject_id' => str_repeat('x', 80),
         ]);
 
-        $subject = $this->resolver->resolve($event);
+        $this->assertNull($this->resolver->resolve($event));
+    }
 
-        $this->assertSame('payment', $subject['type']);
-        $this->assertSame(64, strlen($subject['id']));
+    public function test_the_type_whose_trigger_matches_is_asked_before_the_others(): void
+    {
+        $resolver = new SubjectResolver([
+            'payment' => ['keys' => ['payment_id', 'payment.id'], 'triggers' => ['payment.*', 'payments.*']],
+            'contact' => ['keys' => ['contact_id', 'contact.id'], 'triggers' => ['contact.*', 'contacts.*', 'leadhub.*']],
+        ]);
+
+        // A contact event that mentions the payment it relates to is still
+        // about the contact. Config order alone would have said "payment".
+        $event = $this->event('leadhub.contact_updated', 'event', null, [
+            'contact' => ['id' => 5],
+            'payment_id' => 77,
+        ]);
+
+        $this->assertSame(['type' => 'contact', 'id' => '5'], $resolver->resolve($event));
     }
 
     public function test_empty_and_non_scalar_values_are_skipped(): void
