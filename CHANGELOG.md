@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.6.0 — 2026-09-03
+
+### Geändert: `PATCH /cp/webhook-manager/settings` antwortet mit einem Redirect
+
+Vorher kam JSON zurück. Mit dem Redirect bekommt das Speichern Fortschrittsbalken, Toast und
+Zurück-Knopf, und die Diagnose-Ansicht zeigt nicht mehr den Stand vor dem Speichern. Einziger
+bekannter Konsument ist die Settings-Seite selbst — wer die Route extern gescriptet hat und JSON
+erwartet, merkt es.
+
+### Behoben: vier Dinge, die rendern und nichts tun
+
+- **`TabTrigger :label` — das Prop heißt `text`/`name`.** Die Tab-Leiste blieb leer, **Body und
+  Preview waren dadurch unerreichbar.** Vue reicht ein unbekanntes Prop als HTML-Attribut durch,
+  also warnt nichts.
+- **`Alert variant="danger"` und achtmal `variant="info"`.** `Alert` kennt nur
+  `default`/`warning`/`error`/`success`; Fehlschläge und Hinweise erschienen neutral.
+- **`:message="…"` statt `:text="…"` an zwei Bannern.** Eine geglückte und eine gescheiterte
+  Vorschau sahen identisch aus, nämlich nach nichts.
+- **`CommandPaletteItem @click` statt `:action`, `Panel collapsible`, `DropdownItem danger`** —
+  alle drei sind keine Props.
+
+Dazu: vier rote Kopfknöpfe ins `…`-Menü, zehn Panels bekamen ihre `Card`, und die Inbound-Liste
+zeigt Klartext statt `bearer` und `static_header` (neuer Test).
+
+Sieben `axios`-Aufrufe bleiben absichtlich: sie holen JSON für eine Anzeige auf derselben Seite
+und wechseln sie nicht.
+
 ## 2.5.0 — 2026-09-02
 
 ### Neu: Zustellungen am Objekt
