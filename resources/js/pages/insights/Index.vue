@@ -3,16 +3,26 @@
  * Insights / observability dashboard.
  *
  * Layout follows Statamic core's dashboard idiom — native Header, compact
- * StatTile cards in an auto-fit container grid, and Panels for each chart.
+ * StatTile cards in an auto-fit container grid, and a Panel per chart.
+ *
+ * Each chart sits in a `Card` inside its Panel, not on the Panel itself. The
+ * Panel is the grey frame and carries the heading and subheading only; the
+ * padding a chart needs lives on `Card` (ui-vocabulary §19). The charts used
+ * to be a `<div class="p-6">` straight on the grey, which is the loudest
+ * "third-party addon" signal after a hand-rolled button.
+ *
  * Charts are self-contained (responsive HTML bars + a single inline-SVG
  * trend line) so the addon ships no charting dependency and inherits the
- * CP's Tailwind tokens for a fully native look in light and dark mode.
+ * CP's Tailwind tokens for a fully native look in light and dark mode. The
+ * inline SVG is a drawn chart, not an icon — §16 is about `icon` props
+ * wanting a name from the icon set, which is a different thing.
  */
 import { computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { router } from '@statamic/cms/inertia';
 import {
     Header,
+    Card,
     Panel,
     Badge,
     Button,
@@ -152,7 +162,7 @@ function shortDate(iso) {
             :subheading="__('webhook-manager::messages.insights_volume_sub')"
             class="mt-6"
         >
-            <div class="p-6">
+            <Card>
                 <div class="flex items-end gap-px h-40" role="img" :aria-label="__('webhook-manager::messages.insights_volume_heading')">
                     <div
                         v-for="(d, i) in series"
@@ -179,16 +189,16 @@ function shortDate(iso) {
                     <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-green-500" /> {{ __('Success') }}</span>
                     <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-red-400 dark:bg-red-500" /> {{ __('Failed') }}</span>
                 </div>
-            </div>
+            </Card>
         </Panel>
 
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6 mt-6">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6 mt-6">
             <!-- Success rate trend -->
             <Panel
                 :heading="__('webhook-manager::messages.insights_success_heading')"
                 :subheading="__('webhook-manager::messages.insights_success_sub')"
             >
-                <div class="p-6">
+                <Card>
                     <div class="h-40 w-full">
                         <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-full w-full overflow-visible">
                             <!-- gridlines at 0/50/100% -->
@@ -203,7 +213,7 @@ function shortDate(iso) {
                     <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                         <span>0%</span><span>100%</span>
                     </div>
-                </div>
+                </Card>
             </Panel>
 
             <!-- Latency -->
@@ -211,7 +221,7 @@ function shortDate(iso) {
                 :heading="__('webhook-manager::messages.insights_latency_heading')"
                 :subheading="__('webhook-manager::messages.insights_latency_sub')"
             >
-                <div class="p-6">
+                <Card>
                     <div v-if="hasLatency" class="space-y-3">
                         <div v-for="row in latencyRows" :key="row.label" class="flex items-center gap-3">
                             <span class="w-10 text-xs font-medium text-gray-500 dark:text-gray-400 tabular-nums">{{ row.label }}</span>
@@ -222,17 +232,17 @@ function shortDate(iso) {
                         </div>
                     </div>
                     <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_latency') }}</p>
-                </div>
+                </Card>
             </Panel>
         </div>
 
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6 mt-6">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6 mt-6">
             <!-- Error breakdown -->
             <Panel
                 :heading="__('webhook-manager::messages.insights_errors_heading')"
                 :subheading="__('webhook-manager::messages.insights_errors_sub')"
             >
-                <div class="p-6">
+                <Card>
                     <div v-if="errors.length" class="space-y-3">
                         <div v-for="e in errors" :key="e.type" class="flex items-center gap-3">
                             <span class="w-28 text-xs text-gray-600 dark:text-gray-300 truncate" :title="errorLabel(e.type)">{{ errorLabel(e.type) }}</span>
@@ -243,7 +253,7 @@ function shortDate(iso) {
                         </div>
                     </div>
                     <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
-                </div>
+                </Card>
             </Panel>
 
             <!-- Top failing endpoints -->
@@ -251,7 +261,7 @@ function shortDate(iso) {
                 :heading="__('webhook-manager::messages.insights_top_failing_heading')"
                 :subheading="__('webhook-manager::messages.insights_top_failing_sub')"
             >
-                <div class="p-6">
+                <Card>
                     <ul v-if="topFailing.length" class="divide-y divide-gray-100 dark:divide-gray-800">
                         <li v-for="(row, i) in topFailing" :key="i" class="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
                             <div class="flex-1 min-w-0">
@@ -264,15 +274,17 @@ function shortDate(iso) {
                         </li>
                     </ul>
                     <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
-                </div>
+                </Card>
             </Panel>
         </div>
     </template>
 
     <!-- Empty state -->
     <Panel v-else class="mt-6">
-        <p class="text-sm text-gray-500 dark:text-gray-400 p-10 text-center">
-            {{ __('webhook-manager::messages.insights_empty') }}
-        </p>
+        <Card>
+            <p class="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
+                {{ __('webhook-manager::messages.insights_empty') }}
+            </p>
+        </Card>
     </Panel>
 </template>

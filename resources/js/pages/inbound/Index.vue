@@ -32,7 +32,6 @@ const props = defineProps({
     listingUrl: { type: String, required: true },
     createUrl: { type: String, required: true },
     canCreate: { type: Boolean, default: false },
-    actionOptions: { type: Object, default: () => ({}) },
 });
 
 const isEmpty = computed(
@@ -181,20 +180,29 @@ const actionErrors = ref({});
                 </div>
             </template>
 
-            <!-- Auth type column -->
+            <!-- Auth type column.
+                 A square chip, not a status: it names which of several auth
+                 schemes an endpoint uses, the way a tag does. The status of an
+                 endpoint is the Status column, and that badge is a pill with a
+                 semantic colour and no `size` (ui-vocabulary §22).
+
+                 The label comes from the server. This used to print
+                 `row.auth_type` — `static_header`, `bearer`: the handles the
+                 auth registry keys itself by, shown to somebody who never sees
+                 that registry (§23). -->
             <template #cell-auth_type="{ row }">
                 <Badge
                     :color="authColor(row.auth_type)"
-                    :text="row.auth_type || 'none'"
+                    :text="row.auth_type_label"
                     size="sm"
                 />
             </template>
 
-            <!-- Action type column -->
+            <!-- Action type column — same shape, same reasoning. -->
             <template #cell-action_type="{ row }">
                 <Badge
                     :color="actionColor(row.action_type)"
-                    :text="actionOptions[row.action_type] || row.action_type || 'noop'"
+                    :text="row.action_type_label"
                     size="sm"
                 />
             </template>

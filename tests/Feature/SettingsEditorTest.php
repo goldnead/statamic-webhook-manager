@@ -31,8 +31,16 @@ class SettingsEditorTest extends CpTestCase
 
     /**
      * The form always submits every field, so the rules are `present` and a
-     * partial payload is a 422 rather than a silent partial write. Tests that
-     * care about one key say so, and this fills in the rest from the config.
+     * partial payload is a rejection rather than a silent partial write. Tests
+     * that care about one key say so, and this fills in the rest from config.
+     *
+     * Sent as an Inertia visit, because that is what the screen sends. The
+     * endpoint answers a successful write with `back()`, so a saved settings
+     * form is a 302 and a rejected one is a 302 back with an error bag — not
+     * a 200 with a JSON body and not a 422. That is the whole point of the
+     * change: the CP gets its progress bar, its toast and its dirty guard, and
+     * the page is re-rendered so every prop on it (not only the form) reflects
+     * the write.
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -46,15 +54,26 @@ class SettingsEditorTest extends CpTestCase
 
         $request = $as ? $this->actingAs($as) : $this;
 
-        return $request->patchJson(
-            cp_route('webhook-manager.settings.update'),
-            ['settings' => array_replace($settings, $overrides)],
-        );
+        return $request
+            ->withHeaders($this->inertiaHeaders())
+            ->patch(
+                cp_route('webhook-manager.settings.update'),
+                ['settings' => array_replace($settings, $overrides)],
+            );
+    }
+
+    /** The props the settings page hands the form on a fresh render. */
+    protected function settingsProps(): array
+    {
+        return $this->withHeaders($this->inertiaHeaders())
+            ->get(cp_route('webhook-manager.settings'))
+            ->assertOk()
+            ->json('props');
     }
 
     public function test_it_stores_a_changed_setting_and_applies_it_to_the_config(): void
     {
-        $this->patchSettings(['retry.max_attempts' => 5])->assertOk();
+        $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
 
         $this->assertSame(5, WebhookSetting::where('key', 'retry.max_attempts')->first()?->value);
         $this->assertSame(5, config('webhook-manager.retry.max_attempts'));
@@ -66,19 +85,19 @@ class SettingsEditorTest extends CpTestCase
         // arithmetic and into the comparison that decides whether a row may be
         // deleted. A `"5"` survives until the first strict comparison and then
         // fails somewhere else entirely.
-        $this->patchSettings(['retry.max_attempts' => '5'])->assertOk();
+        $this->patchSettings(['retry.max_attempts' => '5'])->assertRedirect();
 
         $this->assertSame(5, config('webhook-manager.retry.max_attempts'));
     }
 
     public function test_it_deletes_the_override_when_a_value_goes_back_to_the_default(): void
     {
-        $this->patchSettings(['retry.max_attempts' => 5])->assertOk();
+        $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
         $this->assertSame(1, WebhookSetting::count());
 
         // Not "stores 3" — stores nothing. A row pinning a value to what it
         // already was would freeze that default across package upgrades.
-        $this->patchSettings(['retry.max_attempts' => 3])->assertOk();
+        $this->patchSettings(['retry.max_attempts' => 3])->assertRedirect();
 
         $this->assertSame(0, WebhookSetting::count());
 
@@ -89,22 +108,50 @@ class SettingsEditorTest extends CpTestCase
         $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
     }
 
-    public function test_it_answers_with_the_settings_as_they_now_stand(): void
+    public function test_the_page_it_redirects_to_shows_the_settings_as_they_now_stand(): void
     {
         // Keyed by the dotted path, flat — the same shape the form indexes by,
         // so the screen can take the answer without knowing the config nesting.
-        $data = $this->patchSettings([
+        // Read off the re-rendered page rather than out of a JSON body: the
+        // point of redirecting back is that the whole page is rebuilt, not
+        // just the form.
+        $this->patchSettings([
             'retry.max_attempts' => '5',
             'logging.mask_headers' => ['authorization', ' cookie ', ''],
-        ])->assertOk()->json('data');
+        ])->assertRedirect();
 
-        $this->assertSame(5, $data['retry.max_attempts']);
-        $this->assertSame(['authorization', 'cookie'], $data['logging.mask_headers']);
+        $values = $this->settingsProps()['values'];
+
+        $this->assertSame(5, $values['retry.max_attempts']);
+        $this->assertSame(['authorization', 'cookie'], $values['logging.mask_headers']);
+    }
+
+    public function test_it_says_so_when_the_settings_were_saved(): void
+    {
+        // The screen dropped its own success banner when saving moved onto the
+        // Inertia router: the confirmation is now core's flash toast, which
+        // only appears if the controller actually flashes one.
+        $this->patchSettings(['retry.max_attempts' => 5])
+            ->assertRedirect()
+            ->assertSessionHas('success', __('webhook-manager::settings.saved'));
+    }
+
+    public function test_a_rejected_field_comes_back_in_the_error_bag(): void
+    {
+        // An Inertia visit carries validation failures in the session error
+        // bag, keyed the same way the form indexes its controls, and `useForm`
+        // / `router`'s `onError` hands them straight to the field. A 422 with
+        // a JSON body would arrive as an unhandled rejection instead.
+        $this->patchSettings(['retry.max_attempts' => 0])
+            ->assertRedirect()
+            ->assertSessionHasErrors('settings.retry.max_attempts');
+
+        $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
     }
 
     public function test_it_saves_a_list_setting_as_a_trimmed_compacted_list(): void
     {
-        $this->patchSettings(['logging.mask_payload_keys' => ['password', ' iban ', '']])->assertOk();
+        $this->patchSettings(['logging.mask_payload_keys' => ['password', ' iban ', '']])->assertRedirect();
 
         // The control is a textarea of lines, and a trailing newline must not
         // become a masking rule for the empty key.
@@ -115,30 +162,30 @@ class SettingsEditorTest extends CpTestCase
     {
         // They are compared against a real response status, and `"429"` never
         // equals `429`.
-        $this->patchSettings(['retry.retry_on_status' => ['429', '503']])->assertOk();
+        $this->patchSettings(['retry.retry_on_status' => ['429', '503']])->assertRedirect();
 
         $this->assertSame([429, 503], config('webhook-manager.retry.retry_on_status'));
     }
 
     public function test_it_refuses_zero_delivery_attempts(): void
     {
-        $response = $this->patchSettings(['retry.max_attempts' => 0])->assertStatus(422);
+        $this->patchSettings(['retry.max_attempts' => 0])
+            ->assertSessionHasErrors('settings.retry.max_attempts');
 
-        $this->assertArrayHasKey('settings.retry.max_attempts', $response->json('errors'));
         $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
     }
 
     public function test_it_refuses_a_strategy_that_is_not_one_of_the_offered_ones(): void
     {
-        $response = $this->patchSettings(['retry.strategy' => 'whenever'])->assertStatus(422);
+        $this->patchSettings(['retry.strategy' => 'whenever'])
+            ->assertSessionHasErrors('settings.retry.strategy');
 
-        $this->assertArrayHasKey('settings.retry.strategy', $response->json('errors'));
         $this->assertSame('exponential', config('webhook-manager.retry.strategy'));
     }
 
     public function test_it_allows_a_rate_limit_of_zero_because_that_means_no_throttling(): void
     {
-        $this->patchSettings(['inbound.rate_limit_per_minute' => 0])->assertOk();
+        $this->patchSettings(['inbound.rate_limit_per_minute' => 0])->assertRedirect();
 
         $this->assertSame(0, config('webhook-manager.inbound.rate_limit_per_minute'));
     }
@@ -149,7 +196,7 @@ class SettingsEditorTest extends CpTestCase
         // switched through the migrator, not through this form. A row for it
         // must not be creatable through this endpoint, and must not reach
         // `config()` even if one somehow existed.
-        $this->patchSettings(['storage.driver' => 'flat'])->assertOk();
+        $this->patchSettings(['storage.driver' => 'flat'])->assertRedirect();
 
         $this->assertFalse(WebhookSetting::where('key', 'storage.driver')->exists());
         $this->assertSame('eloquent', config('webhook-manager.storage.driver'));
@@ -168,12 +215,9 @@ class SettingsEditorTest extends CpTestCase
 
     public function test_it_hands_the_page_the_form_definition_and_the_current_values(): void
     {
-        $this->patchSettings(['retry.max_attempts' => 5])->assertOk();
+        $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
 
-        $props = $this->withHeaders($this->inertiaHeaders())
-            ->get(cp_route('webhook-manager.settings'))
-            ->assertOk()
-            ->json('props');
+        $props = $this->settingsProps();
 
         $this->assertNotEmpty($props['groups']);
         $this->assertSame(5, $props['values']['retry.max_attempts']);

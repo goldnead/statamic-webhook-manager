@@ -8,6 +8,9 @@ import {
     Header,
     Button,
     Badge,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
     Alert,
     Field,
     Input,
@@ -19,7 +22,6 @@ import {
     TabTrigger,
     TabContent,
     Panel,
-    CardPanel,
     ConfirmationModal,
     CommandPaletteItem,
 } from '@statamic/cms/ui';
@@ -184,25 +186,53 @@ function copyToClipboard(text) {
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
         <!-- ── Page header ─────────────────────────────────────────── -->
+        <!--
+            Header order is core's: the `…` dropdown first, the primary action
+            last (ui-vocabulary §24). `Dropdown` renders its own dots trigger,
+            so there is no `#trigger` here.
+
+            Delete used to be a `Button variant="danger"` in a footer bar below
+            the tabs. Core uses `danger` in exactly one place — the confirm
+            button inside a modal — and a destructive page action is a
+            `DropdownItem variant="destructive"`. The footer also carried a
+            second Save, duplicating the one in the header; it is gone with it.
+        -->
         <Header :title="pageTitle" icon="layout-grid">
+            <Dropdown v-if="canDelete && deleteUrl">
+                <DropdownMenu>
+                    <DropdownItem
+                        variant="destructive"
+                        icon="trash"
+                        :text="__('Delete Template')"
+                        @click="showDelete = true"
+                    />
+                </DropdownMenu>
+            </Dropdown>
             <Button
                 :text="saveLabel"
                 variant="primary"
                 :loading="form.processing"
                 @click="save"
             />
+            <!-- `action`, not `@click`: CommandPaletteItem takes a function
+                 prop and logs "You must provide a `url` string or `action`
+                 function" for anything else, so this entry did nothing when
+                 picked from the palette. `danger` is not one of its props. -->
             <CommandPaletteItem
                 v-if="canDelete && deleteUrl"
                 category="Actions"
                 :text="__('Delete Template')"
                 icon="trash"
-                danger
-                @click="showDelete = true"
+                :action="() => (showDelete = true)"
             />
         </Header>
 
-        <!-- ── Contextual hint ────────────────────────────────────── -->
-        <Alert variant="info" class="mb-6">
+        <!-- ── Contextual hint ──────────────────────────────────────
+             No `variant`: `info` is not one of Alert's four
+             (default/warning/error/success) and fell through to `default`
+             anyway. What this says — here is what a template is for — is
+             exactly `default`. -->
+        <Alert class="mb-6">
             {{ __('webhook-manager::messages.templates_edit_hint') }}
         </Alert>
 
@@ -223,20 +253,21 @@ function copyToClipboard(text) {
         <!-- ── Tabs ───────────────────────────────────────────────── -->
         <Tabs v-model="activeTab">
             <TabList>
-                <TabTrigger
-                    value="general"
-                    :label="__('General')"
-                    :has-error="tabsWithErrors.has('general')"
-                />
-                <TabTrigger
-                    value="body"
-                    :label="__('Body')"
-                    :has-error="tabsWithErrors.has('body')"
-                />
-                <TabTrigger
-                    value="preview"
-                    :label="__('Preview')"
-                />
+                <!-- `label` and `has-error` are not TabTrigger props (it reads
+                     `text`/`name` and its default slot), so both landed in
+                     $attrs and every trigger on this page rendered with no
+                     text at all — a blank strip where the tab bar belongs, and
+                     no way to reach Body or Preview. The other three edit
+                     pages use the default slot; this one now matches them. -->
+                <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
+                    {{ __('General') }}
+                </TabTrigger>
+                <TabTrigger value="body" :class="{ 'text-red-500': tabsWithErrors.has('body') }">
+                    {{ __('Body') }}
+                </TabTrigger>
+                <TabTrigger value="preview">
+                    {{ __('Preview') }}
+                </TabTrigger>
             </TabList>
 
             <!-- ── General tab ─────────────────────────────────────── -->
@@ -284,7 +315,7 @@ function copyToClipboard(text) {
             <!-- ── Body tab ────────────────────────────────────────── -->
             <TabContent value="body">
                 <Panel>
-                    <div class="p-6 space-y-4">
+                    <Card inset class="p-6 space-y-4">
                         <Field inline
                             :label="__('Body')"
                             :error="form.errors.body"
@@ -298,44 +329,50 @@ function copyToClipboard(text) {
                                 :has-error="!!form.errors.body"
                             />
                         </Field>
+                    </Card>
+                </Panel>
 
-                        <!-- Available namespaces as a collapsible hint panel -->
-                        <Panel
-                            v-if="namespaces.length"
-                            :heading="__('Available variables')"
-                            collapsible
-                            :collapsed="true"
-                        >
-                            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <li
-                                    v-for="ns in namespaces"
-                                    :key="ns"
-                                    class="flex items-center justify-between px-4 py-2 text-sm font-mono"
-                                >
-                                    <span>{{ ns }}</span>
-                                    <Button
-                                        size="xs"
-                                        variant="default"
-                                        :text="__('Copy')"
-                                        icon="duplicate"
-                                        @click="copyToClipboard('{{ ' + ns + ' }}')"
-                                    />
-                                </li>
-                            </ul>
-                        </Panel>
-                    </div>
+                <!--
+                    The variable list is its own Panel, a sibling rather than a
+                    Panel nested inside the body Panel's padding — grey inside
+                    grey is not a shape core uses. `collapsible`/`collapsed`
+                    are gone with it: Panel has no such props (heading,
+                    subheading, icon), so they landed in $attrs and the panel
+                    was never collapsed in the first place.
+                -->
+                <Panel
+                    v-if="namespaces.length"
+                    :heading="__('Available variables')"
+                    class="mt-4"
+                >
+                    <Card>
+                        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <li
+                                v-for="ns in namespaces"
+                                :key="ns"
+                                class="flex items-center justify-between py-2 text-sm font-mono first:pt-0 last:pb-0"
+                            >
+                                <span>{{ ns }}</span>
+                                <Button
+                                    size="xs"
+                                    variant="default"
+                                    :text="__('Copy')"
+                                    icon="duplicate"
+                                    @click="copyToClipboard('{{ ' + ns + ' }}')"
+                                />
+                            </li>
+                        </ul>
+                    </Card>
                 </Panel>
             </TabContent>
 
             <!-- ── Preview tab ─────────────────────────────────────── -->
             <TabContent value="preview">
                 <Panel>
-                    <div class="p-6 space-y-6">
-                        <Card inset class="p-6 space-y-6">
-                            <Field inline :label="__('Source Type')">
-                                <Select v-model="sourceType" :options="sourceTypeOptions" />
-                            </Field>
-                        </Card>
+                    <Card inset class="p-6 space-y-6">
+                        <Field inline :label="__('Source Type')">
+                            <Select v-model="sourceType" :options="sourceTypeOptions" />
+                        </Field>
 
                         <Field inline
                             :label="__('Sample Payload')"
@@ -357,51 +394,41 @@ function copyToClipboard(text) {
                                 @click="runPreview"
                             />
                         </div>
-
-                        <!-- Result panel -->
-                        <template v-if="previewResult !== null">
-                            <Panel :heading="__('Rendered output')">
-                                <CodeEditor
-                                    :model-value="previewResult.rendered || ''"
-                                    :mode="editorMode"
-                                    read-only
-                                    class="min-h-32"
-                                />
-                            </Panel>
-
-                            <Panel
-                                v-if="previewResult.issues?.length"
-                                :heading="__('Issues')"
-                            >
-                                <ul class="p-4 space-y-1">
-                                    <li
-                                        v-for="issue in previewResult.issues"
-                                        :key="issue"
-                                        class="text-sm text-red-600 dark:text-red-400"
-                                    >{{ issue }}</li>
-                                </ul>
-                            </Panel>
-                        </template>
-                    </div>
+                    </Card>
                 </Panel>
+
+                <!-- Result panels, siblings of the form panel rather than
+                     Panels nested inside its padding. -->
+                <template v-if="previewResult !== null">
+                    <Panel :heading="__('Rendered output')" class="mt-4">
+                        <Card>
+                            <CodeEditor
+                                :model-value="previewResult.rendered || ''"
+                                :mode="editorMode"
+                                read-only
+                                class="min-h-32"
+                            />
+                        </Card>
+                    </Panel>
+
+                    <Panel
+                        v-if="previewResult.issues?.length"
+                        :heading="__('Issues')"
+                        class="mt-4"
+                    >
+                        <Card>
+                            <ul class="space-y-1">
+                                <li
+                                    v-for="issue in previewResult.issues"
+                                    :key="issue"
+                                    class="text-sm text-red-600 dark:text-red-400"
+                                >{{ issue }}</li>
+                            </ul>
+                        </Card>
+                    </Panel>
+                </template>
             </TabContent>
         </Tabs>
-
-        <!-- ── Footer actions ─────────────────────────────────────── -->
-        <div class="mt-6 flex items-center gap-3">
-            <Button
-                v-if="canDelete && deleteUrl"
-                :text="__('Delete')"
-                variant="danger"
-                @click="showDelete = true"
-            />
-            <Button
-                :text="saveLabel"
-                variant="primary"
-                :loading="form.processing"
-                @click="save"
-            />
-        </div>
 
     </div>
 

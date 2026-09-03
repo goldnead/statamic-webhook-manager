@@ -117,7 +117,10 @@ const actionErrors = ref({});
             </CommandPaletteItem>
         </Header>
 
-        <Alert v-if="!introDismissed" variant="info" class="mb-6">
+        <!-- No `variant`: `info` is not one of Alert's four
+             (default/warning/error/success). A dismissible intro that explains
+             what rules are is `default`. -->
+        <Alert v-if="!introDismissed" class="mb-6">
             <div class="flex items-start justify-between gap-3">
                 <span>{{ __('webhook-manager::messages.rules_help') }}</span>
                 <button

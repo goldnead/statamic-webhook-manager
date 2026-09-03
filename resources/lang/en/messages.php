@@ -32,6 +32,12 @@ return [
     'storage_already_active' => ':driver storage is already active.',
     'storage_counts_line' => ':outbound outbound · :inbound inbound · :rules rules · :templates templates',
 
+    // Shown where a stored handle has no registered label — a scheme or
+    // handler removed by an upgrade, or a row written by a newer version.
+    // Never the handle itself: `static_header` at a reader is the schema's
+    // vocabulary and cannot be told apart from a real label.
+    'unknown_option' => 'Unknown',
+
     // Insights / observability screen
     'insights_title' => 'Insights',
     'insights_subtitle' => 'Delivery volume, success rate, latency and failures across your outbound webhooks.',

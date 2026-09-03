@@ -8,6 +8,9 @@ import {
     Header,
     Button,
     Badge,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
     Alert,
     Field,
     Input,
@@ -242,6 +245,23 @@ const authInstructions = computed(() => {
                 />
             </template>
 
+            <!-- Header order is core's: the `…` dropdown first, the primary
+                 action last (ui-vocabulary §24). Delete used to be a
+                 `Button variant="danger"` in a footer bar under the tabs;
+                 core uses `danger` only for the confirm button inside a
+                 modal, and a destructive page action is a `DropdownItem
+                 variant="destructive"`. The footer's second Save duplicated
+                 the header's and went with it. -->
+            <Dropdown v-if="!isNew && canDelete && deleteUrl">
+                <DropdownMenu>
+                    <DropdownItem
+                        variant="destructive"
+                        icon="trash"
+                        :text="__('Delete webhook')"
+                        @click="showDelete = true"
+                    />
+                </DropdownMenu>
+            </Dropdown>
             <Button
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
@@ -447,8 +467,16 @@ const authInstructions = computed(() => {
                         </Field>
 
                         <div v-if="webhook.auth_configured" class="md:col-span-2">
+                            <!-- `warning`, not the `info` that was here — and
+                                 `info` is not an Alert variant at all
+                                 (default/warning/error/success), so this
+                                 rendered neutral. It is the one banner on this
+                                 page that guards against a destructive
+                                 mistake: the field below already holds an
+                                 encrypted secret, and anything typed into it
+                                 replaces that secret for good. -->
                             <Alert
-                                variant="info"
+                                variant="warning"
                                 :heading="__('Secret already configured')"
                                 :text="__('Leave the field below empty to keep the existing encrypted secret.')"
                             />
@@ -566,16 +594,6 @@ const authInstructions = computed(() => {
                 </Panel>
             </TabContent>
         </Tabs>
-
-        <div v-if="!isNew && canDelete" class="mt-8 flex justify-between items-center">
-            <Button variant="danger" :text="__('Delete webhook')" @click="showDelete = true" />
-            <Button
-                variant="primary"
-                :loading="form.processing"
-                :text="saveLabel"
-                @click="save"
-            />
-        </div>
 
         <ConfirmationModal
             v-if="!isNew && deleteUrl"

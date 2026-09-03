@@ -9,12 +9,15 @@
  * screen was a second description of `config/webhook-manager.php` that could
  * disagree with it and never say so.
  *
- * Saving writes only what changed and answers with the settings as they now
- * stand, which is not always what was typed: a number typed into a text box
+ * Saving is an Inertia visit (`router.patch`), so it brings the progress bar,
+ * the flash toast, the unsaved-changes guard and a working back button. The
+ * server redirects back and this page is re-rendered from scratch, which is
+ * what keeps the screen and the installation from drifting: the values that
+ * come back are not always what was typed — a number typed into a text box
  * comes back a number, a list comes back without the blank line the textarea
  * left behind, and a value set back to the shipped default comes back as that
- * default with the stored override deleted. The form takes the answer, so the
- * screen and the installation cannot drift.
+ * default with the stored override deleted — and the diagnostics panel's
+ * resolved config tree is rebuilt in the same breath.
  *
  * Two panels are deliberately still read-only. `environment` holds what the
  * deployment owns (env vars, and the inbound prefix that route caching freezes)
@@ -23,8 +26,7 @@
  * configuration first, which is what the button below does.
  */
 import { ref, computed, watch } from 'vue';
-import axios from 'axios';
-import { Head, useForm } from '@statamic/cms/inertia';
+import { Head, router, useForm } from '@statamic/cms/inertia';
 import {
     Header,
     Alert,
@@ -109,7 +111,6 @@ function fromForm(form) {
 const form = ref(toForm(props.values));
 const saved = ref(JSON.stringify(form.value));
 const saving = ref(false);
-const savedNotice = ref(false);
 const fieldErrors = ref({});
 
 const dirty = computed(() => JSON.stringify(form.value) !== saved.value);
@@ -142,29 +143,38 @@ function errorFor(field) {
     return Array.isArray(messages) ? messages[0] : messages;
 }
 
-async function save() {
+/**
+ * Save through the Inertia router, not through axios.
+ *
+ * An axios call here was a page mutation dressed up as an API call: no
+ * progress bar, no flash toast, no unsaved-changes guard, and — the part that
+ * actually misled people — no refresh of anything but the form. `rawConfig`,
+ * the resolved config tree in the diagnostics panel below, went on printing
+ * the state from before the save. `router.patch` visits, the server redirects
+ * back, and every prop on the page is rebuilt; the watcher on `values` then
+ * reloads the form from the answer, so the screen still shows what the
+ * installation holds rather than what was typed.
+ */
+function save() {
     if (saving.value) return;
 
     saving.value = true;
-    savedNotice.value = false;
     fieldErrors.value = {};
 
-    try {
-        const { data } = await axios.patch(props.updateUrl, { settings: fromForm(form.value) });
-        form.value = toForm(data.data);
-        saved.value = JSON.stringify(form.value);
-        savedNotice.value = true;
-    } catch (e) {
-        fieldErrors.value = e?.response?.data?.errors ?? {};
-        // A rejection with no error bag (500, network) still has to say
-        // something; an empty banner is how a failed save looks like a
-        // successful one.
-        if (!Object.keys(fieldErrors.value).length) {
-            fieldErrors.value = { 'settings.__failed': [__('webhook-manager::settings.save_failed')] };
-        }
-    } finally {
-        saving.value = false;
-    }
+    router.patch(props.updateUrl, { settings: fromForm(form.value) }, {
+        preserveScroll: true,
+        onSuccess: () => { fieldErrors.value = {}; },
+        onError: (errors) => {
+            fieldErrors.value = errors ?? {};
+            // A rejection with no error bag (500, a dropped connection) still
+            // has to say something; an empty banner is how a failed save looks
+            // exactly like a successful one.
+            if (!Object.keys(fieldErrors.value).length) {
+                fieldErrors.value = { 'settings.__failed': [__('webhook-manager::settings.save_failed')] };
+            }
+        },
+        onFinish: () => { saving.value = false; },
+    });
 }
 
 // ----- storage driver switch -----------------------------------------
@@ -214,10 +224,6 @@ const switchErrors = computed(() => switchForm.errors ?? {});
             />
         </Header>
 
-        <Alert v-if="savedNotice" variant="success" class="mb-6" data-settings-saved>
-            {{ __('webhook-manager::settings.saved') }}
-        </Alert>
-
         <Alert v-if="generalErrors.length" variant="error" class="mb-6" data-settings-form-errors>
             <ul class="list-disc list-inside space-y-0.5">
                 <li v-for="(message, i) in generalErrors" :key="i">{{ message }}</li>
@@ -236,8 +242,13 @@ const switchErrors = computed(() => switchForm.errors ?? {});
             </ul>
         </Alert>
 
-        <!-- ── Where the untouched values come from ─────────────────── -->
-        <Alert variant="info" class="mb-6">
+        <!-- ── Where the untouched values come from ───────────────────
+             No `variant`: `info` is not one of Alert's four
+             (default/warning/error/success). This describes how the screen
+             works — what an untouched value follows, what a changed one
+             stores. It is on screen on every visit, and a banner that is
+             permanently styled as a warning stops being read as one. -->
+        <Alert class="mb-6">
             <template #default>
                 <span>{{ __('webhook-manager::settings.intro', { path: configFilePath }) }}</span>
                 <Button
@@ -248,7 +259,11 @@ const switchErrors = computed(() => switchForm.errors ?? {});
                     @click="copyPath"
                 >
                     <template #icon>
-                        <Icon :name="copied ? 'check' : 'clipboard'" />
+                        <!-- `check` is not in the icon set — `checkmark` is.
+                             Icon renders nothing for an unknown name, so the
+                             button lost its icon at the one moment it was
+                             meant to confirm something. -->
+                        <Icon :name="copied ? 'checkmark' : 'clipboard'" />
                     </template>
                 </Button>
             </template>

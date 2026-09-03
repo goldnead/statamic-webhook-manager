@@ -8,7 +8,7 @@ use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
 use Goldnead\WebhookManager\Support\Settings;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -53,19 +53,27 @@ class SettingsController extends CpController
     /**
      * Write the settings form.
      *
-     * Answers with the values as they now stand rather than with the submitted
-     * ones. An integer arrives from a text input as a string and comes back an
-     * integer, a list arrives with the blank line the textarea left behind and
-     * comes back compacted, and a value equal to the default is dropped and
-     * comes back as whatever the config file says. Echoing the request instead
-     * would leave the screen agreeing with itself and disagreeing with the
-     * installation.
+     * Redirects back rather than answering with JSON, which is what makes this
+     * a Control-Panel mutation instead of an API call: the Inertia visit brings
+     * the progress bar, the flash toast, the unsaved-changes guard and a
+     * working back button, none of which an `axios.patch` has.
+     *
+     * The redirect is also what keeps the page honest. The screen has to end up
+     * showing the values as they now stand, not the ones that were typed: an
+     * integer arrives from a text input as a string and comes back an integer,
+     * a list arrives with the blank line the textarea left behind and comes
+     * back compacted, and a value equal to the shipped default is dropped and
+     * comes back as whatever the config file says. The JSON version answered
+     * with exactly that — but only for the form. `rawConfig`, the resolved
+     * config tree printed in the diagnostics panel, kept showing the state from
+     * before the save until somebody reloaded by hand. `back()` re-renders
+     * {@see self::index()}, so every prop on the page is rebuilt at once.
      */
-    public function update(UpdateSettingsRequest $request, Settings $settings): JsonResponse
+    public function update(UpdateSettingsRequest $request, Settings $settings): RedirectResponse
     {
         $settings->save($this->normalise($request->validated()['settings']));
 
-        return response()->json(['data' => $this->current($settings)]);
+        return back()->with('success', __('webhook-manager::settings.saved'));
     }
 
     /**

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
-import axios from 'axios';
+import { router } from '@statamic/cms/inertia';
 
 import Show from '../../resources/js/pages/settings/Index.vue';
 
@@ -97,9 +97,24 @@ function mountScreen(props = {}) {
  * presence is asserted separately — this calls what it is wired to.
  */
 async function save(wrapper) {
-    await wrapper.vm.save();
+    wrapper.vm.save();
     await flushPromises();
     await wrapper.vm.$nextTick();
+}
+
+/**
+ * Stand in for the Inertia router's PATCH.
+ *
+ * The page mutates through `router.patch` rather than through axios, so what
+ * a test can observe is the visit it makes and the callback it is answered
+ * with. `outcome` is called with the options object the page passed, and
+ * decides whether this visit succeeded or was rejected.
+ */
+function stubPatch(outcome) {
+    return vi.spyOn(router, 'patch').mockImplementation((url, data, options) => {
+        outcome(options ?? {});
+        options?.onFinish?.();
+    });
 }
 
 describe('the settings screen', () => {
@@ -147,51 +162,65 @@ describe('the settings screen', () => {
             .toEqual(['authorization', 'cookie']);
     });
 
-    it('takes the answer from the server, not what was typed', async () => {
-        // An integer arrives from a text input as a string and comes back an
-        // integer; a value equal to the shipped default comes back as that
-        // default with the stored row deleted. Echoing the request instead
-        // would leave the screen agreeing with itself and disagreeing with
-        // the installation.
+    it('saves through the Inertia router, not through axios', async () => {
+        // A page mutation on `axios` loses the progress bar, the flash toast,
+        // the unsaved-changes guard and the back button — and, on this page in
+        // particular, left the diagnostics panel's resolved config tree
+        // showing the state from before the save. The whole page has to be
+        // re-rendered, which is what a router visit does.
         const wrapper = mountScreen();
         wrapper.vm.form['retry.max_attempts'] = '7';
 
-        vi.spyOn(axios, 'patch').mockResolvedValue({
-            data: { data: values({ 'retry.max_attempts': 5 }) },
-        });
+        const patch = stubPatch(({ onSuccess }) => onSuccess?.({}));
 
         await save(wrapper);
 
+        expect(patch).toHaveBeenCalledTimes(1);
+
+        const [url, payload] = patch.mock.calls[0];
+        expect(url).toBe('/cp/webhook-manager/settings');
+        expect(payload.settings['retry.max_attempts']).toBe('7');
+    });
+
+    it('takes the answer from the server, not what was typed', async () => {
+        // An integer arrives from a text input as a string and comes back an
+        // integer; a value equal to the shipped default comes back as that
+        // default with the stored row deleted. The answer arrives as new page
+        // props after the redirect, which is what the watcher picks up.
+        const wrapper = mountScreen();
+        wrapper.vm.form['retry.max_attempts'] = '7';
+
+        stubPatch(({ onSuccess }) => onSuccess?.({}));
+        await save(wrapper);
+
+        await wrapper.setProps({ values: values({ 'retry.max_attempts': 5 }) });
+
         expect(wrapper.vm.form['retry.max_attempts']).toBe(5);
-        expect(wrapper.find('[data-settings-saved]').exists()).toBe(true);
+        expect(wrapper.vm.dirty).toBe(false);
     });
 
     it('puts a rejected field back next to its own control', async () => {
         const wrapper = mountScreen();
 
-        vi.spyOn(axios, 'patch').mockRejectedValue({
-            response: { data: { errors: { 'settings.retry.max_attempts': ['Must be at least 1.'] } } },
-        });
+        stubPatch(({ onError }) => onError?.({ 'settings.retry.max_attempts': 'Must be at least 1.' }));
 
         await save(wrapper);
 
         expect(wrapper.find('[data-settings-field-error="retry.max_attempts"]').text())
             .toContain('Must be at least 1.');
-        expect(wrapper.find('[data-settings-saved]').exists()).toBe(false);
     });
 
     it('says something when the save fails with no error bag at all', async () => {
-        // A 500 or a dropped connection has no `errors` key. Rendering an
-        // empty banner is how a failed save looks exactly like a successful
-        // one, which is the worst of the three outcomes.
+        // A 500 or a dropped connection has no errors. Rendering an empty
+        // banner is how a failed save looks exactly like a successful one,
+        // which is the worst of the three outcomes.
         const wrapper = mountScreen();
 
-        vi.spyOn(axios, 'patch').mockRejectedValue(new Error('network'));
+        stubPatch(({ onError }) => onError?.({}));
 
         await save(wrapper);
 
         expect(wrapper.find('[data-settings-form-errors]').exists()).toBe(true);
-        expect(wrapper.find('[data-settings-saved]').exists()).toBe(false);
     });
 
     it('surfaces an error that belongs to no control on the page', async () => {
@@ -200,9 +229,7 @@ describe('the settings screen', () => {
         // silence, which reads as "nothing happened".
         const wrapper = mountScreen();
 
-        vi.spyOn(axios, 'patch').mockRejectedValue({
-            response: { data: { errors: { 'settings.something.new': ['Nope.'] } } },
-        });
+        stubPatch(({ onError }) => onError?.({ 'settings.something.new': 'Nope.' }));
 
         await save(wrapper);
 

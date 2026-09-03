@@ -42,6 +42,11 @@ return [
     'storage_already_active' => 'Der Speicher :driver ist bereits aktiv.',
     'storage_counts_line' => ':outbound ausgehend · :inbound eingehend · :rules Regeln · :templates Vorlagen',
 
+    // Steht dort, wo ein gespeichertes Handle kein registriertes Label hat —
+    // ein Verfahren oder Handler, den ein Upgrade entfernt hat, oder ein
+    // Datensatz aus einer neueren Version. Nie das Handle selbst.
+    'unknown_option' => 'Unbekannt',
+
     // Insights / observability screen
     'insights_title' => 'Auswertung',
     'insights_subtitle' => 'Auslieferungsvolumen, Erfolgsquote, Antwortzeiten und Fehler deiner ausgehenden Webhooks.',

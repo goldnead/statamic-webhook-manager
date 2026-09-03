@@ -7,6 +7,7 @@ import {
     Header,
     Button,
     Badge,
+    Card,
     Panel,
     Alert,
     CodeEditor,
@@ -219,10 +220,14 @@ function copyCurl() {
             />
         </Header>
 
-        <!-- ── Replay result feedback ────────────────────────────────── -->
+        <!-- ── Replay result feedback ──────────────────────────────────
+             `danger` is not one of Alert's variants (default/warning/error/
+             success), so a failed replay used to land in $attrs and render in
+             the neutral style — the one outcome that has to look wrong looked
+             like nothing had happened. -->
         <Alert
             v-if="lastReplayResult"
-            :variant="lastReplayResult.success ? 'success' : 'danger'"
+            :variant="lastReplayResult.success ? 'success' : 'error'"
             :heading="lastReplayResult.success ? __('Replayed successfully') : __('Replay failed')"
             :text="lastReplayResult.message ?? ''"
             class="mt-4"
@@ -236,136 +241,47 @@ function copyCurl() {
              get their own panel.
         -->
         <Panel :heading="__('Delivery')" class="mt-4">
-            <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 *:min-w-0">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                        {{ __('Trigger') }}
-                    </p>
-                    <Badge color="blue" :text="delivery.trigger_label || delivery.trigger_type || '—'" />
-                    <p
-                        v-if="delivery.trigger_reference"
-                        class="text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all"
-                    >
-                        {{ delivery.trigger_reference }}
-                    </p>
-                </div>
-
-                <!-- The object the delivery was about; links back to the
-                     listing filtered to that object. -->
-                <div data-testid="delivery-subject">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                        {{ __('webhook-manager::messages.subject') }}
-                    </p>
-                    <template v-if="delivery.subject_type && delivery.subject_id">
-                        <Badge
-                            color="default"
-                            :text="delivery.subject_label || delivery.subject_type"
-                            :href="`${indexUrl}?subject_type=${encodeURIComponent(delivery.subject_type)}&subject_id=${encodeURIComponent(delivery.subject_id)}`"
-                        />
-                        <p class="font-mono text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all">
-                            {{ delivery.subject_id }}
-                        </p>
-                    </template>
-                    <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
-                </div>
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                        {{ __('Attempts') }}
-                    </p>
-                    <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
-                        {{ delivery.attempts ?? '—' }}
-                    </span>
-                </div>
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                        {{ __('Duration') }}
-                    </p>
-                    <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
-                        {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
-                    </span>
-                </div>
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                        {{ __('Correlation ID') }}
-                    </p>
-                    <code
-                        class="font-mono text-xs break-all text-gray-800 dark:text-gray-200"
-                        data-testid="correlation-id"
-                    >
-                        {{ delivery.correlation_id || '—' }}
-                    </code>
-                </div>
-            </div>
-        </Panel>
-
-        <!-- ── Side-by-side Request / Response ──────────────────────── -->
-        <!--
-            lg+ → 2-column grid (request | response)
-            < lg → single column (stacked)
-        -->
-        <div class="grid lg:grid-cols-2 gap-4 mt-4 *:min-w-0">
-
-            <!-- Request panel -->
-            <Panel :heading="__('Request')">
-                <div class="space-y-4 p-4">
-
+            <Card>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 *:min-w-0">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Method') }}
+                            {{ __('Trigger') }}
                         </p>
-                        <Badge :color="methodColor" :text="delivery.method" />
+                        <Badge color="blue" :text="delivery.trigger_label || delivery.trigger_type || '—'" />
+                        <p
+                            v-if="delivery.trigger_reference"
+                            class="text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all"
+                        >
+                            {{ delivery.trigger_reference }}
+                        </p>
+                    </div>
+
+                    <!-- The object the delivery was about; links back to the
+                         listing filtered to that object. -->
+                    <div data-testid="delivery-subject">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                            {{ __('webhook-manager::messages.subject') }}
+                        </p>
+                        <template v-if="delivery.subject_type && delivery.subject_id">
+                            <Badge
+                                color="default"
+                                :text="delivery.subject_label || delivery.subject_type"
+                                :href="`${indexUrl}?subject_type=${encodeURIComponent(delivery.subject_type)}&subject_id=${encodeURIComponent(delivery.subject_id)}`"
+                            />
+                            <p class="font-mono text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+                                {{ delivery.subject_id }}
+                            </p>
+                        </template>
+                        <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
                     </div>
 
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('URL') }}
+                            {{ __('Attempts') }}
                         </p>
-                        <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">
-                            {{ delivery.url }}
-                        </code>
-                    </div>
-
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Headers') }}
-                        </p>
-                        <CodeEditor
-                            mode="json"
-                            :model-value="headersJson(delivery.request?.headers)"
-                            read-only
-                            :rows="6"
-                        />
-                    </div>
-
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Body') }}
-                        </p>
-                        <CodeEditor
-                            :mode="bodyMode(delivery.request?.body)"
-                            :model-value="delivery.request?.body ?? ''"
-                            read-only
-                            :rows="14"
-                        />
-                    </div>
-                </div>
-            </Panel>
-
-            <!-- Response panel -->
-            <Panel :heading="__('Response')">
-                <div class="space-y-4 p-4">
-
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Status Code') }}
-                        </p>
-                        <Badge
-                            :color="responseCodeColor"
-                            :text="String(delivery.response_code ?? '—')"
-                        />
+                        <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
+                            {{ delivery.attempts ?? '—' }}
+                        </span>
                     </div>
 
                     <div>
@@ -379,28 +295,123 @@ function copyCurl() {
 
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Headers') }}
+                            {{ __('Correlation ID') }}
                         </p>
-                        <CodeEditor
-                            mode="json"
-                            :model-value="headersJson(delivery.response?.headers)"
-                            read-only
-                            :rows="6"
-                        />
-                    </div>
-
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Body') }}
-                        </p>
-                        <CodeEditor
-                            :mode="responseMode()"
-                            :model-value="delivery.response?.body ?? ''"
-                            read-only
-                            :rows="14"
-                        />
+                        <code
+                            class="font-mono text-xs break-all text-gray-800 dark:text-gray-200"
+                            data-testid="correlation-id"
+                        >
+                            {{ delivery.correlation_id || '—' }}
+                        </code>
                     </div>
                 </div>
+            </Card>
+        </Panel>
+
+        <!-- ── Side-by-side Request / Response ──────────────────────── -->
+        <!--
+            lg+ → 2-column grid (request | response)
+            < lg → single column (stacked)
+        -->
+        <div class="grid lg:grid-cols-2 items-start gap-4 mt-4 *:min-w-0">
+
+            <!-- Request panel -->
+            <Panel :heading="__('Request')">
+                <Card>
+                    <div class="space-y-4">
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Method') }}
+                            </p>
+                            <Badge :color="methodColor" :text="delivery.method" />
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('URL') }}
+                            </p>
+                            <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">
+                                {{ delivery.url }}
+                            </code>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Headers') }}
+                            </p>
+                            <CodeEditor
+                                mode="json"
+                                :model-value="headersJson(delivery.request?.headers)"
+                                read-only
+                                :rows="6"
+                            />
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Body') }}
+                            </p>
+                            <CodeEditor
+                                :mode="bodyMode(delivery.request?.body)"
+                                :model-value="delivery.request?.body ?? ''"
+                                read-only
+                                :rows="14"
+                            />
+                        </div>
+                    </div>
+                </Card>
+            </Panel>
+
+            <!-- Response panel -->
+            <Panel :heading="__('Response')">
+                <Card>
+                    <div class="space-y-4">
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Status Code') }}
+                            </p>
+                            <Badge
+                                :color="responseCodeColor"
+                                :text="String(delivery.response_code ?? '—')"
+                            />
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Duration') }}
+                            </p>
+                            <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
+                                {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
+                            </span>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Headers') }}
+                            </p>
+                            <CodeEditor
+                                mode="json"
+                                :model-value="headersJson(delivery.response?.headers)"
+                                read-only
+                                :rows="6"
+                            />
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Body') }}
+                            </p>
+                            <CodeEditor
+                                :mode="responseMode()"
+                                :model-value="delivery.response?.body ?? ''"
+                                read-only
+                                :rows="14"
+                            />
+                        </div>
+                    </div>
+                </Card>
             </Panel>
         </div>
 
@@ -410,34 +421,36 @@ function copyCurl() {
             :heading="__('Timing & Errors')"
             class="mt-4"
         >
-            <div class="space-y-3 p-4">
+            <Card>
+                <div class="space-y-3">
 
-                <div v-if="delivery.error_type" class="flex items-center gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
-                        {{ __('Error Type') }}
-                    </p>
-                    <Badge
-                        :color="delivery.error_type_color ?? 'default'"
-                        :text="delivery.error_type_label ?? delivery.error_type"
-                    />
-                </div>
+                    <div v-if="delivery.error_type" class="flex items-center gap-2">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
+                            {{ __('Error Type') }}
+                        </p>
+                        <Badge
+                            :color="delivery.error_type_color ?? 'default'"
+                            :text="delivery.error_type_label ?? delivery.error_type"
+                        />
+                    </div>
 
-                <div v-if="delivery.error" class="flex items-start gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0 pt-0.5">
-                        {{ __('Message') }}
-                    </p>
-                    <span class="text-sm text-red-700 dark:text-red-400 break-words">
-                        {{ delivery.error }}
-                    </span>
-                </div>
+                    <div v-if="delivery.error" class="flex items-start gap-2">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0 pt-0.5">
+                            {{ __('Message') }}
+                        </p>
+                        <span class="text-sm text-red-700 dark:text-red-400 break-words">
+                            {{ delivery.error }}
+                        </span>
+                    </div>
 
-                <div v-if="delivery.next_retry_at" class="flex items-center gap-2">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
-                        {{ __('Next Retry') }}
-                    </p>
-                    <date-time :of="delivery.next_retry_at" class="text-sm" />
+                    <div v-if="delivery.next_retry_at" class="flex items-center gap-2">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
+                            {{ __('Next Retry') }}
+                        </p>
+                        <date-time :of="delivery.next_retry_at" class="text-sm" />
+                    </div>
                 </div>
-            </div>
+            </Card>
         </Panel>
 
         <!-- ── Payload Snapshot (when stored) ───────────────────────── -->
@@ -446,7 +459,7 @@ function copyCurl() {
             :heading="__('Payload Snapshot')"
             class="mt-4"
         >
-            <div class="p-4">
+            <Card>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
                     {{ __('The original event payload that triggered this delivery, stored at dispatch time.') }}
                 </p>
@@ -458,12 +471,12 @@ function copyCurl() {
                     read-only
                     :rows="12"
                 />
-            </div>
+            </Card>
         </Panel>
 
         <!-- ── Reproduce with cURL ──────────────────────────────────── -->
         <Panel v-if="curl" :heading="__('Reproduce')" class="mt-4">
-            <div class="p-4">
+            <Card>
                 <div class="flex items-center justify-between gap-4 mb-2">
                     <p class="text-xs text-gray-500 dark:text-gray-400">
                         {{ __('The exact request as a cURL command. Masked headers stay masked.') }}
@@ -482,7 +495,7 @@ function copyCurl() {
                     :rows="8"
                     data-testid="curl"
                 />
-            </div>
+            </Card>
         </Panel>
 
     </div>

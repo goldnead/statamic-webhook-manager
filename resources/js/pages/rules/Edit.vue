@@ -8,6 +8,9 @@ import {
     Header,
     Button,
     Badge,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
     Alert,
     Field,
     Input,
@@ -327,6 +330,23 @@ async function runTest() {
                 />
             </template>
 
+            <!-- Header order is core's: the `…` dropdown first, the primary
+                 action last (ui-vocabulary §24). Delete used to be a
+                 `Button variant="danger"` in a footer bar under the tabs;
+                 core uses `danger` only for the confirm button inside a
+                 modal, and a destructive page action is a `DropdownItem
+                 variant="destructive"`. The footer's second Save duplicated
+                 the header's and went with it. -->
+            <Dropdown v-if="!isNew && canDelete && deleteUrl">
+                <DropdownMenu>
+                    <DropdownItem
+                        variant="destructive"
+                        icon="trash"
+                        :text="__('Delete rule')"
+                        @click="showDelete = true"
+                    />
+                </DropdownMenu>
+            </Dropdown>
             <Button
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
@@ -362,7 +382,11 @@ async function runTest() {
             </ul>
         </Alert>
 
-        <Alert variant="info" class="mt-4">
+        <!-- No `variant`: `info` is not one of Alert's four
+             (default/warning/error/success) and fell through to `default`
+             anyway. "Pick a trigger, add conditions, define actions" is an
+             explanation, which is what `default` is for. -->
+        <Alert class="mt-4">
             {{ __('webhook-manager::messages.rules_edit_hint') }}
         </Alert>
 
@@ -536,8 +560,10 @@ async function runTest() {
             <TabContent value="actions">
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-4">
+                        <!-- No `variant`: format documentation for the field
+                             below, not a warning. (`info` was never an Alert
+                             variant and rendered as `default` regardless.) -->
                         <Alert
-                            variant="info"
                             :heading="__('JSON format')"
                             :text="__('Actions are an ordered array. Each object requires at minimum a handle key. Available handles are listed below.')"
                         />
@@ -605,7 +631,7 @@ async function runTest() {
             <!-- ───────── Test ───────── -->
             <TabContent v-if="!isNew && testUrl" value="test">
                 <Panel class="mt-4">
-                    <div class="p-6 space-y-6">
+                    <Card inset class="p-6 space-y-6">
                         <Field inline
                             :label="__('Sample payload (JSON)')"
                             id="sample_payload"
@@ -645,20 +671,10 @@ async function runTest() {
                                 />
                             </Field>
                         </div>
-                    </div>
+                    </Card>
                 </Panel>
             </TabContent>
         </Tabs>
-
-        <div v-if="!isNew && canDelete" class="mt-8 flex justify-between items-center">
-            <Button variant="danger" :text="__('Delete rule')" @click="showDelete = true" />
-            <Button
-                variant="primary"
-                :loading="form.processing"
-                :text="saveLabel"
-                @click="save"
-            />
-        </div>
 
         <ConfirmationModal
             v-if="!isNew && deleteUrl"

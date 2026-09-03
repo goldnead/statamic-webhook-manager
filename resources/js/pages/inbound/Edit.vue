@@ -8,6 +8,9 @@ import {
     Header,
     Button,
     Badge,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
     Alert,
     Field,
     Input,
@@ -256,12 +259,22 @@ async function runTest() {
                     :inactive-label="__('Disabled')"
                     class="mr-2"
                 />
-                <Button
-                    v-if="!isNew && deleteUrl"
-                    variant="danger"
-                    :text="__('Delete')"
-                    @click="showDelete = true"
-                />
+                <!-- Header order is core's: the `…` dropdown first, the
+                     primary action last (ui-vocabulary §24). Delete was a
+                     `Button variant="danger"` here; core uses `danger` only
+                     for the confirm button inside a modal, and a destructive
+                     page action is a `DropdownItem variant="destructive"`.
+                     `Dropdown` renders its own dots trigger. -->
+                <Dropdown v-if="!isNew && deleteUrl">
+                    <DropdownMenu>
+                        <DropdownItem
+                            variant="destructive"
+                            icon="trash"
+                            :text="__('Delete endpoint')"
+                            @click="showDelete = true"
+                        />
+                    </DropdownMenu>
+                </Dropdown>
                 <Button
                     variant="primary"
                     :text="saveLabel"
@@ -269,6 +282,13 @@ async function runTest() {
                     @click="save"
                 />
                 <CommandPaletteItem category="Actions" :text="saveLabel" :action="save" />
+                <CommandPaletteItem
+                    v-if="!isNew && deleteUrl"
+                    category="Actions"
+                    :text="__('Delete endpoint')"
+                    icon="trash"
+                    :action="() => (showDelete = true)"
+                />
             </template>
         </Header>
 
@@ -389,7 +409,15 @@ async function runTest() {
             <TabContent value="mapping">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                    <Alert variant="info" class="mb-4">
+                    <!-- No `variant`: `info` is not one of Alert's four
+                         (default/warning/error/success), so it fell through to
+                         `default` anyway — the same silent miss as the
+                         `variant="danger"` on the test result further down,
+                         only in the other direction. This banner explains a
+                         field; explanation is what `default` is for. A
+                         `warning` here would be permanent alarm on a screen
+                         where nothing is wrong. -->
+                    <Alert class="mb-4">
                         {{ __('Define a JSON mapping to transform the incoming payload before it is passed to the action.') }}
                         <a
                             href="https://github.com/goldnead/statamic-webhook-manager"
@@ -489,8 +517,13 @@ async function runTest() {
 
                     <!-- Test result panels -->
                     <template v-if="testResult">
+                        <!-- `danger` is not one of Alert's variants
+                             (default/warning/error/success). A failed test
+                             rendered in the neutral style — the same tell the
+                             banner above this file already carries a note
+                             about. -->
                         <Alert
-                            :variant="testResult.ok ? 'success' : 'danger'"
+                            :variant="testResult.ok ? 'success' : 'error'"
                             class="mt-4"
                         >
                             {{ testResult.message || (testResult.ok ? __('Test successful.') : __('Test failed.')) }}

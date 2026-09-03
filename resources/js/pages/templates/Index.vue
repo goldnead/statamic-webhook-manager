@@ -136,7 +136,10 @@ function destroy() {
             />
         </Header>
 
-        <Alert v-if="!introDismissed" variant="info" class="mb-6">
+        <!-- No `variant`: `info` is not one of Alert's four
+             (default/warning/error/success). A dismissible intro that explains
+             what templates are is `default`. -->
+        <Alert v-if="!introDismissed" class="mb-6">
             <div class="flex items-start justify-between gap-3">
                 <span>{{ __('webhook-manager::messages.templates_help') }}</span>
                 <button
@@ -201,11 +204,14 @@ function destroy() {
                     :href="row.duplicate_url"
                     icon="duplicate"
                 />
+                <!-- `danger` is not a DropdownItem prop — the only two values
+                     of `variant` are `default` and `destructive`, so the item
+                     rendered in the ordinary style with a stray attribute. -->
                 <DropdownItem
                     v-if="row.can_delete"
                     :text="__('Delete')"
                     icon="trash"
-                    danger
+                    variant="destructive"
                     @click="confirmDestroy(row)"
                 />
             </template>

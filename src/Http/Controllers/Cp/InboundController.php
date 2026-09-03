@@ -22,6 +22,7 @@ class InboundController extends CpController
         Request $request,
         InboundEndpointRepositoryInterface $repository,
         InboundActionHandlerRegistry $actions,
+        AuthSchemeRegistry $auth,
     ) {
         $this->authorizeAny($request, 'manage inbound endpoints', 'view webhooks');
 
@@ -34,7 +35,7 @@ class InboundController extends CpController
         $endpoints = $repository->paginate($perPage, $search);
 
         $rows = $endpoints->getCollection()
-            ->map(fn (InboundEndpoint $e) => $this->row($e, $request))
+            ->map(fn (InboundEndpoint $e) => $this->row($e, $request, $auth, $actions))
             ->values();
 
         $listingPayload = [
@@ -64,7 +65,6 @@ class InboundController extends CpController
             'createUrl' => cp_route('webhook-manager.inbound.create'),
             'canCreate' => (bool) $request->user()?->can('manage inbound endpoints'),
             'searchTerm' => $search,
-            'actionOptions' => $actions->options(),
             'routePrefix' => WebhookManagerServiceProvider::inboundRoutePrefix(),
             'brandSegment' => app('brand-context')->current()->handle,
         ]);
@@ -198,6 +198,26 @@ class InboundController extends CpController
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
+     * The label for a registry handle, resolved where the registry is.
+     *
+     * A missing entry falls back to a sentence, never to the handle itself.
+     * `static_header` and `noop` are the schema's words; printed at a reader
+     * they are indistinguishable from a real label, so the one case where the
+     * addon genuinely does not know what a stored value means has to look
+     * different from the cases where it does.
+     *
+     * @param  array<string, string>  $options
+     */
+    protected function optionLabel(array $options, ?string $handle): string
+    {
+        if ($handle !== null && isset($options[$handle])) {
+            return (string) $options[$handle];
+        }
+
+        return __('webhook-manager::messages.unknown_option');
+    }
+
+    /**
      * Column definitions for the <Listing> component on the index page.
      *
      * Each entry maps to a slot name (`cell-{field}`) the Vue page binds.
@@ -222,8 +242,12 @@ class InboundController extends CpController
      *
      * @return array<string,mixed>
      */
-    protected function row(InboundEndpoint $endpoint, Request $request): array
-    {
+    protected function row(
+        InboundEndpoint $endpoint,
+        Request $request,
+        AuthSchemeRegistry $auth,
+        InboundActionHandlerRegistry $actions,
+    ): array {
         $user = $request->user();
         $canManage = (bool) $user?->can('manage inbound endpoints');
 
@@ -234,7 +258,9 @@ class InboundController extends CpController
             'handle' => $endpoint->handle,
             'path' => $endpoint->path,
             'auth_type' => $endpoint->auth_type,
+            'auth_type_label' => $this->optionLabel($auth->options(), $endpoint->auth_type),
             'action_type' => $endpoint->action_type,
+            'action_type_label' => $this->optionLabel($actions->options(), $endpoint->action_type),
             'enabled' => (bool) $endpoint->enabled,
 
             // Permissions surfaced to the UI so v-if conditions stay

@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import {
     Header,
+    Card,
     Panel,
     Listing,
     Field,
@@ -194,31 +195,37 @@ function namespaceExample(value) {
             :heading="__('Template Preview')"
             :subheading="__('Render a Webhook Manager template against a sample payload to verify output.')"
         >
-            <div class="space-y-4 p-4">
+            <Card>
+                <div class="space-y-4">
 
-                <Field :label="__('Template (JSON)')" :instructions="__('Enter a JSON template using Antlers or plain values.')">
-                    <CodeEditor v-model="template" mode="json" />
-                </Field>
+                    <Field :label="__('Template (JSON)')" :instructions="__('Enter a JSON template using Antlers or plain values.')">
+                        <CodeEditor v-model="template" mode="json" />
+                    </Field>
 
-                <Field :label="__('Source Type')">
-                    <Select v-model="sourceType" :options="sourceTypeOptions" />
-                </Field>
+                    <Field :label="__('Source Type')">
+                        <Select v-model="sourceType" :options="sourceTypeOptions" />
+                    </Field>
 
-                <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be passed to the template renderer.')">
-                    <CodeEditor v-model="samplePayload" mode="json" />
-                </Field>
+                    <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be passed to the template renderer.')">
+                        <CodeEditor v-model="samplePayload" mode="json" />
+                    </Field>
 
-                <div>
-                    <Button
-                        :text="previewing ? __('Rendering…') : __('Preview')"
-                        variant="primary"
-                        :disabled="previewing"
-                        @click="runPreview"
-                    />
+                    <div>
+                        <Button
+                            :text="previewing ? __('Rendering…') : __('Preview')"
+                            variant="primary"
+                            :disabled="previewing"
+                            @click="runPreview"
+                        />
                 </div>
 
                 <template v-if="previewResult">
-                    <Alert :variant="previewVariant" :message="previewMessage" />
+                    <!-- `text`, not `message`: Alert reads text/heading/
+                         variant/icon and a default slot. `message` landed in
+                         $attrs and the banner rendered empty — a preview that
+                         failed and a preview that succeeded looked the same,
+                         both a blank strip. -->
+                    <Alert :variant="previewVariant" :text="previewMessage" />
                     <Field
                         v-if="previewResult.rendered"
                         :label="__('Rendered Output')"
@@ -227,7 +234,8 @@ function namespaceExample(value) {
                     </Field>
                 </template>
 
-            </div>
+                </div>
+            </Card>
         </Panel>
 
         <!-- ── Simulate Trigger ───────────────────────────────────────── -->
@@ -236,29 +244,31 @@ function namespaceExample(value) {
             :heading="__('Simulate Trigger')"
             :subheading="__('Fire a registered trigger with a sample payload to test outbound webhooks end-to-end.')"
         >
-            <div class="space-y-4 p-4">
+            <Card>
+                <div class="space-y-4">
 
-                <Field :label="__('Trigger')">
-                    <Select v-model="selectedTrigger" :options="triggerOptions" />
-                </Field>
+                    <Field :label="__('Trigger')">
+                        <Select v-model="selectedTrigger" :options="triggerOptions" />
+                    </Field>
 
-                <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be dispatched as the trigger payload.')">
-                    <CodeEditor v-model="triggerPayload" mode="json" />
-                </Field>
+                    <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be dispatched as the trigger payload.')">
+                        <CodeEditor v-model="triggerPayload" mode="json" />
+                    </Field>
 
-                <div>
-                    <Button
-                        :text="simulating ? __('Running…') : __('Run')"
-                        variant="primary"
-                        :disabled="simulating"
-                        @click="runSimulate"
-                    />
+                    <div>
+                        <Button
+                            :text="simulating ? __('Running…') : __('Run')"
+                            variant="primary"
+                            :disabled="simulating"
+                            @click="runSimulate"
+                        />
                 </div>
 
                 <template v-if="simulateResult">
+                    <!-- Same here: `text` is the prop, `message` is not. -->
                     <Alert
                         :variant="simulateResult.success ? 'success' : 'error'"
-                        :message="simulateResult.message"
+                        :text="simulateResult.message"
                     />
                     <Field
                         v-if="simulateResponseJson"
@@ -268,7 +278,8 @@ function namespaceExample(value) {
                     </Field>
                 </template>
 
-            </div>
+                </div>
+            </Card>
         </Panel>
 
     </div>

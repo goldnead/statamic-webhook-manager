@@ -165,6 +165,12 @@ onMounted(load);
                         </TableCell>
                         <TableCell>
                             <span class="flex items-center gap-2 min-w-0">
+                                <!-- A chip, not a status: the HTTP verb of the
+                                     request, sitting in front of its URL the
+                                     way a tag sits in front of a title. Square
+                                     is right for it; the pill is reserved for
+                                     the status badge in the next cell
+                                     (ui-vocabulary §22). -->
                                 <Badge :color="methodColor(row.method)" :text="row.method" size="sm" />
                                 <span class="font-mono text-xs text-gray-900 dark:text-gray-100 min-w-0">
                                     <MiddleEllipsis :text="row.url || ''" />
