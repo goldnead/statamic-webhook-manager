@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.6.1 — 2026-09-05
+
+### Behoben: das Listen-JSON trägt seine Spalten mit
+
+Sechs Listen (Inbound, Outbound, Logs, Zustellungen, Regeln, Vorlagen) lieferten in der
+AJAX-Antwort ein `meta` ohne `columns`. Statamics `<Listing>` ruft als Erstes
+`setColumns(response.data.meta.columns)`; fehlt der Schlüssel, stehen die Spalten auf `undefined`,
+und der nächste Zugriff wirft, im Erfolgspfad derselben Promise-Kette. Gefangen hat das der
+generische `.catch`, der mangels `e.response` nur „Etwas ist schiefgelaufen" toastete. Ergebnis war
+ein roter Fehler-Toast ohne Inhalt bei HTTP 200 auf einer Seite, die sichtbar funktionierte: die
+erste Füllung der Tabelle kommt aus den Inertia-Props, wo die Spalten die ganze Zeit standen.
+Kaputt war nur die Hälfte, die niemand ansieht (F32/F34).
+
+Neuer Test `ListingJsonCarriesColumnsTest` deckt alle sechs Listen ab und prüft den JSON-Pfad,
+nicht den Inertia-Pfad.
+
+### Behoben: der Nav-Abschnitt ist ein Schlüssel, keine Übersetzung
+
+Statamic lokalisiert seine eigenen Abschnitte selbst. Ein vorübersetzter Wert ist ein anderer
+Schlüssel und stellt einen zweiten, gleich aussehenden Abschnitt daneben; im deutschen CP standen
+zwei „Werkzeuge" untereinander (Teil von F36). Dazu kam, dass `webhook-manager::nav.section` in
+keiner Sprachdatei definiert war: `__()` gab den rohen Schlüssel zurück, und der wurde zum
+Abschnittsnamen.
+
+### Behoben: Code-Style auf dem Test-Stand-in
+
+`tests/Fakes/insights-contracts.php` fiel seit 2.4.0 durch `pint --test`, der Code-style-Job war
+damit rot. Formatiert; die Deklarationen sind unverändert, `InsightsContractsMatchTest` vergleicht
+Signaturen per Reflection.
+
 ## 2.6.0 — 2026-09-03
 
 ### Geändert: `PATCH /cp/webhook-manager/settings` antwortet mit einem Redirect
