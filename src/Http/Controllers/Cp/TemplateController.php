@@ -47,6 +47,10 @@ class TemplateController extends CpController
                 'total' => $templates->total(),
                 'from' => $templates->firstItem(),
                 'to' => $templates->lastItem(),
+                // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
+                // Spalten auf undefined und der Fehler landet im generischen
+                // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
+                'columns' => $this->indexColumns(),
             ],
         ];
 

@@ -44,6 +44,10 @@ class RuleController extends CpController
                 'total' => $rules->total(),
                 'from' => $rules->firstItem(),
                 'to' => $rules->lastItem(),
+                // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
+                // Spalten auf undefined und der Fehler landet im generischen
+                // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
+                'columns' => $this->indexColumns(),
             ],
         ];
 

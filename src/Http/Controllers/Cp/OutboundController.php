@@ -48,6 +48,10 @@ class OutboundController extends CpController
                 'total' => $hooks->total(),
                 'from' => $hooks->firstItem(),
                 'to' => $hooks->lastItem(),
+                // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
+                // Spalten auf undefined und der Fehler landet im generischen
+                // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
+                'columns' => $this->indexColumns(),
             ],
         ];
 

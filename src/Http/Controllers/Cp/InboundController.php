@@ -47,6 +47,12 @@ class InboundController extends CpController
                 'total' => $endpoints->total(),
                 'from' => $endpoints->firstItem(),
                 'to' => $endpoints->lastItem(),
+                // Ohne `columns` setzt <Listing> seine Spalten auf undefined und
+                // stirbt beim naechsten Zugriff — und zwar im Erfolgspfad des
+                // Requests. Der generische `.catch` derselben Kette faengt das
+                // und zeigt nur „Etwas ist schiefgelaufen", obwohl die Antwort
+                // 200 war. Siehe indexColumns() weiter unten.
+                'columns' => $this->indexColumns(),
             ],
         ];
 

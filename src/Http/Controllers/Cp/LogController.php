@@ -57,6 +57,10 @@ class LogController extends CpController
                 'total' => $logs->total(),
                 'from' => $logs->firstItem(),
                 'to' => $logs->lastItem(),
+                // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
+                // Spalten auf undefined und der Fehler landet im generischen
+                // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
+                'columns' => $this->indexColumns(),
             ],
         ];
 

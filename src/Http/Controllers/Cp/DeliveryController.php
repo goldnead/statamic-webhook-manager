@@ -58,6 +58,10 @@ class DeliveryController extends CpController
                 'total' => $deliveries->total(),
                 'from' => $deliveries->firstItem(),
                 'to' => $deliveries->lastItem(),
+                // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
+                // Spalten auf undefined und der Fehler landet im generischen
+                // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
+                'columns' => $this->indexColumns(),
             ],
         ];
 
