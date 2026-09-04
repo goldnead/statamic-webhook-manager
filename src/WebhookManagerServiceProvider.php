@@ -681,7 +681,16 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
             }
 
             $nav->create(__('webhook-manager::nav.webhooks'))
-                ->section(__('webhook-manager::nav.section'))
+                // Der Schluessel, nicht die Uebersetzung. Statamic lokalisiert
+                // seine eigenen Abschnitte (`Content`, `Fields`, `Tools`,
+                // `Users`) selbst; ein vorübersetzter Wert ist ein ANDERER
+                // Schluessel und stellt einen zweiten, gleich aussehenden
+                // Abschnitt daneben (Adrian, F36, 03.09.2026).
+                //
+                // `webhook-manager::nav.section` war zudem in keiner
+                // Sprachdatei definiert — `__()` gab den rohen Schluessel
+                // zurueck und der wurde zum Abschnittsnamen.
+                ->section('Tools')
                 ->route('webhook-manager.overview')
                 ->icon('link')
                 ->can('view webhooks')
