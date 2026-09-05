@@ -61,7 +61,21 @@ class RuleController extends CpController
             'rules' => $listingPayload,
             'initialColumns' => $this->indexColumns(),
             'listingUrl' => cp_route('webhook-manager.rules.index'),
-            'actionUrl' => cp_route('webhook-manager.rules.index'),
+            // No bulk-action endpoint exists for this listing, so `actionUrl`
+            // is null on purpose. It used to point back at this very (GET)
+            // index route, which is what core reads as "there are actions": the
+            // listing then drew a checkbox column whose bulk menu could never
+            // fill — `POST {url}/list` answers 404. Checkboxes without an
+            // action behind them are worse than none (T01 brief, 05.09.2026).
+            //
+            // `:allow-bulk-actions="false"` does NOT fix this: core derives the
+            // checkbox column from `actionUrl` alone
+            // (`Listing.vue:183` — `allowsSelections = (selections || hasActions)`),
+            // and that flag only hides the bulk toolbar. Dropping the URL is
+            // what removes the column. The per-row "…" menu stays: it is built
+            // from this page's own `#prepended-row-actions` slot, not from core
+            // actions.
+            'actionUrl' => null,
             'createUrl' => cp_route('webhook-manager.rules.create'),
             'canCreate' => (bool) $request->user()?->can('manage webhook rules'),
             'searchTerm' => $search,

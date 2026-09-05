@@ -64,13 +64,15 @@ trait PresentsOutboundWebhooks
 
             // Permissions surfaced to the UI (so v-if conditions stay
             // declarative and don't leak ability strings into Vue).
+            // `can_toggle` / `toggle_url` used to ride along here. Nothing
+            // reads them any more: enabling and disabling is a native Statamic
+            // action since 05.09.2026, and the PATCH route they pointed at is
+            // only used by the edit screen, which builds its own URL.
             'can_edit' => $canManage,
-            'can_toggle' => $canManage,
             'can_test' => static::canTest($user),
             'can_delete' => $canManage,
 
             'edit_url' => cp_route('webhook-manager.outbound.edit', $hook),
-            'toggle_url' => cp_route('webhook-manager.outbound.toggle', $hook),
             'delete_url' => cp_route('webhook-manager.outbound.destroy', $hook),
             'test_url' => cp_route('webhook-manager.actions.test-outbound', $hook),
         ];

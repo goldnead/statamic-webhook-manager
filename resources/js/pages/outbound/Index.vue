@@ -203,12 +203,17 @@ const actionErrors = ref({});
                 <Badge :color="methodColor(hook.method)" :text="hook.method" />
             </template>
 
-            <!-- `block min-w-0` so MiddleEllipsis measures the cell rather than
-                 the shrink-wrapped inline span; the column itself gets a width
-                 from PresentsOutboundWebhooks::outboundColumns(). Before both,
-                 every URL here rendered as `ht...g`. -->
+            <!-- `min-w-64` is the part that holds. The `width` percentage in
+                 outboundColumns() is only a hint to an auto-layout table, and
+                 the URL column is the one that gives way: the Trigger badge
+                 does not shrink (a measured 207px at every window width), so
+                 below roughly 1280px the URL collapsed back to 119px and
+                 `ht...g` — six characters that tell no two rows apart. A floor
+                 of 12rem keeps it readable and lets the table scroll instead,
+                 which is what core's `.data-table` is built for. `block` so
+                 MiddleEllipsis measures the cell, not a shrink-wrapped span. -->
             <template #cell-url="{ value }">
-                <span class="block min-w-0 text-gray-900 dark:text-gray-100 font-mono text-xs">
+                <span class="block min-w-64 text-gray-900 dark:text-gray-100 font-mono text-xs">
                     <MiddleEllipsis :text="value || ''" />
                 </span>
             </template>

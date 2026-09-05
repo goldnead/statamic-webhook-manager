@@ -6,6 +6,7 @@ use Goldnead\WebhookManager\Actions\Cp\DeleteOutboundWebhook;
 use Goldnead\WebhookManager\Actions\Cp\DisableOutboundWebhook;
 use Goldnead\WebhookManager\Actions\Cp\EnableOutboundWebhook;
 use Goldnead\WebhookManager\Actions\Cp\ReplayDelivery;
+use Goldnead\WebhookManager\Actions\Cp\SendWebhook;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DeliveryActionController;
@@ -14,6 +15,7 @@ use Goldnead\WebhookManager\Jobs\ReplayDeliveryJob;
 use Goldnead\WebhookManager\Tests\CpTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Statamic\Contracts\Entries\Entry;
 
 /**
  * The bulk/row action endpoints the listings post to.
@@ -42,6 +44,12 @@ use Illuminate\Support\Facades\Queue;
  *      OutboundWebhook as a delivery and answered `success: true`; the id then
  *      went to `ReplayDeliveryJob`, which resolves with `Delivery::find()`
  *      outside the CP's brand context.
+ *
+ *   3. **The same hole one file over.** `SendWebhook`, the fifth CP action and
+ *      the oldest, had the identical `authorize()` without a type check — and
+ *      it is registered globally, so it is reachable through core's *own*
+ *      action endpoints, where the allowlist added for 1. and 2. does not
+ *      apply. Found by review after the first two were closed.
  *
  * **What this harness can and cannot drive.** Statamic's `ExtensionServiceProvider`
  * is not loaded by the package testbench, so `app('statamic.actions')` does not
@@ -253,6 +261,41 @@ class ListingActionEndpointsAreScopedTest extends CpTestCase
         $replay = new ReplayDelivery;
         $this->assertTrue($replay->authorize($user, $delivery));
         $this->assertFalse($replay->authorize($user, $hook), 'ReplayDelivery authorizes an OutboundWebhook.');
+    }
+
+    /**
+     * The fifth CP action, and the one that matters most here.
+     *
+     * `SendWebhook` is registered globally (`WebhookManagerServiceProvider`
+     * `$actions`), so it is offered on **core's own** action endpoints —
+     * assets, taxonomy terms, users — where this addon's endpoint allowlist
+     * does not apply at all. Its `visibleTo()` did check for an Entry, but
+     * `visibleTo()` is a UI filter core never consults in `run()`, and its
+     * `authorize()` asked only about the ability. A superuser therefore
+     * authorized it for an asset, and `run()` handed that asset to
+     * `StatamicSnapshot::entry()`.
+     */
+    public function test_the_globally_registered_send_webhook_action_authorizes_only_entries(): void
+    {
+        $user = $this->superUser();
+        $action = new SendWebhook;
+
+        $entry = \Mockery::mock(Entry::class);
+        $this->assertTrue($action->authorize($user, $entry), 'SendWebhook refuses an Entry.');
+
+        foreach ([
+            'an outbound webhook' => $this->makeWebhook(),
+            'a delivery' => $this->makeDelivery(),
+            'a plain object' => new \stdClass,
+        ] as $what => $item) {
+            $this->assertFalse(
+                $action->authorize($user, $item),
+                "SendWebhook authorizes {$what} — it is reachable from core's own action endpoints."
+            );
+        }
+
+        // The ability still has to be held on top of the type.
+        $this->assertFalse($action->authorize($this->cpUser(['view webhooks']), $entry));
     }
 
     public function test_an_action_refuses_a_user_without_the_ability(): void

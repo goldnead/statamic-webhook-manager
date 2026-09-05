@@ -38,7 +38,10 @@ function dismissIntro() {
 const props = defineProps({
     rules: { type: Object, required: true },
     initialColumns: { type: Array, required: true },
-    actionUrl: { type: String, required: true },
+    // Null on purpose — see the controller. There is no bulk-action endpoint
+    // for this listing, and a non-null value here is what makes core draw a
+    // checkbox column whose menu can never fill.
+    actionUrl: { type: String, default: null },
     listingUrl: { type: String, required: true },
     createUrl: { type: String, required: true },
     canCreate: { type: Boolean, default: false },

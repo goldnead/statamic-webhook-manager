@@ -28,9 +28,19 @@ class SendWebhook extends Action
             && app(OutboundWebhookRepositoryInterface::class)->countActive() > 0;
     }
 
+    /**
+     * `visibleTo()` above is only a UI filter — core never consults it in
+     * `run()` (`ActionController.php:26-36`), so the type check has to be here
+     * too. It matters more for this action than for the other four: this one is
+     * registered globally and therefore reachable through **core's own** action
+     * endpoints (assets, taxonomy terms, users), where the addon's endpoint
+     * allowlist does not apply. Without the check, `run()` handed whatever was
+     * selected there to `StatamicSnapshot::entry()`.
+     */
     public function authorize($user, $item)
     {
-        return $user?->can('manage outbound webhooks');
+        return $item instanceof Entry
+            && (bool) $user?->can('manage outbound webhooks');
     }
 
     public function buttonText()

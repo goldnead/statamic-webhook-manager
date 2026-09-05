@@ -259,12 +259,16 @@ async function runTest(hook) {
                     <Badge :color="methodColor(hook.method)" :text="hook.method" />
                 </template>
 
-                <!-- `block min-w-0` so MiddleEllipsis measures the cell rather
-                     than the shrink-wrapped inline span it sat in; the column
-                     gets its share from the `width` in the column definition.
-                     Without both, every URL rendered as six characters. -->
+                <!-- `min-w-64` is the part that holds. The `width` percentage
+                     in the column definition is only a hint to an auto-layout
+                     table, and the URL column is the one that gives way: the
+                     Trigger badge does not shrink, so below roughly 1280px the
+                     URL collapsed back to `ht...g`. A floor of 16rem keeps it
+                     readable and lets the table scroll instead. `block` so
+                     MiddleEllipsis measures the cell, not a shrink-wrapped
+                     span. -->
                 <template #cell-url="{ value }">
-                    <span class="block min-w-0 font-mono text-xs text-gray-900 dark:text-gray-100">
+                    <span class="block min-w-64 font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="value || ''" />
                     </span>
                 </template>
@@ -340,12 +344,16 @@ async function runTest(hook) {
                     <Badge color="blue" :text="row.trigger_label || row.trigger" />
                 </template>
 
-                <!-- `block min-w-0` so MiddleEllipsis measures the cell rather
-                     than the shrink-wrapped inline span it sat in; the column
-                     gets its share from the `width` in the column definition.
-                     Without both, every URL rendered as six characters. -->
+                <!-- `min-w-64` is the part that holds. The `width` percentage
+                     in the column definition is only a hint to an auto-layout
+                     table, and the URL column is the one that gives way: the
+                     Trigger badge does not shrink, so below roughly 1280px the
+                     URL collapsed back to `ht...g`. A floor of 16rem keeps it
+                     readable and lets the table scroll instead. `block` so
+                     MiddleEllipsis measures the cell, not a shrink-wrapped
+                     span. -->
                 <template #cell-url="{ value }">
-                    <span class="block min-w-0 font-mono text-xs text-gray-900 dark:text-gray-100">
+                    <span class="block min-w-64 font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="value || ''" />
                     </span>
                 </template>
