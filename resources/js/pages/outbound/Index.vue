@@ -203,14 +203,18 @@ const actionErrors = ref({});
                 <Badge :color="methodColor(hook.method)" :text="hook.method" />
             </template>
 
-            <!-- `min-w-64` is the part that holds. The `width` percentage in
-                 outboundColumns() is only a hint to an auto-layout table, and
-                 the URL column is the one that gives way: the Trigger badge
-                 does not shrink (a measured 207px at every window width), so
-                 below roughly 1280px the URL collapsed back to 119px and
-                 `ht...g` — six characters that tell no two rows apart. A floor
-                 of 12rem keeps it readable and lets the table scroll instead,
-                 which is what core's `.data-table` is built for. -->
+            <!-- `min-w-64` is the part that holds, and the only part: a
+                 `width` in the column definition reaches the <td> as an
+                 attribute and changes nothing, because `.data-table` is pinned
+                 to `width:100%; min-width:100%` at `table-layout: auto` and
+                 that scales a preferred width away. A minimum it cannot.
+                 Without the floor, the URL column is the one that gives way —
+                 the Trigger badge does not shrink (a measured 207px at every
+                 window width), so below roughly 1280px the URL collapsed to
+                 119px and `ht...g`, six characters that tell no two rows
+                 apart. With it the column sits at 284px and the table scrolls
+                 sideways instead, which is what core's `.data-table` is built
+                 for. -->
             <template #cell-url="{ value }">
                 <UrlCell :url="value || ''" class="min-w-64" />
             </template>

@@ -198,14 +198,18 @@ class DeliveryController extends CpController
      * for the UI; the row() method maps the actual DB columns to those
      * aliases below.
      *
-     * No `width` key here, deliberately. Statamic 6.31's <Listing> does not use
-     * one: measured against the rendered DOM on 05.09.2026, the value reaches
-     * neither the <th>, nor the <td>, nor a <colgroup>, and the table runs on
-     * `table-layout: auto`, so every column gets exactly what its content asks
-     * for. The URL column asked for 60px and printed `...` in every row. What
-     * fixes that is a floor on the cell itself (`min-w-56` in
-     * Deliveries/Index.vue) and a cap on the greedy neighbour (`max-w-40` on
-     * the subject id, which was demanding 386px for a UUID).
+     * No `width` key here, deliberately. Core's ListingTableBody does put the
+     * value on the <td> as an attribute (not on the <th>, and there is no
+     * <colgroup>), but it changes nothing: `.data-table` is pinned to
+     * `width:100%; min-width:100%` at `table-layout: auto`, which scales a
+     * PREFERRED width away and a MINIMUM one not. Measured against the rendered
+     * DOM on 05.09.2026 — `td[width]`, `td.style.width !important` and
+     * `th.style.width` all left the cell where it was; only `min-width` moved
+     * it. So every column gets what its content asks for, and the URL column
+     * asked for 60px and printed `...` in every row. What fixes that is a floor
+     * on the cell itself (`min-w-56` in Deliveries/Index.vue) and a cap on the
+     * greedy neighbour (`max-w-32` on the subject id, which was demanding 386px
+     * for a UUID).
      *
      * @return array<int,array{field:string,label:mixed,visible:bool,sortable:bool}>
      */

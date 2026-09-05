@@ -259,12 +259,14 @@ async function runTest(hook) {
                     <Badge :color="methodColor(hook.method)" :text="hook.method" />
                 </template>
 
-                <!-- `min-w-64` is the part that holds. The `width` percentage
-                     in the column definition is only a hint to an auto-layout
-                     table, and the URL column is the one that gives way: the
-                     Trigger badge does not shrink, so below roughly 1280px the
-                     URL collapsed back to `ht...g`. A floor of 16rem keeps it
-                     readable and lets the table scroll instead. -->
+                <!-- `min-w-64` is the part that holds, and the only part: a
+                     `width` in the column definition reaches the <td> as an
+                     attribute and changes nothing, because `.data-table` is
+                     pinned to `width:100%; min-width:100%` at
+                     `table-layout: auto` — that scales a preferred width away,
+                     a minimum it cannot. Without the floor the URL column is
+                     the one that gives way (the Trigger badge does not shrink)
+                     and collapsed to `ht...g` below roughly 1280px. -->
                 <template #cell-url="{ value }">
                     <UrlCell :url="value || ''" class="min-w-64" />
                 </template>
@@ -340,12 +342,14 @@ async function runTest(hook) {
                     <Badge color="blue" :text="row.trigger_label || row.trigger" />
                 </template>
 
-                <!-- `min-w-64` is the part that holds. The `width` percentage
-                     in the column definition is only a hint to an auto-layout
-                     table, and the URL column is the one that gives way: the
-                     Trigger badge does not shrink, so below roughly 1280px the
-                     URL collapsed back to `ht...g`. A floor of 16rem keeps it
-                     readable and lets the table scroll instead. -->
+                <!-- `min-w-64` is the part that holds, and the only part: a
+                     `width` in the column definition reaches the <td> as an
+                     attribute and changes nothing, because `.data-table` is
+                     pinned to `width:100%; min-width:100%` at
+                     `table-layout: auto` — that scales a preferred width away,
+                     a minimum it cannot. Without the floor the URL column is
+                     the one that gives way (the Trigger badge does not shrink)
+                     and collapsed to `ht...g` below roughly 1280px. -->
                 <template #cell-url="{ value }">
                     <UrlCell :url="value || ''" class="min-w-64" />
                 </template>

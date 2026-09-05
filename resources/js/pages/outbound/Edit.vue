@@ -456,7 +456,7 @@ const authInstructions = computed(() => {
                             <Switch
                                 id="enabled"
                                 v-model="form.enabled"
-                                :text="form.enabled ? __('webhook-manager::messages.cp.field_status_on') : __('webhook-manager::messages.cp.field_status_off')"
+                                :text="form.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
                             />
                         </Field>
                     </Card>

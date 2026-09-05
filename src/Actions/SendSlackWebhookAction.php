@@ -27,7 +27,7 @@ class SendSlackWebhookAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Send Slack/Discord webhook';
+        return __('webhook-manager::messages.cp.rule_actions.send_slack_webhook');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

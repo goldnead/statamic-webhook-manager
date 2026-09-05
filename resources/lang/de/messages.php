@@ -20,7 +20,6 @@ return [
     'auth_config_hmac_secret_required' => 'HMAC-Signierung braucht einen Schlüssel "secret" in der Auth-Konfiguration.',
 
     // Delivery detail / replay
-    'test_sent' => 'Testanfrage gesendet.',
     'send_webhook' => 'Webhook senden',
     'send_webhook_button' => '{1} Webhook senden|[2,*] Webhook senden',
     'send_webhook_missing' => 'Der gewählte Webhook existiert nicht mehr.',
@@ -28,7 +27,7 @@ return [
 
     // Storage driver (Settings → Storage)
     'storage_heading' => 'Speicher',
-    'storage_sub' => 'Wo deine Webhook-Konfiguration liegt. Die Auslieferungshistorie bleibt immer in der Datenbank.',
+    'storage_sub' => 'Wo deine Webhook-Konfiguration liegt. Die Zustellungshistorie bleibt immer in der Datenbank.',
     'storage_database' => 'Datenbank',
     'storage_flat' => 'Flat File (YAML)',
     'storage_active_driver' => 'Aktiver Treiber',
@@ -37,7 +36,7 @@ return [
     'storage_flat_path_label' => 'Ablageort der YAML-Dateien',
     'storage_records' => 'Gespeicherte Konfiguration',
     'storage_switch_to' => 'Auf :driver wechseln',
-    'storage_switch_hint' => 'Kopiert die gesamte Webhook-Konfiguration nach :driver (ID für ID) und macht sie zum aktiven Speicher. Auslieferungen bleiben unberührt.',
+    'storage_switch_hint' => 'Kopiert die gesamte Webhook-Konfiguration nach :driver (ID für ID) und macht sie zum aktiven Speicher. Zustellungen bleiben unberührt.',
     'storage_switched' => 'Speicher auf :driver umgestellt — :count Datensätze migriert.',
     'storage_already_active' => 'Der Speicher :driver ist bereits aktiv.',
     'storage_counts_line' => ':outbound ausgehend · :inbound eingehend · :rules Regeln · :templates Vorlagen',
@@ -49,34 +48,34 @@ return [
 
     // Insights / observability screen
     'insights_title' => 'Auswertung',
-    'insights_subtitle' => 'Auslieferungsvolumen, Erfolgsquote, Antwortzeiten und Fehler deiner ausgehenden Webhooks.',
+    'insights_subtitle' => 'Zustellungsvolumen, Erfolgsquote, Antwortzeiten und Fehler deiner ausgehenden Webhooks.',
     'insights_all_webhooks' => 'Alle Webhooks',
     'insights_range_days' => '{1} Letzter :count Tag|[2,*] Letzte :count Tage',
-    'insights_total_deliveries' => 'Auslieferungen',
+    'insights_total_deliveries' => 'Zustellungen',
     'insights_success_rate' => 'Erfolgsquote',
     'insights_failed' => 'Fehlgeschlagen',
     'insights_p95_latency' => 'p95-Antwortzeit',
-    'insights_volume_heading' => 'Auslieferungsvolumen',
-    'insights_volume_sub' => 'Erfolgreiche und fehlgeschlagene Auslieferungen pro Tag.',
+    'insights_volume_heading' => 'Zustellungsvolumen',
+    'insights_volume_sub' => 'Erfolgreiche und fehlgeschlagene Zustellungen pro Tag.',
     'insights_success_heading' => 'Erfolgsquote im Verlauf',
-    'insights_success_sub' => 'Täglicher Anteil erfolgreicher Auslieferungen.',
+    'insights_success_sub' => 'Täglicher Anteil erfolgreicher Zustellungen.',
     'insights_latency_heading' => 'Antwortzeiten',
     'insights_latency_sub' => 'Perzentile der Antwortzeit über alle erfassten Versuche.',
     'insights_errors_heading' => 'Fehlerverteilung',
     'insights_errors_sub' => 'Fehlschläge nach klassifiziertem Fehlertyp.',
     'insights_top_failing_heading' => 'Endpunkte mit den meisten Fehlern',
     'insights_top_failing_sub' => 'Ausgehende Webhooks mit den meisten Fehlschlägen in diesem Zeitraum.',
-    'insights_empty' => 'In diesem Zeitraum wurden noch keine Auslieferungen erfasst.',
+    'insights_empty' => 'In diesem Zeitraum wurden noch keine Zustellungen erfasst.',
     'insights_no_failures' => 'Keine Fehlschläge in diesem Zeitraum.',
     'insights_no_latency' => 'Noch keine Antwortzeiten erfasst.',
-    'insights_view_deliveries' => 'Auslieferungen ansehen',
+    'insights_view_deliveries' => 'Zustellungen ansehen',
 
     'updated' => 'Webhook aktualisiert.',
     'deleted' => 'Webhook gelöscht.',
     'enabled' => 'Webhook aktiviert.',
     'disabled' => 'Webhook deaktiviert.',
     'tested' => 'Testanfrage ausgelöst.',
-    'replayed' => 'Auslieferung erneut gesendet.',
+    'replayed' => 'Zustellung erneut gesendet.',
     'pruned' => ':count Datensätze aufgeräumt.',
 
     'endpoint_created' => 'Endpunkt erstellt.',
@@ -90,8 +89,6 @@ return [
     'rule_deleted' => 'Regel gelöscht.',
     'rule_enabled' => 'Regel aktiviert.',
     'rule_disabled' => 'Regel deaktiviert.',
-    'rule_test_succeeded' => 'Regeltest erfolgreich.',
-    'rule_test_failed' => 'Regeltest fehlgeschlagen.',
 
     'template_created' => 'Vorlage erstellt.',
     'template_updated' => 'Vorlage aktualisiert.',
@@ -102,19 +99,18 @@ return [
     'outbound_empty_intro' => 'Ausgehende Webhooks schicken Benachrichtigungen von deiner Statamic-Seite an externe Dienste, sobald ein Trigger auslöst.',
     'outbound_create_description' => 'Richte einen ausgehenden Webhook mit Trigger, Ziel-URL, Payload-Vorlage und Authentifizierung ein.',
 
-    'inbound_empty_intro' => 'Eingehende Endpunkte nehmen HTTP-Anfragen externer Dienste an und übersetzen sie in Statamic-Aktionen.',
     'inbound_create_description' => 'Definiere einen eingehenden Endpunkt mit Pfad, Auth-Verfahren und einem Mapping auf Einträge, Aktionen oder gespeicherte Payloads.',
 
-    'rules_empty_intro' => 'Regeln wenden bedingte Logik auf Webhook-Auslieferungen an: Sie treffen ein Event mit Bedingungen und führen eine oder mehrere Aktionen aus.',
+    'rules_empty_intro' => 'Regeln wenden bedingte Logik auf Webhook-Zustellungen an: Sie treffen ein Event mit Bedingungen und führen eine oder mehrere Aktionen aus.',
     'rules_create_description' => 'Baue eine Regel mit einem Trigger, optionalen Bedingungen und den Aktionen, die bei einem Treffer ausgeführt werden.',
 
     'templates_empty_intro' => 'Vorlagen sind wiederverwendbare Payload-Bodies und Benachrichtigungstexte, die von ausgehenden Webhooks und Regeln referenziert werden.',
     'templates_create_description' => 'Erstelle eine Vorlage mit Handle, Typ und gerendertem Body über Token-Variablen wie {{ entry:title }}.',
 
     // Persistent help copy shown above the populated listings and edit screens.
-    'rules_help' => 'Regeln reagieren auf einen eingehenden Trigger (ein Statamic-Event oder einen eingehenden Webhook), prüfen optionale Bedingungen und führen dann Aktionen aus, etwa das Senden eines ausgehenden Webhooks. So verknüpfst du Events mit Webhook-Auslieferungen, ganz ohne Code.',
+    'rules_help' => 'Regeln reagieren auf einen eingehenden Trigger (ein Statamic-Event oder einen eingehenden Webhook), prüfen optionale Bedingungen und führen dann Aktionen aus, etwa das Senden eines ausgehenden Webhooks. So verknüpfst du Events mit Webhook-Zustellungen, ganz ohne Code.',
     'templates_help' => 'Vorlagen definieren den wiederverwendbaren JSON- oder Body-Payload, den ein ausgehender Webhook sendet. Verwende Template-Variablen, die beim Versand aus dem Trigger-Payload gefüllt werden. Weise eine Vorlage einem ausgehenden Webhook zu, damit mehrere Webhooks dieselbe Payload-Struktur teilen.',
-    'rules_edit_hint' => 'Wähle einen Trigger, ergänze optionale Bedingungen und definiere die Aktionen, die bei einem Treffer laufen. So verbindest du ein Event mit einer oder mehreren Webhook-Auslieferungen.',
+    'rules_edit_hint' => 'Wähle einen Trigger, ergänze optionale Bedingungen und definiere die Aktionen, die bei einem Treffer laufen. So verbindest du ein Event mit einer oder mehreren Webhook-Zustellungen.',
     'templates_edit_hint' => 'Definiere einen wiederverwendbaren Payload-Body mit Template-Variablen, die beim Versand aus dem Trigger-Payload gefüllt werden. Weise ihn einem ausgehenden Webhook zu, damit mehrere Webhooks dieselbe Struktur teilen.',
 
     // Das Objekt, um das es bei einer Zustellung ging (subject_type / subject_id).
@@ -139,20 +135,18 @@ return [
         'form_submission' => 'Formulareingang',
     ],
 
-    'errors' => [
-        'invalid_template' => 'Die Template-Syntax ist ungültig.',
-        'invalid_url' => 'Die Ziel-URL ist ungültig.',
-        'unsupported_method' => 'Die HTTP-Methode :method wird nicht unterstützt.',
-        'inbound_endpoint_not_found' => 'Endpunkt nicht gefunden oder deaktiviert.',
-        'inbound_unauthorized' => 'Nicht autorisiert.',
-        'inbound_method_not_allowed' => 'Methode nicht erlaubt.',
-        'inbound_payload_too_large' => 'Payload zu groß.',
-        'inbound_bad_request' => 'Ungültige Anfrage.',
-        'inbound_replay_blocked' => 'Doppelte Anfrage vom Replay-Schutz abgewiesen.',
-        'inbound_mapping_failed' => 'Mapping fehlgeschlagen.',
-        'rule_unknown_action' => 'Unbekannter Action-Handler: :handle',
-        'rule_invalid_conditions' => 'Ungültiger Bedingungsbaum.',
-    ],
+    /*
+     * Hier stand eine `errors`-Gruppe mit dreizehn Schlüsseln, die keine
+     * einzige Codezeile las. Sie war der Versuch, die Zeichenketten zu
+     * übersetzen, die der InboundRequestProcessor in
+     * `{"ok": false, "error": …}` schreibt — „Unauthorized.",
+     * „Payload too large.", „Method not allowed." —, und die dort mit Absicht
+     * hart stehen. Sie gehen in die HTTP-Antwort an einen EXTERNEN Aufrufer,
+     * und der ist eine Maschine auf einem fremden Server: er will nicht die
+     * Sprache des CP-Benutzers, und übersetzt würde der Endpunkt je nachdem
+     * antworten, wer sich zuletzt angemeldet hat. Die Schlüssel sind gelöscht
+     * statt verdrahtet; die Gruppe ist keine offene Aufgabe.
+     */
 
     /*
      * Oberflaeche des Control Panels: Ueberschriften, Spaltenkoepfe,
@@ -163,7 +157,7 @@ return [
      * Kollision ist keine Theorie. Sechs Geschwister-Addons registrieren
      * `loadJsonTranslationsFrom`, `statamic-marketing` definiert darin
      * `"Delivery": "Versand"`. Bis zu dieser Datei hiess die
-     * Auslieferungs-Detailseite dieses Addons auf Deutsch „Versand #266" —
+     * Zustellungs-Detailseite dieses Addons auf Deutsch „Versand #266" —
      * ein Wort aus dem Marketing-Addon fuer eine Webhook-Zustellung. Ein
      * Schluessel mit Namensraum laesst sich von aussen nicht umdeuten.
      */
@@ -290,9 +284,9 @@ return [
         'field_handle' => 'Handle',
         'field_handle_hint' => 'Interner Bezeichner. Nur Kleinbuchstaben, Binde- oder Unterstriche.',
         'field_description' => 'Beschreibung',
+        'field_enabled' => 'Aktiviert',
+        'webhook' => 'Webhook',
         'field_status' => 'Status',
-        'field_status_on' => 'Aktiv',
-        'field_status_off' => 'Deaktiviert',
         'field_trigger_type' => 'Trigger-Typ',
         'field_trigger_type_hint' => 'Internes Ereignis, das diesen Webhook auslöst.',
         'field_url' => 'URL',
@@ -351,7 +345,7 @@ return [
         'page_outbound' => 'Ausgehende Webhooks',
         'page_inbound' => 'Eingehende Endpunkte',
         'page_inbound_short' => 'Eingehend',
-        'page_deliveries' => 'Auslieferungen',
+        'page_deliveries' => 'Zustellungen',
         'page_rules' => 'Regeln',
         'page_templates' => 'Vorlagen',
         'page_logs' => 'Protokoll',
@@ -372,13 +366,10 @@ return [
         'col_path' => 'Pfad',
         'col_namespace' => 'Namensraum',
         'col_source_type' => 'Quelltyp',
-        'col_error_type' => 'Fehlerart',
         'col_actions' => 'Aktionen',
         'col_conditions' => 'Bedingungen',
         'col_correlation_id' => 'Korrelations-ID',
         'col_auth' => 'Auth',
-        'field_description_generic' => 'Beschreibung',
-        'field_enabled_generic' => 'Aktiviert',
         'state_success' => 'Erfolgreich',
         'state_failed' => 'Fehlgeschlagen',
         'row_delete' => 'Löschen',
@@ -430,19 +421,36 @@ return [
         'inbound_mapping_label' => 'Zuordnung (JSON)',
         'inbound_mapping_hint' => 'Ordne eingehende Felder den Ausgabefeldern zu. Leer lassen, um den Payload unverändert durchzureichen.',
         /*
-         * Was ein eingehender Endpunkt mit dem Payload macht. Die Handler
-         * gaben diese Bezeichnungen hart auf Englisch zurück — sichtbar als
-         * Spalte „Aktion" in der Liste und als Auswahl im Formular. Derselbe
-         * Fall wie die Trigger- und Auth-Bezeichnungen, eine Registry weiter.
+         * Zwei Registries, zwei Gruppen — bewusst getrennt, obwohl vier Handles
+         * gleich heißen: das eine ist, was ein eingehender Endpunkt mit einem
+         * Payload macht, das andere, was eine Regel ausführt. Beide gaben ihre
+         * Bezeichnungen hart auf Englisch zurück und landeten so in der
+         * Oberfläche (Spalte „Aktion" der eingehenden Liste, Auswahlfeld im
+         * Regel-Formular). Derselbe Fall wie die Trigger- und
+         * Auth-Bezeichnungen, nur eine Registry weiter — und beim ersten
+         * Durchgang blieb die zweite liegen, weil sie gleich heißt.
          */
-        'action_audit_log' => 'Eintrag ins Prüfprotokoll schreiben',
-        'action_noop' => 'Nur bestätigen (ohne Wirkung)',
-        'action_create_entry' => 'Eintrag anlegen',
-        'action_create_form_submission' => 'Formulareingang anlegen',
-        'action_dispatch_event' => 'Internes Ereignis auslösen',
-        'action_update_entry' => 'Eintrag aktualisieren',
-        'action_upsert_entry' => 'Eintrag anlegen oder aktualisieren (per Schlüssel)',
-        'action_upsert_lead' => 'LeadHub-Lead anlegen oder aktualisieren',
+        'inbound_actions' => [
+            'audit_log' => 'Eintrag ins Prüfprotokoll schreiben',
+            'noop' => 'Nur bestätigen (ohne Wirkung)',
+            'create_entry' => 'Eintrag anlegen',
+            'create_form_submission' => 'Formulareingang anlegen',
+            'dispatch_event' => 'Internes Ereignis auslösen',
+            'update_entry' => 'Eintrag aktualisieren',
+            'upsert_entry' => 'Eintrag anlegen oder aktualisieren (per Schlüssel)',
+            'upsert_lead' => 'LeadHub-Lead anlegen oder aktualisieren',
+        ],
+        'rule_actions' => [
+            'create_entry' => 'Eintrag anlegen',
+            'create_form_submission' => 'Formulareingang anlegen',
+            'dispatch_event' => 'Internes Ereignis auslösen',
+            'send_email' => 'E-Mail-Benachrichtigung senden',
+            'send_outbound_webhook' => 'Ausgehenden Webhook senden',
+            'send_slack_webhook' => 'Slack-/Discord-Webhook senden',
+            'set_field_value' => 'Feldwert im Eintrag setzen',
+            'update_entry' => 'Eintrag aktualisieren',
+            'write_log_note' => 'Notiz ins Protokoll schreiben',
+        ],
 
         'inbound_action_type' => 'Aktionstyp',
         'inbound_action_config' => 'Aktions-Konfiguration (JSON)',
@@ -463,15 +471,9 @@ return [
         'tab_action' => 'Aktion',
         'tab_response' => 'Antwort',
         'tab_test' => 'Test',
-        'tab_general_generic' => 'Allgemein',
-        'field_auth_type_generic' => 'Auth-Typ',
         'field_auth_config_json' => 'Auth-Konfiguration (JSON)',
-        'field_trigger_type_generic' => 'Trigger-Typ',
-        'field_name_hint_generic' => 'Der Name, der im Control Panel angezeigt wird.',
-        'field_handle_hint_generic' => 'Interner Bezeichner. Nur Kleinbuchstaben, Bindestriche und Unterstriche.',
         'field_handle_hint_short' => 'Nur Kleinbuchstaben, Ziffern, Unterstriche und Bindestriche.',
         'sample_payload_json' => 'Beispiel-Payload (JSON)',
-        'sample_payload_json_lc' => 'Beispiel-Payload (JSON)',
         'test_ok_generic' => 'Test erfolgreich.',
         'test_failed_generic' => 'Test fehlgeschlagen.',
         'test_request_failed' => 'Testanfrage fehlgeschlagen.',
@@ -507,7 +509,6 @@ return [
         'rules_actions_available' => 'Verfügbare Aktions-Handles:',
         'rules_actions_order_hint' => 'Die Aktionen laufen der Reihe nach. Ob nach einem Fehlschlag abgebrochen wird, stellst du im Reiter Einstellungen ein.',
         'rules_stop_on_failure' => 'Nach dem ersten Fehlschlag abbrechen',
-        'rules_stop_on_failure_short' => 'Nach dem ersten Fehlschlag abbrechen',
         'rules_stop_on_failure_hint' => 'Ist das an und liefert eine Aktion einen Fehler, werden die restlichen Aktionen dieser Regel übersprungen.',
         'rules_order_hint' => 'Kleinere Zahlen laufen zuerst. Regeln mit gleicher Reihenfolge werden nach Namen sortiert.',
         'rules_test_hint' => 'Dieser Payload geht an die Regel-Engine, als wäre er ein echtes Trigger-Ereignis.',
@@ -524,7 +525,6 @@ return [
         'templates_delete' => 'Vorlage löschen',
         'templates_delete_confirm' => 'Diese Vorlage wirklich löschen? Ausgehende Webhooks, die sie nutzen, verlieren ihre Body-Quelle.',
         'templates_fallback_title' => 'Vorlage',
-        'templates_body' => 'Inhalt',
         'templates_body_hint' => 'Der Inhalt der Vorlage. Für Nicht-JSON-Typen ist Antlers-Syntax möglich.',
         'templates_name_placeholder' => 'Meine Vorlage',
         'templates_handle_placeholder' => 'meine_vorlage',
@@ -532,23 +532,67 @@ return [
         'templates_preview_hint' => 'Gib ein JSON-Objekt an, das als Daten an den Renderer geht.',
         'templates_render_preview' => 'Vorschau rendern',
         'templates_rendered_output' => 'Gerendertes Ergebnis',
-        'templates_rendered_output_lc' => 'Gerendertes Ergebnis',
         'templates_preview_failed' => 'Vorschau fehlgeschlagen.',
         'templates_kind_outbound' => 'Body einer ausgehenden Anfrage',
         'templates_kind_inbound' => 'Body einer eingehenden Antwort',
         'templates_kind_notification' => 'Body einer Benachrichtigung',
         'templates_variables' => 'Verfügbare Variablen',
 
-        // Protokoll und Auslieferungen (Leerzustände)
+        /*
+         * Das Protokoll.
+         *
+         * Die Typ-Spalte hieß „Fehlerart" und wurde gegen die acht
+         * Fehlerklassen einer Zustellung übersetzt — ein Vokabular, das in
+         * dieser Spalte nie vorkommt. Auf dem Schirm standen deshalb die rohen
+         * Handles `inbound_received`, `delivery_failed`, `inbound_auth_failed`,
+         * und die Stufe daneben `info`/`warning`. Hier steht jetzt das
+         * Vokabular, das die Spalte wirklich führt: die 22 Ereignistypen, die
+         * der SystemLogger schreibt.
+         */
+        'col_log_type' => 'Ereignis',
+        'log_levels' => [
+            'debug' => 'Debug',
+            'info' => 'Info',
+            'warning' => 'Warnung',
+            'error' => 'Fehler',
+        ],
+        'log_types' => [
+            'delivery_success' => 'Zustellung erfolgreich',
+            'delivery_failed' => 'Zustellung fehlgeschlagen',
+            'replay_executed' => 'Zustellung erneut gesendet',
+            'rule_executed' => 'Regel ausgeführt',
+            'rule_condition_exception' => 'Fehler in einer Regelbedingung',
+            'alert_mail_failed' => 'Alarm-Mail nicht zugestellt',
+            'alert_slack_failed' => 'Slack-Alarm nicht zugestellt',
+            'inbound_received' => 'Anfrage angenommen',
+            'inbound_audit' => 'Anfrage protokolliert',
+            'inbound_auth_failed' => 'Authentifizierung abgelehnt',
+            'inbound_signature_without_timestamp' => 'Signatur ohne Zeitstempel',
+            'inbound_endpoint_not_found' => 'Endpunkt nicht gefunden',
+            'inbound_method_not_allowed' => 'HTTP-Methode nicht erlaubt',
+            'inbound_rate_limited' => 'Ratenbegrenzung gegriffen',
+            'inbound_payload_too_large' => 'Payload zu groß',
+            'inbound_parse_failed' => 'Payload nicht lesbar',
+            'inbound_replay_blocked' => 'Wiedereinspielung blockiert',
+            'inbound_mapping_failed' => 'Zuordnung fehlgeschlagen',
+            'inbound_action_succeeded' => 'Aktion ausgeführt',
+            'inbound_action_failed' => 'Aktion fehlgeschlagen',
+            'inbound_action_exception' => 'Aktion mit Ausnahme abgebrochen',
+            'inbound_action_handler_missing' => 'Aktionstyp nicht registriert',
+            'inbound_brand_defaulted' => 'Marke nicht angegeben, Vorgabe genommen',
+            'inbound_brand_not_found' => 'Marke nicht gefunden',
+            'circuit_breaker_tripped' => 'Sicherung ausgelöst',
+            'configuration_error_dangling_template' => 'Verwaiste Vorlage referenziert',
+        ],
+
+        // Protokoll und Zustellungen (Leerzustände)
         'logs_empty_heading' => 'Noch kein Protokoll',
         'logs_empty_item' => 'Bisher nichts protokolliert',
         'logs_empty_sub' => 'Protokolleinträge entstehen automatisch, sobald Webhooks rausgehen oder ankommen. Schau wieder rein, wenn etwas gelaufen ist.',
         'logs_docs' => 'Mehr zum Protokoll',
-        'deliveries_empty_heading' => 'Noch keine Auslieferungen',
+        'deliveries_empty_heading' => 'Noch keine Zustellungen',
         'deliveries_empty_item' => 'Bisher wurde nichts ausgeliefert',
-        'deliveries_empty_sub' => 'Auslieferungen werden automatisch erfasst, sobald ausgehende Webhooks feuern. Schau wieder rein, wenn etwas gelaufen ist.',
-        'delivery_generic' => 'Auslieferung',
-        'webhook_generic' => 'Webhook',
+        'deliveries_empty_sub' => 'Zustellungen werden automatisch erfasst, sobald ausgehende Webhooks feuern. Schau wieder rein, wenn etwas gelaufen ist.',
 
         // Integrationen
         'integrations_empty_heading' => 'Keine Integrationen verfügbar',
@@ -568,6 +612,29 @@ return [
         'preset_zapier' => 'Schickt ein strukturiertes JSON-Ereignis an einen Zapier-Trigger „Catch Hook".',
         'preset_make' => 'Schickt ein strukturiertes JSON-Ereignis an einen Custom-Webhook-Trigger in Make.',
         'preset_n8n' => 'Schickt ein strukturiertes JSON-Ereignis an einen Webhook-Node in n8n.',
+        // Beschriftungen und Hinweise der Felder, die das Einrichtungsformular
+        // einer Integration zeigt. Standen ebenfalls hart englisch in den
+        // Preset-Klassen.
+        'preset_fields' => [
+            'message_label' => 'Nachricht',
+            'message_hint' => 'Platzhalter wie {{ entry:title }} und {{ system:trigger }} sind möglich.',
+            'payload_template_label' => 'Payload-Vorlage',
+            'payload_template_hint' => 'JSON-Body. Platzhalter wie {{ entry:title }} werden je Zustellung eingesetzt.',
+            'url_generic_label' => 'Ziel-URL',
+            'url_generic_hint' => 'Der Endpunkt, der das JSON per POST bekommt.',
+            'url_slack_label' => 'Slack-Incoming-Webhook-URL',
+            'url_slack_hint' => 'Auf api.slack.com unter „Incoming Webhooks" anlegen.',
+            'url_discord_label' => 'Discord-Webhook-URL',
+            'url_discord_hint' => 'Kanaleinstellungen → Integrationen → Webhooks → URL kopieren.',
+            'url_teams_label' => 'Teams-Incoming-Webhook-URL',
+            'url_teams_hint' => 'Kanal → Connectors → Incoming Webhook → Erstellen.',
+            'url_zapier_label' => 'Zapier-Catch-Hook-URL',
+            'url_zapier_hint' => 'Zap → Trigger → Webhooks by Zapier → Catch Hook → URL kopieren.',
+            'url_make_label' => 'Make-Webhook-URL',
+            'url_make_hint' => 'Szenario → Webhooks → Custom webhook → Adresse kopieren.',
+            'url_n8n_label' => 'n8n-Webhook-URL',
+            'url_n8n_hint' => 'Einen Webhook-Node anlegen und seine Production-URL kopieren.',
+        ],
 
         // Diagnose
         'debug_triggers_heading' => 'Trigger-Inspektor',
@@ -585,6 +652,10 @@ return [
         'debug_simulate_sub' => 'Löse einen registrierten Trigger mit einem Beispiel-Payload aus und prüfe die ausgehenden Webhooks von Anfang bis Ende.',
         'debug_simulate_hint' => 'JSON-Objekt, das als Trigger-Payload verschickt wird.',
         'debug_simulated' => 'Trigger simuliert.',
+        // Zwei Meldungen, die zwei Zeilen neben ihren übersetzten Zwillingen
+        // hart englisch aus einem Template-Literal kamen.
+        'invalid_json' => 'Ungültiges JSON: :error',
+        'invalid_sample_json' => 'Ungültiges Beispiel-JSON: :error',
         'source_entry' => 'Eintrag',
         'source_form_submission' => 'Formulareingang',
         'source_user' => 'Benutzer:in',
@@ -597,8 +668,8 @@ return [
         'send_webhook_field_hint' => 'Welcher ausgehende Webhook für die gewählten Einträge feuern soll.',
 
         // Benachrichtigung bei endgültigem Fehlschlag
-        'notify_intro' => 'Eine Webhook-Auslieferung ist nach allen Wiederholungen fehlgeschlagen.',
-        'notify_subject' => 'Webhook-Auslieferung fehlgeschlagen: :name',
+        'notify_intro' => 'Eine Webhook-Zustellung ist nach allen Wiederholungen fehlgeschlagen.',
+        'notify_subject' => 'Webhook-Zustellung fehlgeschlagen: :name',
         'notify_webhook' => 'Webhook: :name',
         'notify_url' => 'URL: :url',
         'notify_status' => 'Status: :status',
@@ -615,5 +686,9 @@ return [
         'payload' => 'Payload-Fehler',
         'configuration' => 'Konfigurationsfehler',
         'internal' => 'Interner Anwendungsfehler',
+        // Der DeliveryStatsService sammelt jeden Fehlschlag ohne klassifizierte
+        // Art unter diesem Literal. Ohne Eintrag stand in der Auswertung der
+        // rohe Übersetzungsschlüssel auf dem Schirm.
+        'unknown' => 'Nicht klassifiziert',
     ],
 ];

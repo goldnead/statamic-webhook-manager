@@ -9,6 +9,7 @@ use Goldnead\WebhookManager\Domain\Rule\Actions\ToggleRuleAction;
 use Goldnead\WebhookManager\Domain\Rule\Actions\UpdateRuleAction;
 use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Http\Requests\SaveRuleRequest;
+use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -86,6 +87,7 @@ class RuleController extends CpController
     public function create(
         Request $request,
         TriggerRegistry $triggers,
+        ActionRegistry $actions,
     ) {
         $this->authorizeOr403($request, 'manage webhook rules');
 
@@ -99,7 +101,13 @@ class RuleController extends CpController
         return Inertia::render('webhook-manager::Rules/Edit', [
             'rule' => $this->editPayload($rule),
             'triggerOptions' => $triggers->options(),
-            'actionOptions' => [],
+            // Was a hard-coded `[]`, which made the "Available action handles"
+            // list in Rules/Edit.vue render behind a `v-if` that could never be
+            // true — a help panel nobody has ever seen, listing the nine rule
+            // actions whose labels this addon ships. The registry has an
+            // `options()` for exactly this, the same one the trigger select
+            // above it uses.
+            'actionOptions' => $actions->options(),
             'isNew' => true,
             'canDelete' => false,
             'canTest' => false,
@@ -122,6 +130,7 @@ class RuleController extends CpController
         Request $request,
         Rule $webhookRule,
         TriggerRegistry $triggers,
+        ActionRegistry $actions,
     ) {
         $this->authorizeOr403($request, 'manage webhook rules');
 
@@ -130,7 +139,13 @@ class RuleController extends CpController
         return Inertia::render('webhook-manager::Rules/Edit', [
             'rule' => $this->editPayload($webhookRule),
             'triggerOptions' => $triggers->options(),
-            'actionOptions' => [],
+            // Was a hard-coded `[]`, which made the "Available action handles"
+            // list in Rules/Edit.vue render behind a `v-if` that could never be
+            // true — a help panel nobody has ever seen, listing the nine rule
+            // actions whose labels this addon ships. The registry has an
+            // `options()` for exactly this, the same one the trigger select
+            // above it uses.
+            'actionOptions' => $actions->options(),
             'isNew' => false,
             'canDelete' => (bool) $user?->can('manage webhook rules'),
             'canTest' => (bool) $user?->can('manage webhook rules'),

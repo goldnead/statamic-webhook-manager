@@ -32,7 +32,7 @@ class DiscordPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Discord Webhook URL', 'Channel Settings → Integrations → Webhooks → Copy URL.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_discord_label'), __('webhook-manager::messages.cp.preset_fields.url_discord_hint')),
             $this->messageField(),
         ];
     }

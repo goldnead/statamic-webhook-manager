@@ -28,7 +28,7 @@ class WriteLogNoteAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Write log note';
+        return __('webhook-manager::messages.cp.rule_actions.write_log_note');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

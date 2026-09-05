@@ -30,7 +30,7 @@ class SendEmailAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Send email notification';
+        return __('webhook-manager::messages.cp.rule_actions.send_email');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

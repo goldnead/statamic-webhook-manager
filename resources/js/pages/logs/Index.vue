@@ -11,7 +11,6 @@ import {
     EmptyStateItem,
     DocsCallout,
     Listing,
-    MiddleEllipsis,
 } from '@statamic/cms/ui';
 
 /**
@@ -40,39 +39,15 @@ const isEmpty = computed(
 
 const reloadPage = () => router.reload({ only: ['logs'] });
 
-// ── Colour helpers ────────────────────────────────────────────────────────
-// Centralised here (not in PHP) so colours stay in sync with Statamic's
-// dark-mode-aware Badge component.
-
-const levelColor = (level) => ({
-    error:   'red',
-    warning: 'amber',
-    info:    'blue',
-    debug:   'default',
-}[level] ?? 'default');
-
-const errorTypeColor = (type) => ({
-    network:       'orange',
-    timeout:       'amber',
-    auth:          'red',
-    client:        'yellow',
-    server:        'red',
-    payload:       'purple',
-    configuration: 'blue',
-    internal:      'default',
-}[type] ?? 'default');
-
-// Human-readable labels for error_type badges.
-const errorTypeLabel = (type) => ({
-    network:       'Network',
-    timeout:       'Timeout',
-    auth:          'Auth',
-    client:        'Client',
-    server:        'Server',
-    payload:       'Payload',
-    configuration: 'Config',
-    internal:      'Internal',
-}[type] ?? type);
+// Wording and colour for both badges arrive on the row from LogController.
+//
+// A second copy used to sit here: an English map (`network: 'Network'`,
+// `auth: 'Auth'`) keyed on the delivery listing's failure types, which a log
+// entry's `type` column never contains. It printed the raw handles
+// `inbound_received`, `delivery_failed`, `inbound_auth_failed` at the reader,
+// and the level badge next to it printed `info` / `warning` just as raw.
+// Its `internal: 'default'` also disagreed with PHP's `internal => 'gray'` —
+// the reliable sign that one decision was living in two places.
 </script>
 
 <template>
@@ -110,9 +85,7 @@ const errorTypeLabel = (type) => ({
             >
                 <!-- level column -->
                 <template #cell-level="{ row }">
-                    <Badge :color="levelColor(row.level)">
-                        {{ row.level }}
-                    </Badge>
+                    <Badge :color="row.level_color || 'default'" :text="row.level_label || row.level" />
                 </template>
 
                 <!-- message column — single line, truncated -->
@@ -122,25 +95,32 @@ const errorTypeLabel = (type) => ({
                     </span>
                 </template>
 
-                <!-- correlation_id column — mono + middle ellipsis -->
+                <!-- correlation_id column.
+                     `truncate`, not MiddleEllipsis: that component estimates
+                     text width from a table it has for one font family
+                     (`inter`) and charges a full em per character on a miss —
+                     the CP computes `ui-monospace` here, so it always misses.
+                     Measured in this very cell: a 109px box, 51px used, seven
+                     characters shown where ten and a half fit. `truncate`
+                     measures for real, and the start of a correlation id is
+                     what one compares against a log line elsewhere. -->
                 <template #cell-correlation_id="{ row }">
-                    <MiddleEllipsis
+                    <span
                         v-if="row.correlation_id"
-                        :text="row.correlation_id"
-                        class="font-mono text-sm"
-                    />
-                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
+                        class="block truncate font-mono text-sm"
+                        :title="row.correlation_id"
+                    >{{ row.correlation_id }}</span>
+                    <span v-else class="text-gray-500 dark:text-gray-400">—</span>
                 </template>
 
-                <!-- error_type column -->
+                <!-- log event type column -->
                 <template #cell-error_type="{ row }">
                     <Badge
                         v-if="row.error_type"
-                        :color="errorTypeColor(row.error_type)"
-                    >
-                        {{ errorTypeLabel(row.error_type) }}
-                    </Badge>
-                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
+                        :color="row.error_type_color || 'default'"
+                        :text="row.error_type_label || row.error_type"
+                    />
+                    <span v-else class="text-gray-500 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- created_at column -->

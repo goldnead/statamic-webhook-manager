@@ -15,7 +15,7 @@ return [
     'inbound' => 'Eingehend',
     'rules' => 'Regeln',
     'insights' => 'Auswertung',
-    'deliveries' => 'Auslieferungen',
+    'deliveries' => 'Zustellungen',
     'logs' => 'Protokoll',
     'templates' => 'Vorlagen',
     'settings' => 'Einstellungen',

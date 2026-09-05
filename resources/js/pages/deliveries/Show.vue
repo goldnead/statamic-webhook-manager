@@ -88,13 +88,16 @@ function replay() {
 
 // ── Colour helpers ──────────────────────────────────────────────────────────
 
-/** Delivery status → Statamic Badge colour token. */
-const statusColor = computed(() => props.delivery.status_color ?? ({
-    success: 'green',
-    failed:  'red',
-    pending: 'amber',
-    retry:   'amber',
-}[props.delivery.status] ?? 'default'));
+/**
+ * Delivery status → Statamic Badge colour token.
+ *
+ * The `??` branch that used to sit here was unreachable: the controller sets
+ * `status_color` on every payload it builds, through the same trait the
+ * listing uses. It also carried a `retry` status this addon never writes,
+ * which is exactly how a dead fallback misleads — it reads like evidence that
+ * such a status exists.
+ */
+const statusColor = computed(() => props.delivery.status_color ?? 'default');
 
 /**
  * Human wording for the status. The raw value is a database enum

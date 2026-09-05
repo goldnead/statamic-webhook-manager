@@ -28,7 +28,7 @@ class SetFieldValueAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Set entry field value';
+        return __('webhook-manager::messages.cp.rule_actions.set_field_value');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

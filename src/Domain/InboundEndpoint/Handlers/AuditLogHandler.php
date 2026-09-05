@@ -21,7 +21,7 @@ class AuditLogHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return __('webhook-manager::messages.cp.action_audit_log');
+        return __('webhook-manager::messages.cp.inbound_actions.audit_log');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

@@ -35,7 +35,7 @@ class UpsertLeadHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return __('webhook-manager::messages.cp.action_upsert_lead');
+        return __('webhook-manager::messages.cp.inbound_actions.upsert_lead');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

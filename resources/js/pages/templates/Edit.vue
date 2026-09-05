@@ -260,10 +260,10 @@ function copyToClipboard(text) {
                      no way to reach Body or Preview. The other three edit
                      pages use the default slot; this one now matches them. -->
                 <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
-                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
+                    {{ __('webhook-manager::messages.cp.tab_general') }}
                 </TabTrigger>
                 <TabTrigger value="body" :class="{ 'text-red-500': tabsWithErrors.has('body') }">
-                    {{ __('webhook-manager::messages.cp.templates_body') }}
+                    {{ __('webhook-manager::messages.cp.body') }}
                 </TabTrigger>
                 <TabTrigger value="preview">
                     {{ __('webhook-manager::messages.cp.btn_preview') }}
@@ -317,7 +317,7 @@ function copyToClipboard(text) {
                 <Panel>
                     <Card inset class="p-6 space-y-4">
                         <Field inline
-                            :label="__('webhook-manager::messages.cp.templates_body')"
+                            :label="__('webhook-manager::messages.cp.body')"
                             :error="form.errors.body"
                             :instructions="__('webhook-manager::messages.cp.templates_body_hint')"
                             required
@@ -400,7 +400,7 @@ function copyToClipboard(text) {
                 <!-- Result panels, siblings of the form panel rather than
                      Panels nested inside its padding. -->
                 <template v-if="previewResult !== null">
-                    <Panel :heading="__('webhook-manager::messages.cp.templates_rendered_output_lc')" class="mt-4">
+                    <Panel :heading="__('webhook-manager::messages.cp.templates_rendered_output')" class="mt-4">
                         <Card>
                             <CodeEditor
                                 :model-value="previewResult.rendered || ''"

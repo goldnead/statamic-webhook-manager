@@ -32,7 +32,7 @@ class MakePreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Make Webhook URL', 'Scenario → Webhooks → Custom webhook → Copy address.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_make_label'), __('webhook-manager::messages.cp.preset_fields.url_make_hint')),
         ];
     }
 

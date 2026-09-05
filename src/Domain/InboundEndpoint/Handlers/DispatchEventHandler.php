@@ -28,7 +28,7 @@ class DispatchEventHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return __('webhook-manager::messages.cp.action_dispatch_event');
+        return __('webhook-manager::messages.cp.inbound_actions.dispatch_event');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

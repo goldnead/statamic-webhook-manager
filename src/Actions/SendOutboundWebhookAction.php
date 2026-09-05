@@ -30,7 +30,7 @@ class SendOutboundWebhookAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Send outbound webhook';
+        return __('webhook-manager::messages.cp.rule_actions.send_outbound_webhook');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

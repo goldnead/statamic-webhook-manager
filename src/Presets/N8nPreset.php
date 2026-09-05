@@ -32,7 +32,7 @@ class N8nPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('n8n Webhook URL', 'Add a Webhook node and copy its Production URL.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_n8n_label'), __('webhook-manager::messages.cp.preset_fields.url_n8n_hint')),
         ];
     }
 

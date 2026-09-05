@@ -27,10 +27,10 @@ import {
     Badge,
     Button,
     Select,
-    MiddleEllipsis,
 } from '@statamic/cms/ui';
 import { DateFormatter, NumberFormatter } from '@statamic/cms';
 import StatTile from '../../components/StatTile.vue';
+import UrlCell from '../../components/UrlCell.vue';
 
 const props = defineProps({
     stats: { type: Object, required: true },
@@ -93,8 +93,22 @@ const hasLatency = computed(() => latency.value.p50 != null);
 
 // ── Error breakdown ─────────────────────────────────────────────────────
 const maxError = computed(() => Math.max(1, ...errors.value.map((e) => e.count)));
+/**
+ * `|| type` never fired: Statamic's JS `__()` returns THE KEY when it finds no
+ * translation, and a key is truthy. So a type with no entry printed
+ * `webhook-man…` — the raw translation key, in the panel, on screen.
+ *
+ * It happens for real: DeliveryStatsService groups every failure without an
+ * `error_type` under the literal `unknown`, which no language file defined.
+ * `unknown` now has an entry, and the comparison is the one PHP already makes
+ * in PresentsDeliveryErrors: falls back to the raw handle, never to the key
+ * and never to a blank.
+ */
 function errorLabel(type) {
-    return __('webhook-manager::messages.failure_types.' + type) || type;
+    const key = 'webhook-manager::messages.failure_types.' + type;
+    const translated = __(key);
+
+    return translated === key ? type : translated;
 }
 
 // ── Filters ─────────────────────────────────────────────────────────────
@@ -189,7 +203,7 @@ function shortDate(iso) {
                         />
                     </div>
                 </div>
-                <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>{{ shortDate(series[0].date) }}</span>
                     <span>{{ shortDate(series[series.length - 1].date) }}</span>
                 </div>
@@ -218,7 +232,7 @@ function shortDate(iso) {
                                 stroke-linejoin="round" stroke-linecap="round" />
                         </svg>
                     </div>
-                    <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                    <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
                         <span>0%</span><span>100%</span>
                     </div>
                 </Card>
@@ -239,7 +253,7 @@ function shortDate(iso) {
                             <span class="w-16 text-right text-xs tabular-nums text-gray-900 dark:text-gray-100">{{ ms(row.value) }}</span>
                         </div>
                     </div>
-                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_latency') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_latency') }}</p>
                 </Card>
             </Panel>
         </div>
@@ -260,7 +274,7 @@ function shortDate(iso) {
                             <span class="w-10 text-right text-xs tabular-nums text-gray-900 dark:text-gray-100">{{ e.count }}</span>
                         </div>
                     </div>
-                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
                 </Card>
             </Panel>
 
@@ -273,15 +287,20 @@ function shortDate(iso) {
                     <ul v-if="topFailing.length" class="divide-y divide-gray-100 dark:divide-gray-800">
                         <li v-for="(row, i) in topFailing" :key="i" class="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
                             <div class="flex-1 min-w-0">
-                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ row.name || __('webhook-manager::messages.cp.webhook_generic') }}</div>
-                                <div class="font-mono text-xs text-gray-500 dark:text-gray-400">
-                                    <MiddleEllipsis :text="row.url || ''" />
-                                </div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ row.name || __('webhook-manager::messages.cp.webhook') }}</div>
+                                <!-- Same two defects as in every listing cell:
+                                     MiddleEllipsis billed each character a full
+                                     em (its width table knows only `inter`) and
+                                     used 276 of 469 available pixels, and it cut
+                                     the middle — a third Slack endpoint here
+                                     would have been indistinguishable from the
+                                     other two. -->
+                                <UrlCell :url="row.url || ''" class="mt-0.5" />
                             </div>
                             <Badge color="red" :text="String(row.failures)" />
                         </li>
                     </ul>
-                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
+                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">{{ __('webhook-manager::messages.insights_no_failures') }}</p>
                 </Card>
             </Panel>
         </div>

@@ -28,7 +28,7 @@ class UpdateEntryAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Update entry';
+        return __('webhook-manager::messages.cp.rule_actions.update_entry');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

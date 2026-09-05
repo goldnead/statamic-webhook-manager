@@ -37,12 +37,12 @@ class GenericJsonPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Destination URL', 'The endpoint that will receive the JSON POST.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_generic_label'), __('webhook-manager::messages.cp.preset_fields.url_generic_hint')),
             [
                 'handle' => 'payload_template',
-                'label' => 'Payload template',
+                'label' => __('webhook-manager::messages.cp.preset_fields.payload_template_label'),
                 'type' => 'code',
-                'instructions' => 'JSON body. Tokens like {{ entry:title }} are rendered per delivery.',
+                'instructions' => __('webhook-manager::messages.cp.preset_fields.payload_template_hint'),
                 'required' => false,
                 'default' => $this->structuredEventTemplate(),
             ],

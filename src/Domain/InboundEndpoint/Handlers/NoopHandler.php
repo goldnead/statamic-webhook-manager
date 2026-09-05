@@ -18,7 +18,7 @@ class NoopHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return __('webhook-manager::messages.cp.action_noop');
+        return __('webhook-manager::messages.cp.inbound_actions.noop');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

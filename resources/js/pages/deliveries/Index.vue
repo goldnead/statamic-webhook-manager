@@ -5,7 +5,6 @@ import { router } from '@statamic/cms/inertia';
 import {
     Header,
     Badge,
-    Alert,
     Button,
     DropdownItem,
     EmptyStateMenu,
@@ -24,8 +23,12 @@ import UrlCell from '../../components/UrlCell.vue';
  * action — deliveries are written by the system. Filters are resolved
  * server-side so the controller stays the single source of truth.
  *
- * error_type vocabulary is identical to LogController so colours/labels
- * are kept in sync below.
+ * Wording and colour for status and error type arrive on the row from the
+ * controller (PresentsDeliveryStatuses / PresentsDeliveryErrors). Nothing is
+ * mapped in this file any more, and the claim that used to stand here — that
+ * the error_type vocabulary matches LogController's — was wrong twice over:
+ * both files kept their own English copy, and LogController's column holds log
+ * EVENT types, not failure types at all.
  */
 const props = defineProps({
     deliveries:     { type: Object, required: true },
@@ -107,20 +110,11 @@ const methodColor = (method) => ({
 // (PresentsDeliveryErrors). The English map that used to sit here said
 // "Config" where the detail page said "Konfigurationsfehler".
 
-// Rejections from the actions on this listing. Nothing here is a field, so
-// whatever comes back is shown in the banner above the rows.
-const actionErrors = ref({});
-
-// Was an inline `router.post(row.replay_url, …)` in the template with no error
-// branch: a refused replay looked exactly like a successful one.
-function replay(row) {
-    if (!row.replay_url) return;
-    router.post(row.replay_url, {}, {
-        preserveScroll: true,
-        onError: (errors) => { actionErrors.value = errors || {}; },
-        onSuccess: () => { actionErrors.value = {}; },
-    });
-}
+// A `replay()` and an error banner used to live here, feeding the hand-built
+// row action. Both went with it: the only thing that ever wrote `actionErrors`
+// was that function, so the banner could not appear once the action was gone —
+// a move with one end. Refusals from the native action surface through core's
+// own action handling, which is what runs the endpoint now.
 </script>
 
 <template>
@@ -148,23 +142,6 @@ function replay(row) {
         <!-- ── Populated state ─────────────────────────────────────────── -->
         <div v-else class="max-w-page mx-auto">
             <Header :title="__('webhook-manager::messages.cp.page_deliveries')" icon="arrow-up-right" />
-
-            <!-- What the server said when an action from this listing was refused.
-                 There is no field here to hang a message on, so everything that comes
-                 back is shown above the listing. Structural today: the endpoints these
-                 buttons reach can only refuse with a 403, which Inertia does not route
-                 through `onError`. It is the net for the day one of them refuses with a
-                 reason, the way LeadHub 1.7.0 refuses a delete that still has children. -->
-            <Alert
-                v-if="Object.keys(actionErrors).length"
-                variant="error"
-                class="mb-4"
-                data-webhook-form-errors
-            >
-                <ul class="list-disc list-inside space-y-0.5">
-                    <li v-for="(err, key) in actionErrors" :key="key">{{ err }}</li>
-                </ul>
-            </Alert>
 
             <!-- Subject filter: which object the deliveries were about. -->
             <div class="flex items-center gap-2 mb-4 flex-wrap" data-testid="subject-filter">
@@ -263,13 +240,18 @@ function replay(row) {
 
                 <!-- url column — identifying tail first, host and leading path
                      underneath.
+
                      `min-w-56` is the only thing that holds this column open.
-                     A `width` in the column definition does nothing: measured
-                     on 05.09.2026, Statamic 6.31's <Listing> puts it neither on
-                     the <th>, nor the <td>, nor a <colgroup>, and the table is
-                     `table-layout: auto`, so a cell gets what its content asks
-                     for. Without a floor this one asked for 60px and every row
-                     read `...`. -->
+                     A `width` in the column definition does land as an
+                     attribute on the <td> (core's ListingTableBody passes it
+                     through; the <th> gets nothing and there is no <colgroup>),
+                     but it has no effect: core pins `.data-table` to
+                     `width:100%; min-width:100%` at `table-layout: auto`, and
+                     that scales a PREFERRED width away. A MINIMUM it cannot
+                     scale away. Measured on 05.09.2026 — `td[width]`,
+                     `td.style.width !important` and `th.style.width` all left
+                     the cell at 252px; only `min-width` moved it. Without a
+                     floor this column asked for 60px and every row read `...`. -->
                 <template #cell-url="{ row }">
                     <UrlCell :url="row.url || ''" class="min-w-56 max-w-56" />
                 </template>
@@ -300,7 +282,7 @@ function replay(row) {
                         :color="row.error_type_color || 'default'"
                         :text="row.error_type_label || row.error_type"
                     />
-                    <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
+                    <span v-else class="text-gray-500 dark:text-gray-400">—</span>
                 </template>
 
                 <!-- when column -->
@@ -308,18 +290,18 @@ function replay(row) {
                     <date-time :of="row.created_at" />
                 </template>
 
-                <!-- row actions -->
+                <!-- Row actions. Only "view" is hand-built; the replay entry
+                     used to sit next to it and is gone, because since
+                     05.09.2026 this listing has a real action endpoint and
+                     `ReplayDelivery` is a native Statamic action. Both said
+                     „Erneut senden", so the menu carried the same entry twice.
+                     `/outbound` made the same move when its hand-rolled toggle
+                     left a second „Deaktivieren" behind. -->
                 <template #prepended-row-actions="{ row }">
                     <DropdownItem
                         icon="eye"
                         :text="__('webhook-manager::messages.cp.row_view')"
                         :href="row.show_url"
-                    />
-                    <DropdownItem
-                        v-if="row.can_replay"
-                        icon="sync"
-                        :text="__('webhook-manager::messages.cp.replay')"
-                        @click="replay(row)"
                     />
                 </template>
             </Listing>

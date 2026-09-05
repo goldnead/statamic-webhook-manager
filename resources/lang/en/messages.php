@@ -10,7 +10,6 @@ return [
     'auth_config_hmac_secret_required' => 'HMAC signing needs a "secret" key in the auth config.',
 
     // Delivery detail / replay
-    'test_sent' => 'Test request sent.',
     'send_webhook' => 'Send webhook',
     'send_webhook_button' => '{1} Send webhook|[2,*] Send webhook',
     'send_webhook_missing' => 'The selected webhook no longer exists.',
@@ -81,8 +80,6 @@ return [
     'rule_deleted' => 'Rule deleted.',
     'rule_enabled' => 'Rule enabled.',
     'rule_disabled' => 'Rule disabled.',
-    'rule_test_succeeded' => 'Rule test succeeded.',
-    'rule_test_failed' => 'Rule test failed.',
 
     'template_created' => 'Template created.',
     'template_updated' => 'Template updated.',
@@ -94,7 +91,6 @@ return [
     'outbound_empty_intro' => 'Outbound webhooks send notifications from your Statamic site to external services whenever a trigger event fires.',
     'outbound_create_description' => 'Configure an outbound webhook with a trigger, destination URL, payload template and authentication.',
 
-    'inbound_empty_intro' => 'Inbound endpoints accept HTTP requests from external services and translate them into Statamic actions.',
     'inbound_create_description' => 'Define an inbound endpoint with a path, authentication scheme and a mapping to entries, actions or stored payloads.',
 
     'rules_empty_intro' => 'Rules apply conditional logic to webhook deliveries — match an event with conditions and run one or more actions.',
@@ -131,20 +127,17 @@ return [
         'form_submission' => 'Form submission',
     ],
 
-    'errors' => [
-        'invalid_template' => 'Template syntax is invalid.',
-        'invalid_url' => 'Destination URL is invalid.',
-        'unsupported_method' => 'HTTP method :method is not supported.',
-        'inbound_endpoint_not_found' => 'Endpoint not found or disabled.',
-        'inbound_unauthorized' => 'Unauthorized.',
-        'inbound_method_not_allowed' => 'Method not allowed.',
-        'inbound_payload_too_large' => 'Payload too large.',
-        'inbound_bad_request' => 'Bad request.',
-        'inbound_replay_blocked' => 'Duplicate request blocked by replay protection.',
-        'inbound_mapping_failed' => 'Mapping failed.',
-        'rule_unknown_action' => 'Unknown action handler: :handle',
-        'rule_invalid_conditions' => 'Invalid condition tree.',
-    ],
+    /*
+     * An `errors` group of thirteen keys stood here and was never read by one
+     * line of code. It was an attempt to translate the strings
+     * InboundRequestProcessor puts in `{"ok": false, "error": …}` —
+     * "Unauthorized.", "Payload too large.", "Method not allowed." — which are
+     * hard-coded there on purpose. Those go into the HTTP response an EXTERNAL
+     * caller receives, and that caller is a machine on someone else's server:
+     * it does not want the CP operator's language, and translating them would
+     * make the endpoint answer differently depending on who last logged in.
+     * The keys are gone rather than wired up; the group is not a to-do.
+     */
 
     /*
      * Control Panel chrome: headings, column labels, field labels, row actions.
@@ -282,9 +275,9 @@ return [
         'field_handle' => 'Handle',
         'field_handle_hint' => 'Internal identifier. Lowercase, hyphens or underscores only.',
         'field_description' => 'Description',
+        'field_enabled' => 'Enabled',
+        'webhook' => 'Webhook',
         'field_status' => 'Status',
-        'field_status_on' => 'Enabled',
-        'field_status_off' => 'Disabled',
         'field_trigger_type' => 'Trigger type',
         'field_trigger_type_hint' => 'Internal event that fires this webhook.',
         'field_url' => 'URL',
@@ -362,13 +355,10 @@ return [
         'col_path' => 'Path',
         'col_namespace' => 'Namespace',
         'col_source_type' => 'Source Type',
-        'col_error_type' => 'Error Type',
         'col_actions' => 'Actions',
         'col_conditions' => 'Conditions',
         'col_correlation_id' => 'Correlation ID',
         'col_auth' => 'Auth',
-        'field_description_generic' => 'Description',
-        'field_enabled_generic' => 'Enabled',
         'state_success' => 'Success',
         'state_failed' => 'Failed',
         'row_delete' => 'Delete',
@@ -420,19 +410,36 @@ return [
         'inbound_mapping_label' => 'Mapping Config (JSON)',
         'inbound_mapping_hint' => 'Map incoming fields to output fields. Leave empty to pass the payload through unchanged.',
         /*
-         * What an inbound endpoint does with the payload. The handlers used to
-         * return these labels as hard-coded English — visible as the "Action"
-         * column in the listing and as the choices in the form. Same case as
-         * the trigger and auth labels, one registry along.
+         * Two registries, two groups — kept apart on purpose even though four
+         * handles read the same: one is what an inbound endpoint does with a
+         * payload, the other is what a rule executes. Both returned their
+         * labels as hard-coded English and both reached the screen (the
+         * "Action" column of the inbound listing, the select in the rule form).
+         * Same case as the trigger and auth labels, one registry along — and on
+         * the first pass the second one was missed precisely because it shares
+         * its names with the first.
          */
-        'action_audit_log' => 'Write audit log entry',
-        'action_noop' => 'Acknowledge only (no side effects)',
-        'action_create_entry' => 'Create entry',
-        'action_create_form_submission' => 'Create form submission',
-        'action_dispatch_event' => 'Dispatch internal event',
-        'action_update_entry' => 'Update entry',
-        'action_upsert_entry' => 'Upsert entry by key',
-        'action_upsert_lead' => 'Create or update LeadHub lead',
+        'inbound_actions' => [
+            'audit_log' => 'Write audit log entry',
+            'noop' => 'Acknowledge only (no side effects)',
+            'create_entry' => 'Create entry',
+            'create_form_submission' => 'Create form submission',
+            'dispatch_event' => 'Dispatch internal event',
+            'update_entry' => 'Update entry',
+            'upsert_entry' => 'Upsert entry by key',
+            'upsert_lead' => 'Create or update LeadHub lead',
+        ],
+        'rule_actions' => [
+            'create_entry' => 'Create entry',
+            'create_form_submission' => 'Create form submission',
+            'dispatch_event' => 'Dispatch internal event',
+            'send_email' => 'Send email notification',
+            'send_outbound_webhook' => 'Send outbound webhook',
+            'send_slack_webhook' => 'Send Slack/Discord webhook',
+            'set_field_value' => 'Set entry field value',
+            'update_entry' => 'Update entry',
+            'write_log_note' => 'Write log note',
+        ],
 
         'inbound_action_type' => 'Action Type',
         'inbound_action_config' => 'Action Config (JSON)',
@@ -453,15 +460,9 @@ return [
         'tab_action' => 'Action',
         'tab_response' => 'Response',
         'tab_test' => 'Test',
-        'tab_general_generic' => 'General',
-        'field_auth_type_generic' => 'Auth Type',
         'field_auth_config_json' => 'Auth Config (JSON)',
-        'field_trigger_type_generic' => 'Trigger type',
-        'field_name_hint_generic' => 'Human-readable name shown across the CP.',
-        'field_handle_hint_generic' => 'Internal identifier. Lowercase, hyphens or underscores only.',
         'field_handle_hint_short' => 'Lowercase letters, numbers, underscores and hyphens only.',
         'sample_payload_json' => 'Sample Payload (JSON)',
-        'sample_payload_json_lc' => 'Sample payload (JSON)',
         'test_ok_generic' => 'Test successful.',
         'test_failed_generic' => 'Test failed.',
         'test_request_failed' => 'Test request failed.',
@@ -497,7 +498,6 @@ return [
         'rules_actions_available' => 'Available action handles:',
         'rules_actions_order_hint' => 'Each action runs in order. Stop on failure can be configured in the Settings tab.',
         'rules_stop_on_failure' => 'Stop on first action failure',
-        'rules_stop_on_failure_short' => 'Stop on first failure',
         'rules_stop_on_failure_hint' => 'When enabled, if any action returns an error the remaining actions in this rule are skipped.',
         'rules_order_hint' => 'Lower numbers run first. Rules with equal order are sorted by name.',
         'rules_test_hint' => 'This payload is passed to the rule engine as if it were a real trigger event.',
@@ -514,7 +514,6 @@ return [
         'templates_delete' => 'Delete Template',
         'templates_delete_confirm' => 'Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.',
         'templates_fallback_title' => 'Template',
-        'templates_body' => 'Body',
         'templates_body_hint' => 'Template body. Twig / Antlers syntax is supported for non-JSON types.',
         'templates_name_placeholder' => 'My template',
         'templates_handle_placeholder' => 'my_template',
@@ -522,12 +521,58 @@ return [
         'templates_preview_hint' => 'Provide a JSON object that will be passed as data to the template renderer.',
         'templates_render_preview' => 'Render preview',
         'templates_rendered_output' => 'Rendered Output',
-        'templates_rendered_output_lc' => 'Rendered output',
         'templates_preview_failed' => 'Preview failed.',
         'templates_kind_outbound' => 'Outbound request body',
         'templates_kind_inbound' => 'Inbound response body',
         'templates_kind_notification' => 'Notification body',
         'templates_variables' => 'Available variables',
+
+        /*
+         * The log.
+         *
+         * The type column was headed "Fehlerart" and translated against the
+         * eight failure classes of a delivery — a vocabulary that never appears
+         * in it. The screen therefore showed the raw handles
+         * `inbound_received`, `delivery_failed`, `inbound_auth_failed`, with an
+         * equally raw `info`/`warning` next to them. What stands here is the
+         * vocabulary the column actually carries: the 22 event types the
+         * SystemLogger writes.
+         */
+        'col_log_type' => 'Event',
+        'log_levels' => [
+            'debug' => 'Debug',
+            'info' => 'Info',
+            'warning' => 'Warning',
+            'error' => 'Error',
+        ],
+        'log_types' => [
+            'delivery_success' => 'Delivery succeeded',
+            'delivery_failed' => 'Delivery failed',
+            'replay_executed' => 'Delivery replayed',
+            'rule_executed' => 'Rule executed',
+            'rule_condition_exception' => 'Rule condition threw',
+            'alert_mail_failed' => 'Alert mail not delivered',
+            'alert_slack_failed' => 'Slack alert not delivered',
+            'inbound_received' => 'Request accepted',
+            'inbound_audit' => 'Request logged',
+            'inbound_auth_failed' => 'Authentication refused',
+            'inbound_signature_without_timestamp' => 'Signature without timestamp',
+            'inbound_endpoint_not_found' => 'Endpoint not found',
+            'inbound_method_not_allowed' => 'HTTP method not allowed',
+            'inbound_rate_limited' => 'Rate limit hit',
+            'inbound_payload_too_large' => 'Payload too large',
+            'inbound_parse_failed' => 'Payload could not be read',
+            'inbound_replay_blocked' => 'Replay blocked',
+            'inbound_mapping_failed' => 'Mapping failed',
+            'inbound_action_succeeded' => 'Action executed',
+            'inbound_action_failed' => 'Action failed',
+            'inbound_action_exception' => 'Action aborted with an exception',
+            'inbound_action_handler_missing' => 'Action type not registered',
+            'inbound_brand_defaulted' => 'No brand given, default used',
+            'inbound_brand_not_found' => 'Brand not found',
+            'circuit_breaker_tripped' => 'Circuit breaker tripped',
+            'configuration_error_dangling_template' => 'Dangling template referenced',
+        ],
 
         // Logs and deliveries (empty states)
         'logs_empty_heading' => 'No logs yet',
@@ -537,8 +582,6 @@ return [
         'deliveries_empty_heading' => 'No deliveries yet',
         'deliveries_empty_item' => 'Nothing dispatched so far',
         'deliveries_empty_sub' => 'Deliveries are recorded automatically when outbound webhooks are fired. Check back once some activity has occurred.',
-        'delivery_generic' => 'Delivery',
-        'webhook_generic' => 'Webhook',
 
         // Integrations
         'integrations_empty_heading' => 'No integrations available',
@@ -558,6 +601,28 @@ return [
         'preset_zapier' => 'Send a structured JSON event to a Zapier "Catch Hook" trigger.',
         'preset_make' => 'Send a structured JSON event to a Make custom-webhook trigger.',
         'preset_n8n' => 'Send a structured JSON event to an n8n Webhook node.',
+        // Labels and instructions for the fields an integration's setup form
+        // shows. These were hard-coded English in the preset classes too.
+        'preset_fields' => [
+            'message_label' => 'Message',
+            'message_hint' => 'Supports tokens like {{ entry:title }} and {{ system:trigger }}.',
+            'payload_template_label' => 'Payload template',
+            'payload_template_hint' => 'JSON body. Tokens like {{ entry:title }} are rendered per delivery.',
+            'url_generic_label' => 'Destination URL',
+            'url_generic_hint' => 'The endpoint that will receive the JSON POST.',
+            'url_slack_label' => 'Slack Incoming Webhook URL',
+            'url_slack_hint' => 'Create one at api.slack.com → Incoming Webhooks.',
+            'url_discord_label' => 'Discord Webhook URL',
+            'url_discord_hint' => 'Channel Settings → Integrations → Webhooks → Copy URL.',
+            'url_teams_label' => 'Teams Incoming Webhook URL',
+            'url_teams_hint' => 'Channel → Connectors → Incoming Webhook → Create.',
+            'url_zapier_label' => 'Zapier Catch Hook URL',
+            'url_zapier_hint' => 'Zap → Trigger → Webhooks by Zapier → Catch Hook → Copy URL.',
+            'url_make_label' => 'Make Webhook URL',
+            'url_make_hint' => 'Scenario → Webhooks → Custom webhook → Copy address.',
+            'url_n8n_label' => 'n8n Webhook URL',
+            'url_n8n_hint' => 'Add a Webhook node and copy its Production URL.',
+        ],
 
         // Debug
         'debug_triggers_heading' => 'Trigger Inspector',
@@ -575,6 +640,10 @@ return [
         'debug_simulate_sub' => 'Fire a registered trigger with a sample payload to test outbound webhooks end-to-end.',
         'debug_simulate_hint' => 'JSON object that will be dispatched as the trigger payload.',
         'debug_simulated' => 'Trigger simulated.',
+        // Two messages that came out of a template literal in hard-coded
+        // English, two lines away from their translated twins.
+        'invalid_json' => 'Invalid JSON: :error',
+        'invalid_sample_json' => 'Invalid sample JSON: :error',
         'source_entry' => 'Entry',
         'source_form_submission' => 'Form Submission',
         'source_user' => 'User',
@@ -605,5 +674,9 @@ return [
         'payload' => 'Payload error',
         'configuration' => 'Configuration error',
         'internal' => 'Internal app error',
+        // DeliveryStatsService groups every failure without a classified type
+        // under this literal. Without an entry the insights panel printed the
+        // raw translation key at the reader.
+        'unknown' => 'Not classified',
     ],
 ];

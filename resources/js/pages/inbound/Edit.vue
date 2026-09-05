@@ -310,7 +310,7 @@ async function runTest() {
         <Tabs v-model="activeTab">
             <TabList>
                 <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
-                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
+                    {{ __('webhook-manager::messages.cp.tab_general') }}
                 </TabTrigger>
                 <TabTrigger value="auth" :class="{ 'text-red-500': tabsWithErrors.has('auth') }">
                     {{ __('webhook-manager::messages.cp.tab_authentication') }}
@@ -351,11 +351,11 @@ async function runTest() {
                         </div>
                     </Field>
 
-                    <Field inline :label="__('webhook-manager::messages.cp.field_enabled_generic')" :error="form.errors.enabled">
-                        <Switch v-model="form.enabled">{{ __('webhook-manager::messages.cp.field_enabled_generic') }}</Switch>
+                    <Field inline :label="__('webhook-manager::messages.cp.field_enabled')" :error="form.errors.enabled">
+                        <Switch v-model="form.enabled">{{ __('webhook-manager::messages.cp.field_enabled') }}</Switch>
                     </Field>
 
-                    <Field inline :label="__('webhook-manager::messages.cp.field_description_generic')" :error="form.errors.description">
+                    <Field inline :label="__('webhook-manager::messages.cp.field_description')" :error="form.errors.description">
                         <Textarea v-model="form.description" :rows="3" />
                     </Field>
                     </Card>
@@ -366,7 +366,7 @@ async function runTest() {
             <TabContent value="auth">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                    <Field inline :label="__('webhook-manager::messages.cp.field_auth_type_generic')" :error="form.errors.auth_type" required>
+                    <Field inline :label="__('webhook-manager::messages.cp.field_auth_type')" :error="form.errors.auth_type" required>
                         <Select v-model="form.auth_type" :options="authOptionsArray" />
                     </Field>
 
@@ -510,7 +510,7 @@ async function runTest() {
                             :disabled="!testUrl || testing"
                             @click="runTest"
                         />
-                        <span v-if="!testUrl" class="ml-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                        <span v-if="!testUrl" class="ml-3 text-sm text-gray-500 dark:text-gray-400">
                             {{ __('webhook-manager::messages.cp.inbound_test_save_first') }}
                         </span>
                     </div>

@@ -32,7 +32,7 @@ class SlackPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Slack Incoming Webhook URL', 'Create one at api.slack.com → Incoming Webhooks.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_slack_label'), __('webhook-manager::messages.cp.preset_fields.url_slack_hint')),
             $this->messageField(),
         ];
     }

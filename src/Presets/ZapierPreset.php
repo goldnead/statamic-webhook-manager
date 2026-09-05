@@ -32,7 +32,7 @@ class ZapierPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Zapier Catch Hook URL', 'Zap → Trigger → Webhooks by Zapier → Catch Hook → Copy URL.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_zapier_label'), __('webhook-manager::messages.cp.preset_fields.url_zapier_hint')),
         ];
     }
 

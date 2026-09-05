@@ -24,14 +24,16 @@ trait PresentsOutboundWebhooks
     protected function outboundColumns(): array
     {
         // These carried `width` percentages until 05.09.2026, on the belief
-        // that the value reaches the <td>. It does not: measured against the
-        // rendered DOM of this very listing, Statamic 6.31 puts it neither on
-        // the <th>, nor the <td>, nor a <colgroup>. The table runs on
-        // `table-layout: auto`, so a column gets what its content asks for —
-        // which is why the URL column had collapsed to `ht...g` in the first
-        // place. What actually holds it open is the `min-w-64` on the cell in
-        // Outbound/Index.vue and on the overview. Keeping a dead key here
-        // would keep the wrong explanation alive with it.
+        // that reaching the <td> made them work. Half of that is true: core's
+        // ListingTableBody does put the value on the <td> (the <th> gets
+        // nothing, and there is no <colgroup>). It still does nothing, because
+        // `.data-table` is pinned to `width:100%; min-width:100%` at
+        // `table-layout: auto` — that scales a PREFERRED width away and a
+        // MINIMUM one not. Measured: `td[width]`, an inline `!important` width
+        // on the <td> and one on the <th> all left the column where it was.
+        // What actually widened this listing's URL column from 119px to 284px
+        // was the `min-w-64` on the cell in Outbound/Index.vue. Keeping a dead
+        // key here would keep the wrong explanation alive with it.
         return [
             ['field' => 'name', 'label' => __('webhook-manager::messages.cp.col_name'), 'sortable' => true, 'visible' => true],
             ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'sortable' => true, 'visible' => true],

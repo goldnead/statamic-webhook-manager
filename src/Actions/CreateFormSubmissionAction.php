@@ -23,7 +23,7 @@ class CreateFormSubmissionAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Create form submission';
+        return __('webhook-manager::messages.cp.rule_actions.create_form_submission');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

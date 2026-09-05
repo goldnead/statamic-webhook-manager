@@ -49,7 +49,7 @@ async function runPreview() {
     try {
         payload = JSON.parse(samplePayload.value);
     } catch (e) {
-        previewResult.value = { rendered: '', issues: [`Invalid sample JSON: ${e.message}`] };
+        previewResult.value = { rendered: '', issues: [__('webhook-manager::messages.cp.invalid_sample_json', { error: e.message })] };
         return;
     }
     previewing.value = true;
@@ -100,7 +100,7 @@ async function runSimulate() {
     try {
         payload = JSON.parse(triggerPayload.value);
     } catch (e) {
-        simulateResult.value = { success: false, message: `Invalid JSON: ${e.message}`, response: null };
+        simulateResult.value = { success: false, message: __('webhook-manager::messages.cp.invalid_json', { error: e.message }), response: null };
         return;
     }
     simulating.value = true;

@@ -393,7 +393,7 @@ async function runTest() {
         <Tabs v-model="activeTab" class="mt-4">
             <TabList>
                 <TabTrigger value="general">
-                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
+                    {{ __('webhook-manager::messages.cp.tab_general') }}
                     <Badge v-if="tabsWithErrors.has('general')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger value="trigger">
@@ -426,7 +426,7 @@ async function runTest() {
                             id="name"
                             :required="true"
                             :error="form.errors.name"
-                            :instructions="__('webhook-manager::messages.cp.field_name_hint_generic')"
+                            :instructions="__('webhook-manager::messages.cp.field_name_hint')"
                         >
                             <Input id="name" v-model="form.name" autofocus />
                         </Field>
@@ -436,13 +436,13 @@ async function runTest() {
                             id="handle"
                             :required="true"
                             :error="form.errors.handle"
-                            :instructions="__('webhook-manager::messages.cp.field_handle_hint_generic')"
+                            :instructions="__('webhook-manager::messages.cp.field_handle_hint')"
                         >
                             <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
                         </Field>
 
                         <Field inline
-                            :label="__('webhook-manager::messages.cp.field_description_generic')"
+                            :label="__('webhook-manager::messages.cp.field_description')"
                             id="description"
                             class="md:col-span-2"
                             :error="form.errors.description"
@@ -467,7 +467,7 @@ async function runTest() {
                             <Switch
                                 id="enabled"
                                 v-model="form.enabled"
-                                :text="form.enabled ? __('webhook-manager::messages.cp.field_enabled_generic') : __('webhook-manager::messages.cp.status_disabled')"
+                                :text="form.enabled ? __('webhook-manager::messages.cp.field_enabled') : __('webhook-manager::messages.cp.status_disabled')"
                             />
                         </Field>
                     </Card>
@@ -479,7 +479,7 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('webhook-manager::messages.cp.field_trigger_type_generic')"
+                            :label="__('webhook-manager::messages.cp.field_trigger_type')"
                             id="trigger_type"
                             :required="true"
                             :error="form.errors.trigger_type"
@@ -612,7 +612,7 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('webhook-manager::messages.cp.rules_stop_on_failure_short')"
+                            :label="__('webhook-manager::messages.cp.rules_stop_on_failure')"
                             id="stop_on_failure"
                             class="md:col-span-2"
                             :error="form.errors.stop_on_failure"
@@ -633,7 +633,7 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('webhook-manager::messages.cp.sample_payload_json_lc')"
+                            :label="__('webhook-manager::messages.cp.sample_payload_json')"
                             id="sample_payload"
                             :instructions="__('webhook-manager::messages.cp.rules_test_hint')"
                         >

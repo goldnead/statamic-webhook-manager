@@ -32,7 +32,7 @@ class MicrosoftTeamsPreset extends AbstractPreset
     public function fields(): array
     {
         return [
-            $this->urlFieldDef('Teams Incoming Webhook URL', 'Channel → Connectors → Incoming Webhook → Create.'),
+            $this->urlFieldDef(__('webhook-manager::messages.cp.preset_fields.url_teams_label'), __('webhook-manager::messages.cp.preset_fields.url_teams_hint')),
             $this->messageField(),
         ];
     }

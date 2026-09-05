@@ -29,7 +29,7 @@ class CreateEntryAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Create entry';
+        return __('webhook-manager::messages.cp.rule_actions.create_entry');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

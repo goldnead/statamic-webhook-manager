@@ -91,11 +91,13 @@ class OverviewController extends CpController
             'outboundActionUrl' => cp_route('webhook-manager.outbound.actions.run'),
 
             'recentFailures' => $this->buildRecentFailures($triggerLabels),
-            // No `width` key: measured against the rendered DOM on 05.09.2026,
-            // Statamic 6.31's <Listing> never applies it — not to the <th>,
-            // not to the <td>, not through a <colgroup>. The table is
-            // `table-layout: auto`, so the floor that keeps the URL column
-            // readable is the `min-w-64` on the cell in Overview/Index.vue.
+            // No `width` key. Core does hand it to the <td> as an attribute,
+            // but `.data-table` is pinned to `width:100%; min-width:100%` at
+            // `table-layout: auto`, and that scales a preferred width away —
+            // measured on 05.09.2026, neither the attribute nor an inline
+            // `!important` width moved a column by a pixel. The floor that
+            // keeps the URL column readable is the `min-w-64` on the cell in
+            // Overview/Index.vue.
             'failureColumns' => [
                 ['field' => 'when', 'label' => __('webhook-manager::messages.cp.col_when'), 'visible' => true, 'sortable' => true],
                 ['field' => 'trigger', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'visible' => true, 'sortable' => true],

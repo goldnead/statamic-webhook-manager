@@ -27,7 +27,7 @@ class DispatchEventAction implements ActionInterface
 
     public function label(): string
     {
-        return 'Dispatch internal event';
+        return __('webhook-manager::messages.cp.rule_actions.dispatch_event');
     }
 
     public function execute(array $config, ExecutionContext $context): ExecutionResult

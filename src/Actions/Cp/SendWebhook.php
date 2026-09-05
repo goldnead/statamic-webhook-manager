@@ -53,7 +53,7 @@ class SendWebhook extends Action
         return [
             'webhook' => [
                 'type' => 'select',
-                'display' => __('webhook-manager::messages.cp.webhook_generic'),
+                'display' => __('webhook-manager::messages.cp.webhook'),
                 'instructions' => __('webhook-manager::messages.cp.send_webhook_field_hint'),
                 'options' => app(OutboundWebhookRepositoryInterface::class)->all()
                     ->filter(fn ($hook) => (bool) $hook->enabled)

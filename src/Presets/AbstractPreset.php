@@ -87,9 +87,9 @@ JSON;
     {
         return [
             'handle' => 'message',
-            'label' => 'Message',
+            'label' => __('webhook-manager::messages.cp.preset_fields.message_label'),
             'type' => 'textarea',
-            'instructions' => 'Supports tokens like {{ entry:title }} and {{ system:trigger }}.',
+            'instructions' => __('webhook-manager::messages.cp.preset_fields.message_hint'),
             'required' => false,
             'default' => $this->defaultMessage(),
         ];
