@@ -84,12 +84,12 @@ const actionErrors = ref({});
 </script>
 
 <template>
-    <Head :title="[__('Rules'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_rules'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
-                {{ __('Rules') }}
+                {{ __('webhook-manager::messages.cp.page_rules') }}
             </h1>
         </header>
 
@@ -98,20 +98,20 @@ const actionErrors = ref({});
                 v-if="canCreate"
                 :href="createUrl"
                 icon="filter"
-                :heading="__('Create Rule')"
+                :heading="__('webhook-manager::messages.cp.rules_create_heading')"
                 :description="__('webhook-manager::messages.rules_create_description')"
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Rules')" url="https://github.com/goldnead/statamic-webhook-manager#rules" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_rules')" url="https://github.com/goldnead/statamic-webhook-manager#rules" />
     </div>
 
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Rules')" icon="filter">
+        <Header :title="__('webhook-manager::messages.cp.page_rules')" icon="filter">
             <CommandPaletteItem
                 v-if="canCreate"
                 category="Actions"
-                :text="__('Create Rule')"
+                :text="__('webhook-manager::messages.cp.rules_create_heading')"
                 icon="filter"
                 :url="createUrl"
                 v-slot="{ text, url }"
@@ -129,7 +129,7 @@ const actionErrors = ref({});
                 <button
                     type="button"
                     class="shrink-0 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                    :aria-label="__('Dismiss')"
+                    :aria-label="__('webhook-manager::messages.cp.btn_dismiss')"
                     @click="dismissIntro"
                 >
                     <Icon name="x" class="h-4 w-4" />
@@ -190,7 +190,7 @@ const actionErrors = ref({});
             <template #cell-enabled="{ row: rule }">
                 <Badge
                     :color="rule.enabled ? 'green' : 'default'"
-                    :text="rule.enabled ? __('Active') : __('Disabled')"
+                    :text="rule.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
                 />
             </template>
 
@@ -198,18 +198,18 @@ const actionErrors = ref({});
                 <DropdownItem
                     v-if="rule.can_edit"
                     icon="cog"
-                    :text="__('Edit')"
+                    :text="__('webhook-manager::messages.cp.action_edit')"
                     :href="rule.edit_url"
                 />
                 <DropdownItem
                     v-if="rule.can_toggle"
                     icon="fieldtype-toggle"
-                    :text="rule.enabled ? __('Disable') : __('Enable')"
+                    :text="rule.enabled ? __('webhook-manager::messages.cp.row_disable') : __('webhook-manager::messages.cp.row_enable')"
                     @click="toggle(rule)"
                 />
             </template>
         </Listing>
 
-        <DocsCallout :topic="__('Rules')" url="https://github.com/goldnead/statamic-webhook-manager#rules" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_rules')" url="https://github.com/goldnead/statamic-webhook-manager#rules" />
     </div>
 </template>

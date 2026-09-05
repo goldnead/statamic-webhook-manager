@@ -91,16 +91,16 @@ class OverviewController extends CpController
             'outboundActionUrl' => cp_route('webhook-manager.outbound.actions.run'),
 
             'recentFailures' => $this->buildRecentFailures($triggerLabels),
-            // `width` reaches the <td> (Listing/TableBody.vue:102). Without it
-            // the auto-layout table hands the URL column whatever the badges
-            // leave over, and MiddleEllipsis — which measures its container —
-            // truncates a URL down to six characters that tell no two rows
-            // apart. Percentages, so it survives the max-width toggle.
+            // No `width` key: measured against the rendered DOM on 05.09.2026,
+            // Statamic 6.31's <Listing> never applies it — not to the <th>,
+            // not to the <td>, not through a <colgroup>. The table is
+            // `table-layout: auto`, so the floor that keeps the URL column
+            // readable is the `min-w-64` on the cell in Overview/Index.vue.
             'failureColumns' => [
-                ['field' => 'when', 'label' => __('webhook-manager::messages.cp.col_when'), 'visible' => true, 'sortable' => true, 'width' => '18%'],
-                ['field' => 'trigger', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'visible' => true, 'sortable' => true, 'width' => '20%'],
-                ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'visible' => true, 'sortable' => false, 'width' => '44%'],
-                ['field' => 'status', 'label' => __('webhook-manager::messages.cp.col_error'), 'visible' => true, 'sortable' => true, 'width' => '18%'],
+                ['field' => 'when', 'label' => __('webhook-manager::messages.cp.col_when'), 'visible' => true, 'sortable' => true],
+                ['field' => 'trigger', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'visible' => true, 'sortable' => true],
+                ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'visible' => true, 'sortable' => false],
+                ['field' => 'status', 'label' => __('webhook-manager::messages.cp.col_error'), 'visible' => true, 'sortable' => true],
             ],
             'deliveriesIndexUrl' => cp_route('webhook-manager.deliveries.index'),
             'deliveryActionUrl' => cp_route('webhook-manager.deliveries.actions.run'),

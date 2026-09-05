@@ -26,7 +26,7 @@ class ZapierPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Send a structured JSON event to a Zapier "Catch Hook" trigger.';
+        return __('webhook-manager::messages.cp.preset_zapier');
     }
 
     public function fields(): array

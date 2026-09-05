@@ -83,9 +83,9 @@ const testResult = ref(null);
 const samplePayload = ref('{\n  "id": 1,\n  "name": "Test"\n}');
 
 const pageTitle = computed(() =>
-    props.isNew ? __('Create inbound endpoint') : (props.endpoint.name || __('Inbound endpoint'))
+    props.isNew ? __('webhook-manager::messages.cp.inbound_create_title') : (props.endpoint.name || __('webhook-manager::messages.cp.inbound_fallback_title'))
 );
-const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+const saveLabel = computed(() => props.isNew ? __('webhook-manager::messages.cp.btn_create') : __('webhook-manager::messages.cp.btn_save'));
 
 // The URL the router actually matches: prefix, brand, handle. `handle` and
 // not `path` — the route is `{prefix}/{brand}/{handle}` and `path` is a free
@@ -146,12 +146,12 @@ const authPlaceholder = computed(() => {
 
 const authInstructions = computed(() => {
     if (form.auth_type === 'none') {
-        return __('No authentication. Anyone can post to this endpoint.');
+        return __('webhook-manager::messages.cp.inbound_auth_none_hint');
     }
     if (props.endpoint.auth_configured) {
-        return __('A secret is already configured. Leave blank to keep it. Paste new JSON to replace — the value is encrypted at rest.');
+        return __('webhook-manager::messages.cp.inbound_auth_set_hint');
     }
-    return __('Stored encrypted. Format depends on the auth type — see the placeholder for an example.');
+    return __('webhook-manager::messages.cp.inbound_auth_hint');
 });
 
 const allMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -235,7 +235,7 @@ async function runTest() {
             ok: false,
             message: e?.response?.data?.message
                 ?? e?.message
-                ?? __('Test request failed.'),
+                ?? __('webhook-manager::messages.cp.test_request_failed'),
             mapped: {},
             data: {},
         };
@@ -246,7 +246,7 @@ async function runTest() {
 </script>
 
 <template>
-    <Head :title="[pageTitle, __('Inbound'), __('Webhook Manager')]" />
+    <Head :title="[pageTitle, __('webhook-manager::messages.cp.page_inbound_short'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
@@ -255,8 +255,8 @@ async function runTest() {
                 <StatusIndicator
                     v-if="!isNew"
                     :active="endpoint.enabled"
-                    :active-label="__('Active')"
-                    :inactive-label="__('Disabled')"
+                    :active-label="__('webhook-manager::messages.cp.status_active')"
+                    :inactive-label="__('webhook-manager::messages.cp.status_disabled')"
                     class="mr-2"
                 />
                 <!-- Header order is core's: the `…` dropdown first, the
@@ -270,7 +270,7 @@ async function runTest() {
                         <DropdownItem
                             variant="destructive"
                             icon="trash"
-                            :text="__('Delete endpoint')"
+                            :text="__('webhook-manager::messages.cp.inbound_delete')"
                             @click="showDelete = true"
                         />
                     </DropdownMenu>
@@ -285,7 +285,7 @@ async function runTest() {
                 <CommandPaletteItem
                     v-if="!isNew && deleteUrl"
                     category="Actions"
-                    :text="__('Delete endpoint')"
+                    :text="__('webhook-manager::messages.cp.inbound_delete')"
                     icon="trash"
                     :action="() => (showDelete = true)"
                 />
@@ -310,25 +310,25 @@ async function runTest() {
         <Tabs v-model="activeTab">
             <TabList>
                 <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
-                    {{ __('General') }}
+                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
                 </TabTrigger>
                 <TabTrigger value="auth" :class="{ 'text-red-500': tabsWithErrors.has('auth') }">
-                    {{ __('Authentication') }}
+                    {{ __('webhook-manager::messages.cp.tab_authentication') }}
                 </TabTrigger>
                 <TabTrigger value="methods" :class="{ 'text-red-500': tabsWithErrors.has('methods') }">
-                    {{ __('Allowed Methods') }}
+                    {{ __('webhook-manager::messages.cp.tab_allowed_methods') }}
                 </TabTrigger>
                 <TabTrigger value="mapping" :class="{ 'text-red-500': tabsWithErrors.has('mapping') }">
-                    {{ __('Mapping') }}
+                    {{ __('webhook-manager::messages.cp.tab_mapping') }}
                 </TabTrigger>
                 <TabTrigger value="action" :class="{ 'text-red-500': tabsWithErrors.has('action') }">
-                    {{ __('Action') }}
+                    {{ __('webhook-manager::messages.cp.tab_action') }}
                 </TabTrigger>
                 <TabTrigger value="response" :class="{ 'text-red-500': tabsWithErrors.has('response') }">
-                    {{ __('Response') }}
+                    {{ __('webhook-manager::messages.cp.tab_response') }}
                 </TabTrigger>
                 <TabTrigger value="test">
-                    {{ __('Test') }}
+                    {{ __('webhook-manager::messages.cp.tab_test') }}
                 </TabTrigger>
             </TabList>
 
@@ -336,26 +336,26 @@ async function runTest() {
             <TabContent value="general">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                    <Field inline :label="__('Name')" :error="form.errors.name" required>
-                        <Input v-model="form.name" :placeholder="__('My Inbound Endpoint')" />
+                    <Field inline :label="__('webhook-manager::messages.cp.col_name')" :error="form.errors.name" required>
+                        <Input v-model="form.name" :placeholder="__('webhook-manager::messages.cp.inbound_name_placeholder')" />
                     </Field>
 
-                    <Field inline :label="__('Handle')" :error="form.errors.handle" required>
-                        <Input v-model="form.handle" :placeholder="__('my-inbound-endpoint')" class="font-mono" />
+                    <Field inline :label="__('webhook-manager::messages.cp.col_handle')" :error="form.errors.handle" required>
+                        <Input v-model="form.handle" :placeholder="__('webhook-manager::messages.cp.inbound_handle_placeholder')" class="font-mono" />
                     </Field>
 
-                    <Field inline :label="__('Path')" :error="form.errors.path" :instructions="__('The URL path segment for this endpoint.')">
-                        <Input v-model="form.path" :placeholder="__('my-endpoint')" class="font-mono" />
+                    <Field inline :label="__('webhook-manager::messages.cp.col_path')" :error="form.errors.path" :instructions="__('webhook-manager::messages.cp.inbound_path_hint')">
+                        <Input v-model="form.path" :placeholder="__('webhook-manager::messages.cp.inbound_path_placeholder')" class="font-mono" />
                         <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 font-mono">
-                            {{ __('Full URL:') }} <span class="text-primary">{{ fullUrl }}</span>
+                            {{ __('webhook-manager::messages.cp.inbound_full_url') }} <span class="text-primary">{{ fullUrl }}</span>
                         </div>
                     </Field>
 
-                    <Field inline :label="__('Enabled')" :error="form.errors.enabled">
-                        <Switch v-model="form.enabled">{{ __('Enabled') }}</Switch>
+                    <Field inline :label="__('webhook-manager::messages.cp.field_enabled_generic')" :error="form.errors.enabled">
+                        <Switch v-model="form.enabled">{{ __('webhook-manager::messages.cp.field_enabled_generic') }}</Switch>
                     </Field>
 
-                    <Field inline :label="__('Description')" :error="form.errors.description">
+                    <Field inline :label="__('webhook-manager::messages.cp.field_description_generic')" :error="form.errors.description">
                         <Textarea v-model="form.description" :rows="3" />
                     </Field>
                     </Card>
@@ -366,13 +366,13 @@ async function runTest() {
             <TabContent value="auth">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                    <Field inline :label="__('Auth Type')" :error="form.errors.auth_type" required>
+                    <Field inline :label="__('webhook-manager::messages.cp.field_auth_type_generic')" :error="form.errors.auth_type" required>
                         <Select v-model="form.auth_type" :options="authOptionsArray" />
                     </Field>
 
                     <Field inline
                         v-if="form.auth_type !== 'none'"
-                        :label="__('Auth Config (JSON)')"
+                        :label="__('webhook-manager::messages.cp.field_auth_config_json')"
                         :error="form.errors.auth_config_json || form.errors.auth_config"
                         :instructions="authInstructions"
                     >
@@ -392,9 +392,9 @@ async function runTest() {
                 <Panel>
                     <Card inset class="p-6 space-y-6">
                     <Field inline
-                        :label="__('Allowed HTTP Methods')"
+                        :label="__('webhook-manager::messages.cp.inbound_methods_label')"
                         :error="form.errors.allowed_methods"
-                        :instructions="__('Select which HTTP methods this endpoint will accept.')"
+                        :instructions="__('webhook-manager::messages.cp.inbound_methods_hint')"
                     >
                         <CheckboxGroup
                             v-model="form.allowed_methods"
@@ -418,19 +418,19 @@ async function runTest() {
                          `warning` here would be permanent alarm on a screen
                          where nothing is wrong. -->
                     <Alert class="mb-4">
-                        {{ __('Define a JSON mapping to transform the incoming payload before it is passed to the action.') }}
+                        {{ __('webhook-manager::messages.cp.inbound_mapping_intro') }}
                         <a
                             href="https://github.com/goldnead/statamic-webhook-manager"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="underline ml-1"
-                        >{{ __('View mapping documentation') }}</a>
+                        >{{ __('webhook-manager::messages.cp.inbound_mapping_docs') }}</a>
                     </Alert>
 
                     <Field inline
-                        :label="__('Mapping Config (JSON)')"
+                        :label="__('webhook-manager::messages.cp.inbound_mapping_label')"
                         :error="form.errors.mapping_config_json || form.errors.mapping_config"
-                        :instructions="__('Map incoming fields to output fields. Leave empty to pass the payload through unchanged.')"
+                        :instructions="__('webhook-manager::messages.cp.inbound_mapping_hint')"
                     >
                         <CodeEditor
                             v-model="form.mapping_config_json"
@@ -447,15 +447,15 @@ async function runTest() {
             <TabContent value="action">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                    <Field inline :label="__('Action Type')" :error="form.errors.action_type" required>
+                    <Field inline :label="__('webhook-manager::messages.cp.inbound_action_type')" :error="form.errors.action_type" required>
                         <Select v-model="form.action_type" :options="actionOptionsArray" />
                     </Field>
 
                     <Field inline
                         v-if="form.action_type && form.action_type !== 'noop'"
-                        :label="__('Action Config (JSON)')"
+                        :label="__('webhook-manager::messages.cp.inbound_action_config')"
                         :error="form.errors.action_config_json || form.errors.action_config"
-                        :instructions="__('Configuration for the selected action. Format depends on the action type.')"
+                        :instructions="__('webhook-manager::messages.cp.inbound_action_config_hint')"
                     >
                         <CodeEditor
                             v-model="form.action_config_json"
@@ -473,9 +473,9 @@ async function runTest() {
                 <Panel>
                     <Card inset class="p-6 space-y-6">
                     <Field inline
-                        :label="__('Response Config (JSON)')"
+                        :label="__('webhook-manager::messages.cp.inbound_response_config')"
                         :error="form.errors.response_config_json || form.errors.response_config"
-                        :instructions="__('Customise the HTTP response returned to the caller. Leave empty for the default 200 OK.')"
+                        :instructions="__('webhook-manager::messages.cp.inbound_response_hint')"
                     >
                         <CodeEditor
                             v-model="form.response_config_json"
@@ -490,10 +490,10 @@ async function runTest() {
 
             <!-- ── TEST ── -->
             <TabContent value="test">
-                <Panel :heading="__('Send a test payload')">
+                <Panel :heading="__('webhook-manager::messages.cp.inbound_test_heading')">
                     <Field inline
-                        :label="__('Sample Payload (JSON)')"
-                        :instructions="__('This payload will be processed through the mapping and action pipeline.')"
+                        :label="__('webhook-manager::messages.cp.sample_payload_json')"
+                        :instructions="__('webhook-manager::messages.cp.inbound_test_hint')"
                     >
                         <CodeEditor
                             v-model="samplePayload"
@@ -505,13 +505,13 @@ async function runTest() {
                     <div class="mt-4">
                         <Button
                             variant="default"
-                            :text="__('Run test')"
+                            :text="__('webhook-manager::messages.cp.btn_run_test')"
                             :loading="testing"
                             :disabled="!testUrl || testing"
                             @click="runTest"
                         />
                         <span v-if="!testUrl" class="ml-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                            {{ __('Save the endpoint first to enable testing.') }}
+                            {{ __('webhook-manager::messages.cp.inbound_test_save_first') }}
                         </span>
                     </div>
 
@@ -526,11 +526,11 @@ async function runTest() {
                             :variant="testResult.ok ? 'success' : 'error'"
                             class="mt-4"
                         >
-                            {{ testResult.message || (testResult.ok ? __('Test successful.') : __('Test failed.')) }}
+                            {{ testResult.message || (testResult.ok ? __('webhook-manager::messages.cp.test_ok_generic') : __('webhook-manager::messages.cp.test_failed_generic')) }}
                         </Alert>
 
                         <div class="mt-4 grid md:grid-cols-2 gap-4 *:min-w-0">
-                            <Panel :heading="__('Mapped Payload')">
+                            <Panel :heading="__('webhook-manager::messages.cp.inbound_test_mapped')">
                                 <CodeEditor
                                     :model-value="JSON.stringify(testResult.mapped ?? {}, null, 2)"
                                     mode="json"
@@ -539,7 +539,7 @@ async function runTest() {
                                 />
                             </Panel>
 
-                            <Panel :heading="__('Action Result')">
+                            <Panel :heading="__('webhook-manager::messages.cp.inbound_test_action_result')">
                                 <CodeEditor
                                     :model-value="JSON.stringify(testResult.data ?? {}, null, 2)"
                                     mode="json"
@@ -549,7 +549,7 @@ async function runTest() {
                             </Panel>
                         </div>
 
-                        <Panel v-if="testResult.errors?.length" :heading="__('Errors')" class="mt-4">
+                        <Panel v-if="testResult.errors?.length" :heading="__('webhook-manager::messages.cp.inbound_test_errors')" class="mt-4">
                             <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
                                 <li v-for="(err, i) in testResult.errors" :key="i">{{ err }}</li>
                             </ul>
@@ -563,9 +563,9 @@ async function runTest() {
         <ConfirmationModal
             v-if="!isNew && deleteUrl"
             :open="showDelete"
-            :title="__('Delete endpoint?')"
-            :body-text="__('This action cannot be undone.')"
-            :button-text="__('Delete')"
+            :title="__('webhook-manager::messages.cp.inbound_delete_confirm_title')"
+            :body-text="__('webhook-manager::messages.cp.confirm_irreversible')"
+            :button-text="__('webhook-manager::messages.cp.row_delete')"
             :danger="true"
             @confirm="destroy"
             @update:open="showDelete = $event"

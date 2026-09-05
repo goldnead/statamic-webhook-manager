@@ -97,7 +97,7 @@ const pageTitle = computed(() =>
         ? __('webhook-manager::messages.cp.edit_title_new')
         : (props.webhook.name || __('webhook-manager::messages.cp.edit_title_fallback'))
 );
-const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+const saveLabel = computed(() => props.isNew ? __('webhook-manager::messages.cp.btn_create') : __('webhook-manager::messages.cp.btn_save'));
 const hasLibraryTemplates = computed(() => Object.keys(props.availableTemplates).length > 0);
 
 /**
@@ -244,7 +244,7 @@ const authInstructions = computed(() => {
 </script>
 
 <template>
-    <Head :title="[pageTitle, __('webhook-manager::messages.cp.webhooks_heading'), __('Webhook Manager')]" />
+    <Head :title="[pageTitle, __('webhook-manager::messages.cp.webhooks_heading'), __('webhook-manager::messages.cp.app_name')]" />
 
     <!-- The narrow detail container ui-vocabulary §2.3 sanctions for detail
          and settings screens; `data-max-width-wrapper` is what lets the

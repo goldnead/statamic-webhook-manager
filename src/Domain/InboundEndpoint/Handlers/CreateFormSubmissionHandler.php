@@ -26,7 +26,7 @@ class CreateFormSubmissionHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return 'Create form submission';
+        return __('webhook-manager::messages.cp.action_create_form_submission');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

@@ -32,7 +32,7 @@ class UpsertEntryHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return 'Upsert entry by key';
+        return __('webhook-manager::messages.cp.action_upsert_entry');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

@@ -50,11 +50,15 @@ const pages = {
             deleteUrl: '/cp/webhook-manager/outbound/1',
             indexUrl: '/cp/webhook-manager/outbound',
         },
-        // Outbound was translated through the addon's own namespace on
-        // 05.09.2026 (F33); the test bootstrap's `__()` hands the key back, so
-        // the key is what the modal receives. The other three still carry
-        // plain global keys and are the reason `title`/`buttonText` are per
-        // page here rather than one shared literal.
+        // Every page now names its strings through the addon's own namespace;
+        // the test bootstrap's `__()` hands the key straight back, so the key
+        // is what the modal receives. The keys differ per page because the
+        // wording does ("Webhook löschen" vs "Endpunkt löschen?"), which is why
+        // `title`/`buttonText` stay per page rather than one shared literal.
+        //
+        // A plain English literal appearing here again would mean a global
+        // `__()` key came back — see NoGlobalTranslationKeysTest for the rule
+        // that catches it across the whole addon rather than page by page.
         title: 'webhook-manager::messages.cp.delete_webhook',
         buttonText: 'webhook-manager::messages.cp.delete',
     },
@@ -70,8 +74,8 @@ const pages = {
             deleteUrl: '/cp/webhook-manager/inbound/1',
             indexUrl: '/cp/webhook-manager/inbound',
         },
-        title: 'Delete endpoint?',
-        buttonText: 'Delete',
+        title: 'webhook-manager::messages.cp.inbound_delete_confirm_title',
+        buttonText: 'webhook-manager::messages.cp.row_delete',
     },
     Rules: {
         component: RulesEdit,
@@ -85,8 +89,8 @@ const pages = {
             deleteUrl: '/cp/webhook-manager/rules/1',
             indexUrl: '/cp/webhook-manager/rules',
         },
-        title: 'Delete rule',
-        buttonText: 'Delete',
+        title: 'webhook-manager::messages.cp.rules_delete',
+        buttonText: 'webhook-manager::messages.cp.row_delete',
     },
     Templates: {
         component: TemplatesEdit,
@@ -101,8 +105,8 @@ const pages = {
             previewUrl: '/cp/webhook-manager/templates/1/preview',
             indexUrl: '/cp/webhook-manager/templates',
         },
-        title: 'Delete Template',
-        buttonText: 'Delete',
+        title: 'webhook-manager::messages.cp.templates_delete',
+        buttonText: 'webhook-manager::messages.cp.row_delete',
     },
 };
 

@@ -77,20 +77,20 @@ const errorTypeLabel = (type) => ({
 
 <template>
     <div>
-        <Head :title="__('Logs')" />
+        <Head :title="__('webhook-manager::messages.cp.page_logs')" />
 
         <!-- ── Empty state ──────────────────────────────────────────── -->
         <div v-if="isEmpty">
-            <Header :title="__('Logs')" icon="clipboard" />
+            <Header :title="__('webhook-manager::messages.cp.page_logs')" icon="clipboard" />
 
-            <EmptyStateMenu :heading="__('No logs yet')">
+            <EmptyStateMenu :heading="__('webhook-manager::messages.cp.logs_empty_heading')">
                 <EmptyStateItem
-                    :heading="__('Nothing logged so far')"
-                    :description="__('Logs are written automatically when webhooks are dispatched or received. Check back once some activity has occurred.')"
+                    :heading="__('webhook-manager::messages.cp.logs_empty_item')"
+                    :description="__('webhook-manager::messages.cp.logs_empty_sub')"
                     icon="clipboard"
                 >
                     <DocsCallout
-                        :heading="__('Learn about logs')"
+                        :heading="__('webhook-manager::messages.cp.logs_docs')"
                         url="https://github.com/goldnead/statamic-webhook-manager#concepts"
                     />
                 </EmptyStateItem>
@@ -99,7 +99,7 @@ const errorTypeLabel = (type) => ({
 
         <!-- ── Populated state ─────────────────────────────────────── -->
         <div v-else>
-            <Header :title="__('Logs')" icon="clipboard" />
+            <Header :title="__('webhook-manager::messages.cp.page_logs')" icon="clipboard" />
 
             <Listing
                 :url="listingUrl"

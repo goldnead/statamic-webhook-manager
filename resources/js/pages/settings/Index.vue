@@ -209,7 +209,7 @@ const switchErrors = computed(() => switchForm.errors ?? {});
 </script>
 
 <template>
-    <Head :title="[__('Settings'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_settings'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-page mx-auto">
 
@@ -255,7 +255,7 @@ const switchErrors = computed(() => switchForm.errors ?? {});
                     size="sm"
                     variant="default"
                     class="ml-3 shrink-0"
-                    :text="copied ? __('Copied!') : __('Copy path')"
+                    :text="copied ? __('webhook-manager::messages.cp.btn_copied') : __('webhook-manager::messages.cp.btn_copy_path')"
                     @click="copyPath"
                 >
                     <template #icon>
@@ -399,10 +399,10 @@ const switchErrors = computed(() => switchForm.errors ?? {});
         </div>
 
         <!-- ── Raw config panel ─────────────────────────────────────── -->
-        <Panel :heading="__('Raw configuration')" class="mt-6">
+        <Panel :heading="__('webhook-manager::messages.cp.settings_raw_heading')" class="mt-6">
             <Card>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {{ __('Full resolved config tree — useful for debugging environment-variable overrides.') }}
+                    {{ __('webhook-manager::messages.cp.settings_raw_sub') }}
                 </p>
                 <CodeEditor
                     :model-value="rawConfig"

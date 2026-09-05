@@ -151,7 +151,7 @@ watch(showConditionJson, show => {
         // Switching back to builder: parse the JSON.
         const parsed = jsonOrNull(conditionsJson.value);
         if (parsed === undefined) {
-            conditionsError.value = __('Invalid JSON — fix it before switching back to the builder.');
+            conditionsError.value = __('webhook-manager::messages.cp.rules_json_invalid');
             // Revert the switch state without triggering the watcher again.
             showConditionJson.value = true;
             return;
@@ -186,9 +186,9 @@ function objectToOptions(obj) {
 const triggerOptionsArray = computed(() => objectToOptions(props.triggerOptions));
 
 const pageTitle = computed(() =>
-    props.isNew ? __('Create rule') : (props.rule.name || __('Rule'))
+    props.isNew ? __('webhook-manager::messages.cp.rules_create_button') : (props.rule.name || __('webhook-manager::messages.cp.rules_fallback_title'))
 );
-const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+const saveLabel = computed(() => props.isNew ? __('webhook-manager::messages.cp.btn_create') : __('webhook-manager::messages.cp.btn_save'));
 
 // Surface server-side validation errors on the right tab so users don't
 // miss them when they are on a different tab.
@@ -239,7 +239,7 @@ function syncFormFields() {
         } else {
             const parsed = jsonOrNull(conditionsJson.value);
             if (parsed === undefined) {
-                conditionsError.value = __('Invalid JSON in conditions.');
+                conditionsError.value = __('webhook-manager::messages.cp.rules_json_invalid_conditions');
                 return false;
             }
             form.conditions = parsed;
@@ -253,12 +253,12 @@ function syncFormFields() {
         try {
             const parsed = JSON.parse(actionsJson.value);
             if (!Array.isArray(parsed)) {
-                actionsError.value = __('Actions must be a JSON array.');
+                actionsError.value = __('webhook-manager::messages.cp.rules_actions_must_be_array');
                 return false;
             }
             form.actions = parsed;
         } catch (e) {
-            actionsError.value = __('Invalid JSON in actions.');
+            actionsError.value = __('webhook-manager::messages.cp.rules_json_invalid_actions');
             return false;
         }
     }
@@ -308,7 +308,7 @@ async function runTest() {
             ok: false,
             message: e?.response?.data?.message
                 ?? e?.message
-                ?? __('Test failed.'),
+                ?? __('webhook-manager::messages.cp.test_failed_generic'),
             data: {},
         };
     } finally {
@@ -318,7 +318,7 @@ async function runTest() {
 </script>
 
 <template>
-    <Head :title="[pageTitle, __('Rules'), __('Webhook Manager')]" />
+    <Head :title="[pageTitle, __('webhook-manager::messages.cp.page_rules'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
         <Header :title="pageTitle" icon="filter">
@@ -326,7 +326,7 @@ async function runTest() {
                 <StatusIndicator :status="rule.enabled ? 'published' : 'draft'" />
                 <Badge
                     :color="rule.enabled ? 'green' : 'default'"
-                    :text="rule.enabled ? __('Active') : __('Disabled')"
+                    :text="rule.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
                 />
             </template>
 
@@ -342,7 +342,7 @@ async function runTest() {
                     <DropdownItem
                         variant="destructive"
                         icon="trash"
-                        :text="__('Delete rule')"
+                        :text="__('webhook-manager::messages.cp.rules_delete')"
                         @click="showDelete = true"
                     />
                 </DropdownMenu>
@@ -350,7 +350,7 @@ async function runTest() {
             <Button
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
-                :text="__('Test')"
+                :text="__('webhook-manager::messages.cp.tab_test')"
                 icon="arrow-up-right"
                 @click="() => { activeTab = 'test'; }"
             />
@@ -364,7 +364,7 @@ async function runTest() {
             <CommandPaletteItem
                 v-if="!isNew && canDelete && deleteUrl"
                 category="Actions"
-                :text="__('Delete rule')"
+                :text="__('webhook-manager::messages.cp.rules_delete')"
                 icon="trash"
                 :action="() => (showDelete = true)"
             />
@@ -393,27 +393,27 @@ async function runTest() {
         <Tabs v-model="activeTab" class="mt-4">
             <TabList>
                 <TabTrigger value="general">
-                    {{ __('General') }}
-                    <Badge v-if="tabsWithErrors.has('general')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
+                    <Badge v-if="tabsWithErrors.has('general')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger value="trigger">
-                    {{ __('Trigger') }}
-                    <Badge v-if="tabsWithErrors.has('trigger')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.col_trigger') }}
+                    <Badge v-if="tabsWithErrors.has('trigger')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger value="conditions">
-                    {{ __('Conditions') }}
-                    <Badge v-if="tabsWithErrors.has('conditions')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.col_conditions') }}
+                    <Badge v-if="tabsWithErrors.has('conditions')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger value="actions">
-                    {{ __('Actions') }}
-                    <Badge v-if="tabsWithErrors.has('actions')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.col_actions') }}
+                    <Badge v-if="tabsWithErrors.has('actions')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger value="settings">
-                    {{ __('Settings') }}
-                    <Badge v-if="tabsWithErrors.has('settings')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.page_settings') }}
+                    <Badge v-if="tabsWithErrors.has('settings')" color="red" class="ms-1.5" text="!" :aria-label="__('webhook-manager::messages.cp.tab_has_errors')" />
                 </TabTrigger>
                 <TabTrigger v-if="!isNew && testUrl" value="test">
-                    {{ __('Test') }}
+                    {{ __('webhook-manager::messages.cp.tab_test') }}
                 </TabTrigger>
             </TabList>
 
@@ -422,27 +422,27 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('Name')"
+                            :label="__('webhook-manager::messages.cp.col_name')"
                             id="name"
                             :required="true"
                             :error="form.errors.name"
-                            :instructions="__('Human-readable name shown across the CP.')"
+                            :instructions="__('webhook-manager::messages.cp.field_name_hint_generic')"
                         >
                             <Input id="name" v-model="form.name" autofocus />
                         </Field>
 
                         <Field inline
-                            :label="__('Handle')"
+                            :label="__('webhook-manager::messages.cp.col_handle')"
                             id="handle"
                             :required="true"
                             :error="form.errors.handle"
-                            :instructions="__('Internal identifier. Lowercase, hyphens or underscores only.')"
+                            :instructions="__('webhook-manager::messages.cp.field_handle_hint_generic')"
                         >
                             <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
                         </Field>
 
                         <Field inline
-                            :label="__('Description')"
+                            :label="__('webhook-manager::messages.cp.field_description_generic')"
                             id="description"
                             class="md:col-span-2"
                             :error="form.errors.description"
@@ -451,23 +451,23 @@ async function runTest() {
                         </Field>
 
                         <Field inline
-                            :label="__('Order')"
+                            :label="__('webhook-manager::messages.cp.col_order')"
                             id="order_index"
                             :error="form.errors.order_index"
-                            :instructions="__('Lower numbers run first. Rules with equal order are sorted by name.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_order_hint')"
                         >
                             <Input id="order_index" v-model.number="form.order_index" type="number" min="0" />
                         </Field>
 
                         <Field inline
-                            :label="__('Status')"
+                            :label="__('webhook-manager::messages.cp.col_status')"
                             id="enabled"
                             :error="form.errors.enabled"
                         >
                             <Switch
                                 id="enabled"
                                 v-model="form.enabled"
-                                :text="form.enabled ? __('Enabled') : __('Disabled')"
+                                :text="form.enabled ? __('webhook-manager::messages.cp.field_enabled_generic') : __('webhook-manager::messages.cp.status_disabled')"
                             />
                         </Field>
                     </Card>
@@ -479,20 +479,20 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('Trigger type')"
+                            :label="__('webhook-manager::messages.cp.field_trigger_type_generic')"
                             id="trigger_type"
                             :required="true"
                             :error="form.errors.trigger_type"
-                            :instructions="__('The internal event that fires this rule.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_trigger_hint')"
                         >
                             <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
 
                         <Field inline
-                            :label="__('Trigger config (JSON)')"
+                            :label="__('webhook-manager::messages.cp.rules_trigger_config')"
                             id="trigger_config"
                             :error="form.errors.trigger_config"
-                            :instructions="__('Optional. Trigger-specific filter parameters — see the trigger\'s documentation for available keys.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_trigger_config_hint')"
                         >
                             <CodeEditor
                                 id="trigger_config"
@@ -512,9 +512,9 @@ async function runTest() {
                     <Card inset class="p-6 space-y-4">
                         <div class="flex items-center justify-between">
                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                {{ __('Optional. AND/OR groups of leaf conditions. Leave empty to always match.') }}
+                                {{ __('webhook-manager::messages.cp.rules_conditions_hint') }}
                             </p>
-                            <Field inline :label="__('Show JSON')" class="shrink-0 ms-4">
+                            <Field inline :label="__('webhook-manager::messages.cp.btn_show_json')" class="shrink-0 ms-4">
                                 <Switch v-model="showConditionJson" />
                             </Field>
                         </div>
@@ -548,7 +548,7 @@ async function runTest() {
                                     :placeholder="conditionsPlaceholder"
                                 />
                                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                    {{ __('Editing JSON directly. Switch back to builder to use the visual editor.') }}
+                                    {{ __('webhook-manager::messages.cp.rules_json_mode') }}
                                 </p>
                             </div>
                         </Field>
@@ -564,8 +564,8 @@ async function runTest() {
                              below, not a warning. (`info` was never an Alert
                              variant and rendered as `default` regardless.) -->
                         <Alert
-                            :heading="__('JSON format')"
-                            :text="__('Actions are an ordered array. Each object requires at minimum a handle key. Available handles are listed below.')"
+                            :heading="__('webhook-manager::messages.cp.templates_json_format')"
+                            :text="__('webhook-manager::messages.cp.rules_actions_hint')"
                         />
 
                         <Alert
@@ -575,10 +575,10 @@ async function runTest() {
                         />
 
                         <Field inline
-                            :label="__('Actions (JSON array)')"
+                            :label="__('webhook-manager::messages.cp.rules_actions_label')"
                             id="actions"
                             :error="form.errors.actions"
-                            :instructions="__('Each action runs in order. Stop on failure can be configured in the Settings tab.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_actions_order_hint')"
                         >
                             <CodeEditor
                                 id="actions"
@@ -591,7 +591,7 @@ async function runTest() {
 
                         <div v-if="Object.keys(actionOptions).length" class="mt-2">
                             <p class="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
-                                {{ __('Available action handles:') }}
+                                {{ __('webhook-manager::messages.cp.rules_actions_available') }}
                             </p>
                             <ul class="space-y-0.5">
                                 <li
@@ -612,16 +612,16 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('Stop on first failure')"
+                            :label="__('webhook-manager::messages.cp.rules_stop_on_failure_short')"
                             id="stop_on_failure"
                             class="md:col-span-2"
                             :error="form.errors.stop_on_failure"
-                            :instructions="__('When enabled, if any action returns an error the remaining actions in this rule are skipped.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_stop_on_failure_hint')"
                         >
                             <Switch
                                 id="stop_on_failure"
                                 v-model="form.stop_on_failure"
-                                :text="__('Stop on first action failure')"
+                                :text="__('webhook-manager::messages.cp.rules_stop_on_failure')"
                             />
                         </Field>
                     </Card>
@@ -633,9 +633,9 @@ async function runTest() {
                 <Panel class="mt-4">
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('Sample payload (JSON)')"
+                            :label="__('webhook-manager::messages.cp.sample_payload_json_lc')"
                             id="sample_payload"
-                            :instructions="__('This payload is passed to the rule engine as if it were a real trigger event.')"
+                            :instructions="__('webhook-manager::messages.cp.rules_test_hint')"
                         >
                             <CodeEditor
                                 id="sample_payload"
@@ -649,7 +649,7 @@ async function runTest() {
                             <Button
                                 variant="primary"
                                 :loading="testing"
-                                :text="__('Run test')"
+                                :text="__('webhook-manager::messages.cp.btn_run_test')"
                                 icon="arrow-up-right"
                                 @click="runTest"
                             />
@@ -658,11 +658,11 @@ async function runTest() {
                         <div v-if="testResult" class="space-y-3">
                             <Alert
                                 :variant="testResult.ok ? 'success' : 'error'"
-                                :heading="testResult.ok ? __('Rule matched — actions executed') : __('Rule did not match or an error occurred')"
+                                :heading="testResult.ok ? __('webhook-manager::messages.cp.rules_test_matched') : __('webhook-manager::messages.cp.rules_test_not_matched')"
                                 :text="testResult.message ?? ''"
                             />
 
-                            <Field inline v-if="testResult.data && Object.keys(testResult.data).length" :label="__('Result detail')">
+                            <Field inline v-if="testResult.data && Object.keys(testResult.data).length" :label="__('webhook-manager::messages.cp.rules_test_detail')">
                                 <CodeEditor
                                     :model-value="JSON.stringify(testResult.data, null, 2)"
                                     mode="json"
@@ -679,9 +679,9 @@ async function runTest() {
         <ConfirmationModal
             v-if="!isNew && deleteUrl"
             :open="showDelete"
-            :title="__('Delete rule')"
-            :body-text="__('This permanently removes the rule configuration.')"
-            :button-text="__('Delete')"
+            :title="__('webhook-manager::messages.cp.rules_delete')"
+            :body-text="__('webhook-manager::messages.cp.rules_delete_confirm')"
+            :button-text="__('webhook-manager::messages.cp.row_delete')"
             :danger="true"
             @confirm="destroy"
             @update:open="showDelete = $event"

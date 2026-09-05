@@ -26,7 +26,7 @@ class MicrosoftTeamsPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Post a message to a Microsoft Teams channel via an Incoming Webhook.';
+        return __('webhook-manager::messages.cp.preset_teams');
     }
 
     public function fields(): array

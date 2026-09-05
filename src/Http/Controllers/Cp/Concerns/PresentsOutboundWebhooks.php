@@ -23,18 +23,21 @@ trait PresentsOutboundWebhooks
      */
     protected function outboundColumns(): array
     {
-        // `width` reaches the <td> (core's Listing/TableBody.vue:102). Without
-        // it the auto-layout table gives the URL column whatever the four
-        // badge columns leave over — measured at 108px, of which
-        // MiddleEllipsis could use 80px, so every URL rendered as `ht...g` and
-        // no two rows could be told apart. Percentages rather than pixels, so
-        // the widths survive the header's max-width toggle.
+        // These carried `width` percentages until 05.09.2026, on the belief
+        // that the value reaches the <td>. It does not: measured against the
+        // rendered DOM of this very listing, Statamic 6.31 puts it neither on
+        // the <th>, nor the <td>, nor a <colgroup>. The table runs on
+        // `table-layout: auto`, so a column gets what its content asks for —
+        // which is why the URL column had collapsed to `ht...g` in the first
+        // place. What actually holds it open is the `min-w-64` on the cell in
+        // Outbound/Index.vue and on the overview. Keeping a dead key here
+        // would keep the wrong explanation alive with it.
         return [
-            ['field' => 'name', 'label' => __('webhook-manager::messages.cp.col_name'), 'sortable' => true, 'visible' => true, 'width' => '24%'],
-            ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'sortable' => true, 'visible' => true, 'width' => '17%'],
-            ['field' => 'method', 'label' => __('webhook-manager::messages.cp.col_method'), 'sortable' => false, 'visible' => true, 'width' => '8%'],
-            ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'sortable' => false, 'visible' => true, 'width' => '39%'],
-            ['field' => 'enabled', 'label' => __('webhook-manager::messages.cp.col_status'), 'sortable' => true, 'visible' => true, 'width' => '12%'],
+            ['field' => 'name', 'label' => __('webhook-manager::messages.cp.col_name'), 'sortable' => true, 'visible' => true],
+            ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'sortable' => true, 'visible' => true],
+            ['field' => 'method', 'label' => __('webhook-manager::messages.cp.col_method'), 'sortable' => false, 'visible' => true],
+            ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'sortable' => false, 'visible' => true],
+            ['field' => 'enabled', 'label' => __('webhook-manager::messages.cp.col_status'), 'sortable' => true, 'visible' => true],
         ];
     }
 

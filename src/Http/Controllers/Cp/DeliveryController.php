@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryErrors;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryStatuses;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
 use Goldnead\WebhookManager\Services\DeliveryMaskingService;
@@ -14,6 +15,7 @@ use Statamic\Http\Controllers\CP\CpController;
 class DeliveryController extends CpController
 {
     use PresentsDeliveryErrors;
+    use PresentsDeliveryStatuses;
 
     /**
      * List deliveries (server-driven Listing).
@@ -196,20 +198,29 @@ class DeliveryController extends CpController
      * for the UI; the row() method maps the actual DB columns to those
      * aliases below.
      *
+     * No `width` key here, deliberately. Statamic 6.31's <Listing> does not use
+     * one: measured against the rendered DOM on 05.09.2026, the value reaches
+     * neither the <th>, nor the <td>, nor a <colgroup>, and the table runs on
+     * `table-layout: auto`, so every column gets exactly what its content asks
+     * for. The URL column asked for 60px and printed `...` in every row. What
+     * fixes that is a floor on the cell itself (`min-w-56` in
+     * Deliveries/Index.vue) and a cap on the greedy neighbour (`max-w-40` on
+     * the subject id, which was demanding 386px for a UUID).
+     *
      * @return array<int,array{field:string,label:mixed,visible:bool,sortable:bool}>
      */
     protected function indexColumns(): array
     {
         return [
-            ['field' => 'status',        'label' => __('Status'),    'visible' => true,  'sortable' => true],
-            ['field' => 'outbound_name', 'label' => __('Trigger'),   'visible' => true,  'sortable' => false],
-            ['field' => 'subject',       'label' => __('webhook-manager::messages.subject'), 'visible' => true, 'sortable' => false],
-            ['field' => 'url',           'label' => __('URL'),       'visible' => true,  'sortable' => false],
-            ['field' => 'method',        'label' => __('Method'),    'visible' => true,  'sortable' => false],
-            ['field' => 'response_code', 'label' => __('Code'),      'visible' => true,  'sortable' => true],
-            ['field' => 'attempts',      'label' => __('Attempts'),  'visible' => true,  'sortable' => true],
-            ['field' => 'error_type',    'label' => __('Error'),     'visible' => false, 'sortable' => true],
-            ['field' => 'when',          'label' => __('When'),      'visible' => true,  'sortable' => true],
+            ['field' => 'status',        'label' => __('webhook-manager::messages.cp.col_status'),    'visible' => true,  'sortable' => true],
+            ['field' => 'outbound_name', 'label' => __('webhook-manager::messages.cp.col_trigger'),   'visible' => true,  'sortable' => false],
+            ['field' => 'subject',       'label' => __('webhook-manager::messages.subject'),          'visible' => true,  'sortable' => false],
+            ['field' => 'url',           'label' => __('webhook-manager::messages.cp.col_url'),       'visible' => true,  'sortable' => false],
+            ['field' => 'method',        'label' => __('webhook-manager::messages.cp.col_method'),    'visible' => true,  'sortable' => false],
+            ['field' => 'response_code', 'label' => __('webhook-manager::messages.cp.col_code'),      'visible' => true,  'sortable' => true],
+            ['field' => 'attempts',      'label' => __('webhook-manager::messages.cp.col_attempts'),  'visible' => true,  'sortable' => true],
+            ['field' => 'error_type',    'label' => __('webhook-manager::messages.cp.col_error'),     'visible' => false, 'sortable' => true],
+            ['field' => 'when',          'label' => __('webhook-manager::messages.cp.col_when'),      'visible' => true,  'sortable' => true],
         ];
     }
 
@@ -232,6 +243,7 @@ class DeliveryController extends CpController
             'uuid' => $delivery->uuid,
 
             'status' => $delivery->status,
+            'status_label' => $this->statusLabel($delivery->status),
             'status_color' => $this->statusColor($delivery->status),
 
             'trigger_type' => $delivery->trigger_type,
@@ -371,18 +383,10 @@ class DeliveryController extends CpController
     }
 
     // ── Colour helpers ──────────────────────────────────────────────────────
-
-    protected function statusColor(?string $status): string
-    {
-        return match ($status) {
-            'success' => 'green',
-            'failed' => 'red',
-            'pending' => 'amber',
-            'retry' => 'amber',
-            'processing' => 'blue',
-            default => 'gray',
-        };
-    }
+    //
+    // `statusColor()` used to live here as a private copy. It moved into
+    // PresentsDeliveryStatuses together with the wording, because the two
+    // belong to the same decision and the overview needs both as well.
 
     protected function methodColor(?string $method): string
     {

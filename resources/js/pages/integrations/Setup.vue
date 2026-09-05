@@ -50,14 +50,14 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="[preset.label, __('Webhook Manager')]" />
+    <Head :title="[preset.label, __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-page mx-auto">
-        <Header :title="`${__('Set up')} ${preset.label}`" :icon="preset.icon">
-            <Button :href="galleryUrl" :text="__('Back')" />
+        <Header :title="`${__('webhook-manager::messages.cp.btn_set_up')} ${preset.label}`" :icon="preset.icon">
+            <Button :href="galleryUrl" :text="__('webhook-manager::messages.cp.btn_back')" />
             <Button
                 variant="primary"
-                :text="__('Create')"
+                :text="__('webhook-manager::messages.cp.btn_create')"
                 :disabled="form.processing"
                 @click="submit"
             />
@@ -80,12 +80,12 @@ function submit() {
 
         <Panel class="mt-4">
             <Card inset class="p-6 space-y-6">
-                <Field inline :label="__('Name')" :error="form.errors.name" required>
+                <Field inline :label="__('webhook-manager::messages.cp.col_name')" :error="form.errors.name" required>
                     <Input v-model="form.name" autofocus />
                 </Field>
 
-                <Field inline :label="__('Trigger')" :error="form.errors.trigger_type" required
-                    :instructions="__('The Statamic event that fires this integration.')">
+                <Field inline :label="__('webhook-manager::messages.cp.col_trigger')" :error="form.errors.trigger_type" required
+                    :instructions="__('webhook-manager::messages.cp.integrations_trigger_hint')">
                     <Select v-model="form.trigger_type" :options="triggerOptionsArray" />
                 </Field>
 

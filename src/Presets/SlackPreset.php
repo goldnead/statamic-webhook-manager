@@ -26,7 +26,7 @@ class SlackPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Post a message to a Slack channel via an Incoming Webhook.';
+        return __('webhook-manager::messages.cp.preset_slack');
     }
 
     public function fields(): array

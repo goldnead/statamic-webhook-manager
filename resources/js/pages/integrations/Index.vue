@@ -23,16 +23,16 @@ const setupUrl = (handle) => props.setupUrlBase.replace('__PRESET__', handle);
 </script>
 
 <template>
-    <Head :title="[__('Add integration'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_add_integration'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-page mx-auto">
-        <Header :title="__('Add an integration')" icon="arrow-up-right">
-            <Button :href="outboundUrl" :text="__('Back to webhooks')" />
+        <Header :title="__('webhook-manager::messages.cp.integrations_add_heading')" icon="arrow-up-right">
+            <Button :href="outboundUrl" :text="__('webhook-manager::messages.cp.back_to_webhooks')" />
         </Header>
 
         <EmptyStateMenu
-            :heading="__('Pick a destination')"
-            :subheading="__('Each preset pre-fills the payload, headers and auth — you just provide a URL and choose a trigger.')"
+            :heading="__('webhook-manager::messages.cp.integrations_pick_destination')"
+            :subheading="__('webhook-manager::messages.cp.integrations_intro')"
         >
             <EmptyStateItem
                 v-for="preset in presets"
@@ -51,11 +51,11 @@ const setupUrl = (handle) => props.setupUrlBase.replace('__PRESET__', handle);
                 v-if="!presets.length"
                 :href="outboundUrl"
                 icon="arrow-up-right"
-                :heading="__('No integrations available')"
-                :description="__('No presets are registered. Create an outbound webhook by hand, or register a preset from a service provider.')"
+                :heading="__('webhook-manager::messages.cp.integrations_empty_heading')"
+                :description="__('webhook-manager::messages.cp.integrations_empty_sub')"
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Integrations')" url="https://github.com/goldnead/statamic-webhook-manager#integration-presets" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_integrations')" url="https://github.com/goldnead/statamic-webhook-manager#integration-presets" />
     </div>
 </template>

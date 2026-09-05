@@ -13,9 +13,9 @@ import {
     DocsCallout,
     Input,
     Listing,
-    MiddleEllipsis,
     Select,
 } from '@statamic/cms/ui';
+import UrlCell from '../../components/UrlCell.vue';
 
 /**
  * Delivery listing.
@@ -88,14 +88,11 @@ const isEmpty = computed(
 const reloadPage = () => router.reload({ only: ['deliveries'] });
 
 // ── Colour helpers ──────────────────────────────────────────────────────────
-
-/** Delivery status → Statamic Badge colour token. */
-const statusColor = (status) => ({
-    success: 'green',
-    failed:  'red',
-    pending: 'amber',
-    retry:   'amber',
-}[status] ?? 'default');
+//
+// Status colour and wording used to be a second, English copy right here
+// (`failed`, `retry` — a status this addon never writes). Both now arrive on
+// the row from PresentsDeliveryStatuses, so there is one vocabulary for a
+// delivery's status instead of one per screen.
 
 /** HTTP method → Statamic Badge colour token (mirrors Outbound/Index). */
 const methodColor = (method) => ({
@@ -106,31 +103,9 @@ const methodColor = (method) => ({
     DELETE: 'red',
 }[(method || '').toUpperCase()] ?? 'default');
 
-/**
- * error_type colour mapping — identical to Logs/Index so the two pages
- * remain visually consistent for operators debugging across both views.
- */
-const errorTypeColor = (type) => ({
-    network:       'orange',
-    timeout:       'amber',
-    auth:          'red',
-    client:        'yellow',
-    server:        'red',
-    payload:       'purple',
-    configuration: 'blue',
-    internal:      'default',
-}[type] ?? 'default');
-
-const errorTypeLabel = (type) => ({
-    network:       'Network',
-    timeout:       'Timeout',
-    auth:          'Auth',
-    client:        'Client',
-    server:        'Server',
-    payload:       'Payload',
-    configuration: 'Config',
-    internal:      'Internal',
-}[type] ?? type);
+// The error type's wording and colour arrive on the row as well
+// (PresentsDeliveryErrors). The English map that used to sit here said
+// "Config" where the detail page said "Konfigurationsfehler".
 
 // Rejections from the actions on this listing. Nothing here is a field, so
 // whatever comes back is shown in the banner above the rows.
@@ -150,29 +125,29 @@ function replay(row) {
 
 <template>
     <div>
-        <Head :title="[__('Deliveries'), __('Webhook Manager')]" />
+        <Head :title="[__('webhook-manager::messages.cp.page_deliveries'), __('webhook-manager::messages.cp.app_name')]" />
 
         <!-- ── Empty state ─────────────────────────────────────────────── -->
         <div v-if="isEmpty" class="max-w-page mx-auto">
-            <Header :title="__('Deliveries')" icon="arrow-up-right" />
+            <Header :title="__('webhook-manager::messages.cp.page_deliveries')" icon="arrow-up-right" />
 
-            <EmptyStateMenu :heading="__('No deliveries yet')">
+            <EmptyStateMenu :heading="__('webhook-manager::messages.cp.deliveries_empty_heading')">
                 <EmptyStateItem
-                    :heading="__('Nothing dispatched so far')"
-                    :description="__('Deliveries are recorded automatically when outbound webhooks are fired. Check back once some activity has occurred.')"
+                    :heading="__('webhook-manager::messages.cp.deliveries_empty_item')"
+                    :description="__('webhook-manager::messages.cp.deliveries_empty_sub')"
                     icon="arrow-up-right"
                 />
             </EmptyStateMenu>
 
             <DocsCallout
-                :topic="__('Deliveries')"
+                :topic="__('webhook-manager::messages.cp.page_deliveries')"
                 url="https://github.com/goldnead/statamic-webhook-manager#retries"
             />
         </div>
 
         <!-- ── Populated state ─────────────────────────────────────────── -->
         <div v-else class="max-w-page mx-auto">
-            <Header :title="__('Deliveries')" icon="arrow-up-right" />
+            <Header :title="__('webhook-manager::messages.cp.page_deliveries')" icon="arrow-up-right" />
 
             <!-- What the server said when an action from this listing was refused.
                  There is no field here to hang a message on, so everything that comes
@@ -245,16 +220,29 @@ function replay(row) {
                 push-query
                 @updated="reloadPage"
             >
-                <!-- status column -->
+                <!-- status column — the wording and the colour both come from
+                     the server (PresentsDeliveryStatuses), so this listing says
+                     "Fehlgeschlagen" where the detail page one click away says
+                     "Fehlgeschlagen", instead of the raw enum `failed`. -->
                 <template #cell-status="{ row }">
-                    <Badge :color="statusColor(row.status)" :text="row.status" />
+                    <Badge :color="row.status_color || 'default'" :text="row.status_label || row.status" />
                 </template>
 
-                <!-- subject column — the object the delivery was about -->
+                <!-- subject column — the object the delivery was about.
+                     The id is a UUID, and an auto-layout table gives a cell
+                     whatever its longest unbroken string demands: measured at
+                     386px on 05.09.2026, a quarter of the table for a value
+                     nobody reads character by character, while the URL column
+                     starved next to it. `max-w-40` caps it; `truncate` needs a
+                     bounded, `min-w-0` box to bite, and the whole id stays
+                     available on hover and in the row's detail page. -->
                 <template #cell-subject="{ row }">
-                    <span v-if="row.subject_type && row.subject_id" class="inline-flex items-center gap-1.5 min-w-0">
+                    <span v-if="row.subject_type && row.subject_id" class="flex items-center gap-1.5 max-w-32">
                         <Badge color="default" :text="row.subject_label || row.subject_type" />
-                        <span class="font-mono text-xs text-gray-600 dark:text-gray-400 truncate">{{ row.subject_id }}</span>
+                        <span
+                            class="min-w-0 truncate font-mono text-xs text-gray-600 dark:text-gray-400"
+                            :title="row.subject_id"
+                        >{{ row.subject_id }}</span>
                     </span>
                     <span v-else class="text-gray-500 dark:text-gray-400">—</span>
                 </template>
@@ -273,11 +261,17 @@ function replay(row) {
                     >{{ row.trigger_type }}</span>
                 </template>
 
-                <!-- url column — mono + middle ellipsis -->
+                <!-- url column — identifying tail first, host and leading path
+                     underneath.
+                     `min-w-56` is the only thing that holds this column open.
+                     A `width` in the column definition does nothing: measured
+                     on 05.09.2026, Statamic 6.31's <Listing> puts it neither on
+                     the <th>, nor the <td>, nor a <colgroup>, and the table is
+                     `table-layout: auto`, so a cell gets what its content asks
+                     for. Without a floor this one asked for 60px and every row
+                     read `...`. -->
                 <template #cell-url="{ row }">
-                    <span class="font-mono text-xs text-gray-900 dark:text-gray-100">
-                        <MiddleEllipsis :text="row.url || ''" />
-                    </span>
+                    <UrlCell :url="row.url || ''" class="min-w-56 max-w-56" />
                 </template>
 
                 <!-- method column -->
@@ -303,8 +297,8 @@ function replay(row) {
                 <template #cell-error_type="{ row }">
                     <Badge
                         v-if="row.error_type"
-                        :color="errorTypeColor(row.error_type)"
-                        :text="errorTypeLabel(row.error_type)"
+                        :color="row.error_type_color || 'default'"
+                        :text="row.error_type_label || row.error_type"
                     />
                     <span v-else class="text-gray-500 dark:text-gray-400 dark:text-gray-400">—</span>
                 </template>
@@ -318,20 +312,20 @@ function replay(row) {
                 <template #prepended-row-actions="{ row }">
                     <DropdownItem
                         icon="eye"
-                        :text="__('View')"
+                        :text="__('webhook-manager::messages.cp.row_view')"
                         :href="row.show_url"
                     />
                     <DropdownItem
                         v-if="row.can_replay"
                         icon="sync"
-                        :text="__('Replay')"
+                        :text="__('webhook-manager::messages.cp.replay')"
                         @click="replay(row)"
                     />
                 </template>
             </Listing>
 
             <DocsCallout
-                :topic="__('Deliveries')"
+                :topic="__('webhook-manager::messages.cp.page_deliveries')"
                 url="https://github.com/goldnead/statamic-webhook-manager#retries"
             />
         </div>

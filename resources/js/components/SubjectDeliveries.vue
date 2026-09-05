@@ -7,7 +7,6 @@ import {
     Badge,
     Button,
     Card,
-    MiddleEllipsis,
     Panel,
     Skeleton,
     Table,
@@ -18,6 +17,7 @@ import {
     TableRows,
     Text,
 } from '@statamic/cms/ui';
+import UrlCell from './UrlCell.vue';
 
 /**
  * The webhook deliveries recorded for one object, for another addon's page.
@@ -77,7 +77,7 @@ function load() {
             total.value = res.data?.total ?? rows.value.length;
         })
         .catch((e) => {
-            error.value = e?.response?.data?.message ?? e?.message ?? __('Something went wrong');
+            error.value = e?.response?.data?.message ?? e?.message ?? __('webhook-manager::messages.cp.generic_error');
         })
         .finally(() => {
             loading.value = false;
@@ -93,13 +93,10 @@ function replay(row) {
     });
 }
 
-const statusColor = (status) => ({
-    success: 'green',
-    failed: 'red',
-    pending: 'amber',
-    retry: 'amber',
-    processing: 'blue',
-}[status] ?? 'default');
+// Status colour and wording come from the row (PresentsDeliveryStatuses) —
+// this is the same `row()` payload the deliveries listing gets. The English
+// copy that used to sit here printed the raw enum `failed`, and carried a
+// `retry` status this addon never writes.
 
 const methodColor = (method) => ({
     GET: 'blue',
@@ -149,10 +146,10 @@ onMounted(load);
 
             <Table v-else data-testid="subject-deliveries-table">
                 <TableColumns>
-                    <TableColumn>{{ __('When') }}</TableColumn>
-                    <TableColumn>{{ __('URL') }}</TableColumn>
-                    <TableColumn>{{ __('Status') }}</TableColumn>
-                    <TableColumn>{{ __('Code') }}</TableColumn>
+                    <TableColumn>{{ __('webhook-manager::messages.cp.col_when') }}</TableColumn>
+                    <TableColumn>{{ __('webhook-manager::messages.cp.col_url') }}</TableColumn>
+                    <TableColumn>{{ __('webhook-manager::messages.cp.col_status') }}</TableColumn>
+                    <TableColumn>{{ __('webhook-manager::messages.cp.col_code') }}</TableColumn>
                     <TableColumn />
                 </TableColumns>
                 <TableRows>
@@ -172,13 +169,11 @@ onMounted(load);
                                      the status badge in the next cell
                                      (ui-vocabulary §22). -->
                                 <Badge :color="methodColor(row.method)" :text="row.method" size="sm" />
-                                <span class="font-mono text-xs text-gray-900 dark:text-gray-100 min-w-0">
-                                    <MiddleEllipsis :text="row.url || ''" />
-                                </span>
+                                <UrlCell :url="row.url || ''" class="flex-1" />
                             </span>
                         </TableCell>
                         <TableCell>
-                            <Badge :color="statusColor(row.status)" :text="row.status" />
+                            <Badge :color="row.status_color || 'default'" :text="row.status_label || row.status" />
                         </TableCell>
                         <TableCell>
                             <span class="text-gray-600 dark:text-gray-400 tabular-nums">
@@ -191,7 +186,7 @@ onMounted(load);
                                 size="xs"
                                 variant="ghost"
                                 icon="sync"
-                                :text="__('Replay')"
+                                :text="__('webhook-manager::messages.cp.replay')"
                                 data-testid="subject-delivery-replay"
                                 @click="replay(row)"
                             />

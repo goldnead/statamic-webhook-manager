@@ -25,12 +25,12 @@ class DeliveryFailedNotification extends Notification
 
         return (new MailMessage)
             ->error()
-            ->subject(__('Webhook delivery failed: :name', ['name' => $name]))
-            ->line(__('A webhook delivery has failed after all retries.'))
-            ->line(__('Webhook: :name', ['name' => $name]))
-            ->line(__('URL: :url', ['url' => (string) $this->delivery->request_url]))
-            ->line(__('Status: :status', ['status' => $this->delivery->response_status ?: '—']))
-            ->line(__('Error: :error', ['error' => (string) ($this->delivery->error_message ?? $this->delivery->error_type)]))
-            ->line(__('Attempts: :attempts', ['attempts' => (int) $this->delivery->attempts]));
+            ->subject(__('webhook-manager::messages.cp.notify_subject', ['name' => $name]))
+            ->line(__('webhook-manager::messages.cp.notify_intro'))
+            ->line(__('webhook-manager::messages.cp.notify_webhook', ['name' => $name]))
+            ->line(__('webhook-manager::messages.cp.notify_url', ['url' => (string) $this->delivery->request_url]))
+            ->line(__('webhook-manager::messages.cp.notify_status', ['status' => $this->delivery->response_status ?: '—']))
+            ->line(__('webhook-manager::messages.cp.notify_error', ['error' => (string) ($this->delivery->error_message ?? $this->delivery->error_type)]))
+            ->line(__('webhook-manager::messages.cp.notify_attempts', ['attempts' => (int) $this->delivery->attempts]));
     }
 }

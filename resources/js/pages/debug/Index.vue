@@ -24,9 +24,9 @@ const props = defineProps({
 
 // ── Trigger Inspector columns ──────────────────────────────────────────────
 const inspectorColumns = [
-    { field: 'handle',      label: __('Handle'),      sortable: false },
-    { field: 'label',       label: __('Label'),        sortable: false },
-    { field: 'source_type', label: __('Source Type'),  sortable: false },
+    { field: 'handle',      label: __('webhook-manager::messages.cp.col_handle'),      sortable: false },
+    { field: 'label',       label: __('webhook-manager::messages.cp.col_label'),        sortable: false },
+    { field: 'source_type', label: __('webhook-manager::messages.cp.col_source_type'),  sortable: false },
 ];
 
 // ── Template Preview state ─────────────────────────────────────────────────
@@ -35,10 +35,10 @@ const samplePayload = ref(JSON.stringify({ id: '1', title: 'Hello', site: 'defau
 const sourceType = ref('entry');
 
 const sourceTypeOptions = [
-    { value: 'entry',           label: __('Entry') },
-    { value: 'form_submission', label: __('Form Submission') },
-    { value: 'user',            label: __('User') },
-    { value: 'asset',           label: __('Asset') },
+    { value: 'entry',           label: __('webhook-manager::messages.cp.source_entry') },
+    { value: 'form_submission', label: __('webhook-manager::messages.cp.source_form_submission') },
+    { value: 'user',            label: __('webhook-manager::messages.cp.source_user') },
+    { value: 'asset',           label: __('webhook-manager::messages.cp.source_asset') },
 ];
 
 const previewing = ref(false);
@@ -80,7 +80,7 @@ const previewVariant = computed(() =>
 const previewMessage = computed(() =>
     previewHasErrors.value
         ? previewResult.value.issues.join(' · ')
-        : __('Rendered successfully.')
+        : __('webhook-manager::messages.cp.debug_render_ok')
 );
 
 // ── Simulate Trigger state ─────────────────────────────────────────────────
@@ -110,7 +110,7 @@ async function runSimulate() {
             trigger:        selectedTrigger.value,
             sample_payload: payload,
         });
-        simulateResult.value = { success: true, message: __('Trigger simulated.'), response: res.data };
+        simulateResult.value = { success: true, message: __('webhook-manager::messages.cp.debug_simulated'), response: res.data };
     } catch (e) {
         simulateResult.value = {
             success:  false,
@@ -130,7 +130,7 @@ const simulateResponseJson = computed(() =>
 
 // ── Resolver Inspector ─────────────────────────────────────────────────────
 const resolverColumns = [
-    { field: 'namespace', label: __('Namespace'), sortable: false },
+    { field: 'namespace', label: __('webhook-manager::messages.cp.col_namespace'), sortable: false },
 ];
 
 /**
@@ -146,16 +146,16 @@ function namespaceExample(value) {
 </script>
 
 <template>
-    <Head :title="[__('Debug'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_debug'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-page mx-auto">
 
-        <Header :title="__('Debug')" icon="code-block" />
+        <Header :title="__('webhook-manager::messages.cp.page_debug')" icon="code-block" />
 
         <!-- ── Trigger Inspector ───────────────────────────────────────── -->
         <Panel
-            :heading="__('Trigger Inspector')"
-            :subheading="__('All triggers registered with the Webhook Manager.')"
+            :heading="__('webhook-manager::messages.cp.debug_triggers_heading')"
+            :subheading="__('webhook-manager::messages.cp.debug_triggers_sub')"
         >
             <Listing
                 :items="triggers"
@@ -175,8 +175,8 @@ function namespaceExample(value) {
         <!-- ── Resolver Inspector ─────────────────────────────────────── -->
         <Panel
             v-if="resolvers.length > 0"
-            :heading="__('Resolver Namespaces')"
-            :subheading="__('Registered payload resolvers and their template namespaces.')"
+            :heading="__('webhook-manager::messages.cp.debug_resolvers_heading')"
+            :subheading="__('webhook-manager::messages.cp.debug_resolvers_sub')"
         >
             <Listing
                 :items="resolvers"
@@ -192,27 +192,27 @@ function namespaceExample(value) {
 
         <!-- ── Template Preview ───────────────────────────────────────── -->
         <Panel
-            :heading="__('Template Preview')"
-            :subheading="__('Render a Webhook Manager template against a sample payload to verify output.')"
+            :heading="__('webhook-manager::messages.cp.debug_preview_heading')"
+            :subheading="__('webhook-manager::messages.cp.debug_preview_sub')"
         >
             <Card>
                 <div class="space-y-4">
 
-                    <Field :label="__('Template (JSON)')" :instructions="__('Enter a JSON template using Antlers or plain values.')">
+                    <Field :label="__('webhook-manager::messages.cp.debug_template_label')" :instructions="__('webhook-manager::messages.cp.debug_template_hint')">
                         <CodeEditor v-model="template" mode="json" />
                     </Field>
 
-                    <Field :label="__('Source Type')">
+                    <Field :label="__('webhook-manager::messages.cp.col_source_type')">
                         <Select v-model="sourceType" :options="sourceTypeOptions" />
                     </Field>
 
-                    <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be passed to the template renderer.')">
+                    <Field :label="__('webhook-manager::messages.cp.debug_sample_payload')" :instructions="__('webhook-manager::messages.cp.debug_sample_payload_hint')">
                         <CodeEditor v-model="samplePayload" mode="json" />
                     </Field>
 
                     <div>
                         <Button
-                            :text="previewing ? __('Rendering…') : __('Preview')"
+                            :text="previewing ? __('webhook-manager::messages.cp.btn_rendering') : __('webhook-manager::messages.cp.btn_preview')"
                             variant="primary"
                             :disabled="previewing"
                             @click="runPreview"
@@ -228,7 +228,7 @@ function namespaceExample(value) {
                     <Alert :variant="previewVariant" :text="previewMessage" />
                     <Field
                         v-if="previewResult.rendered"
-                        :label="__('Rendered Output')"
+                        :label="__('webhook-manager::messages.cp.templates_rendered_output')"
                     >
                         <CodeEditor :model-value="previewResult.rendered" read-only />
                     </Field>
@@ -241,23 +241,23 @@ function namespaceExample(value) {
         <!-- ── Simulate Trigger ───────────────────────────────────────── -->
         <Panel
             v-if="simulateUrl && triggers.length > 0"
-            :heading="__('Simulate Trigger')"
-            :subheading="__('Fire a registered trigger with a sample payload to test outbound webhooks end-to-end.')"
+            :heading="__('webhook-manager::messages.cp.debug_simulate_heading')"
+            :subheading="__('webhook-manager::messages.cp.debug_simulate_sub')"
         >
             <Card>
                 <div class="space-y-4">
 
-                    <Field :label="__('Trigger')">
+                    <Field :label="__('webhook-manager::messages.cp.col_trigger')">
                         <Select v-model="selectedTrigger" :options="triggerOptions" />
                     </Field>
 
-                    <Field :label="__('Sample Payload')" :instructions="__('JSON object that will be dispatched as the trigger payload.')">
+                    <Field :label="__('webhook-manager::messages.cp.debug_sample_payload')" :instructions="__('webhook-manager::messages.cp.debug_simulate_hint')">
                         <CodeEditor v-model="triggerPayload" mode="json" />
                     </Field>
 
                     <div>
                         <Button
-                            :text="simulating ? __('Running…') : __('Run')"
+                            :text="simulating ? __('webhook-manager::messages.cp.btn_running') : __('webhook-manager::messages.cp.btn_run')"
                             variant="primary"
                             :disabled="simulating"
                             @click="runSimulate"
@@ -272,7 +272,7 @@ function namespaceExample(value) {
                     />
                     <Field
                         v-if="simulateResponseJson"
-                        :label="__('Response')"
+                        :label="__('webhook-manager::messages.cp.tab_response')"
                     >
                         <CodeEditor :model-value="simulateResponseJson" mode="json" read-only />
                     </Field>

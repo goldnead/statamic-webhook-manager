@@ -29,6 +29,7 @@ import {
     Select,
     MiddleEllipsis,
 } from '@statamic/cms/ui';
+import { DateFormatter, NumberFormatter } from '@statamic/cms';
 import StatTile from '../../components/StatTile.vue';
 
 const props = defineProps({
@@ -85,7 +86,7 @@ const latencyRows = computed(() => {
         { label: 'p50', value: latency.value.p50 },
         { label: 'p95', value: latency.value.p95 },
         { label: 'p99', value: latency.value.p99 },
-        { label: __('Max'), value: latency.value.max },
+        { label: __('webhook-manager::messages.cp.insights_max'), value: latency.value.max },
     ].map((r) => ({ ...r, pct: r.value != null ? Math.max(2, (r.value / max) * 100) : 0 }));
 });
 const hasLatency = computed(() => latency.value.p50 != null);
@@ -106,21 +107,28 @@ function reload(patch) {
 }
 
 // ── Formatting helpers ──────────────────────────────────────────────────
+//
+// Numbers and dates go through core's formatters, not through bare `Intl`.
+// Statamic lets a user pick a formatting locale in their profile; core's
+// DateFormatter/NumberFormatter honour that choice, while
+// `new Intl.NumberFormat()` and `toLocaleDateString(undefined, …)` silently
+// take whatever locale the browser happens to be set to. Those two calls were
+// the only places in this addon that formatted a date or a number itself —
+// every other screen already renders through core's `<date-time>`.
 function fmt(n) {
-    return new Intl.NumberFormat().format(n ?? 0);
+    return NumberFormatter.format(n ?? 0);
 }
 function ms(v) {
     if (v == null) return '—';
     return v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 's' : v + 'ms';
 }
 function shortDate(iso) {
-    const d = new Date(iso + 'T00:00:00');
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return DateFormatter.format(new Date(iso + 'T00:00:00'), { month: 'short', day: 'numeric' });
 }
 </script>
 
 <template>
-    <Head :title="[__('webhook-manager::messages.insights_title'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.insights_title'), __('webhook-manager::messages.cp.app_name')]" />
 
     <Header :title="__('webhook-manager::messages.insights_title')" icon="chart-monitoring-indicator">
         <div class="w-44">
@@ -186,8 +194,8 @@ function shortDate(iso) {
                     <span>{{ shortDate(series[series.length - 1].date) }}</span>
                 </div>
                 <div class="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-green-500" /> {{ __('Success') }}</span>
-                    <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-red-400 dark:bg-red-500" /> {{ __('Failed') }}</span>
+                    <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-green-500" /> {{ __('webhook-manager::messages.cp.state_success') }}</span>
+                    <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-red-400 dark:bg-red-500" /> {{ __('webhook-manager::messages.cp.state_failed') }}</span>
                 </div>
             </Card>
         </Panel>
@@ -265,7 +273,7 @@ function shortDate(iso) {
                     <ul v-if="topFailing.length" class="divide-y divide-gray-100 dark:divide-gray-800">
                         <li v-for="(row, i) in topFailing" :key="i" class="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
                             <div class="flex-1 min-w-0">
-                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ row.name || __('Webhook') }}</div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ row.name || __('webhook-manager::messages.cp.webhook_generic') }}</div>
                                 <div class="font-mono text-xs text-gray-500 dark:text-gray-400">
                                     <MiddleEllipsis :text="row.url || ''" />
                                 </div>

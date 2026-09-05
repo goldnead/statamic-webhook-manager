@@ -21,9 +21,9 @@ import {
     EmptyStateMenu,
     EmptyStateItem,
     DocsCallout,
-    MiddleEllipsis,
     CommandPaletteItem,
 } from '@statamic/cms/ui';
+import UrlCell from '../../components/UrlCell.vue';
 
 /**
  * Overview screen.
@@ -125,14 +125,14 @@ async function runTest(hook) {
 </script>
 
 <template>
-    <Head :title="[__('webhook-manager::messages.cp.overview'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.overview'), __('webhook-manager::messages.cp.app_name')]" />
 
     <!-- ── Empty state ─────────────────────────────────────────────── -->
     <template v-if="isEmpty">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
                 <Icon name="link" class="size-5 text-gray-500 dark:text-gray-400" />
-                {{ __('Webhook Manager') }}
+                {{ __('webhook-manager::messages.cp.app_name') }}
             </h1>
         </header>
 
@@ -163,12 +163,12 @@ async function runTest(hook) {
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Webhook Manager')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.app_name')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
     </template>
 
     <!-- ── Populated state ─────────────────────────────────────────── -->
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Webhook Manager')" icon="link">
+        <Header :title="__('webhook-manager::messages.cp.app_name')" icon="link">
             <CommandPaletteItem
                 v-if="canCreateOutbound"
                 category="Actions"
@@ -264,13 +264,9 @@ async function runTest(hook) {
                      table, and the URL column is the one that gives way: the
                      Trigger badge does not shrink, so below roughly 1280px the
                      URL collapsed back to `ht...g`. A floor of 16rem keeps it
-                     readable and lets the table scroll instead. `block` so
-                     MiddleEllipsis measures the cell, not a shrink-wrapped
-                     span. -->
+                     readable and lets the table scroll instead. -->
                 <template #cell-url="{ value }">
-                    <span class="block min-w-64 font-mono text-xs text-gray-900 dark:text-gray-100">
-                        <MiddleEllipsis :text="value || ''" />
-                    </span>
+                    <UrlCell :url="value || ''" class="min-w-64" />
                 </template>
 
                 <template #cell-enabled="{ row: hook }">
@@ -349,13 +345,9 @@ async function runTest(hook) {
                      table, and the URL column is the one that gives way: the
                      Trigger badge does not shrink, so below roughly 1280px the
                      URL collapsed back to `ht...g`. A floor of 16rem keeps it
-                     readable and lets the table scroll instead. `block` so
-                     MiddleEllipsis measures the cell, not a shrink-wrapped
-                     span. -->
+                     readable and lets the table scroll instead. -->
                 <template #cell-url="{ value }">
-                    <span class="block min-w-64 font-mono text-xs text-gray-900 dark:text-gray-100">
-                        <MiddleEllipsis :text="value || ''" />
-                    </span>
+                    <UrlCell :url="value || ''" class="min-w-64" />
                 </template>
 
                 <!-- Wording and colour come from the controller. The badge used
@@ -377,6 +369,6 @@ async function runTest(hook) {
             </Listing>
         </Panel>
 
-        <DocsCallout :topic="__('Webhook Manager')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.app_name')" url="https://github.com/goldnead/statamic-webhook-manager#statamic-webhook-manager" />
     </div>
 </template>

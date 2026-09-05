@@ -102,12 +102,12 @@ function destroy() {
 </script>
 
 <template>
-    <Head :title="[__('Templates'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_templates'), __('webhook-manager::messages.cp.app_name')]" />
 
     <!-- ── Empty state ─────────────────────────────────────────────── -->
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
-            <h1 class="mb-3 font-bold text-3xl">{{ __('Templates') }}</h1>
+            <h1 class="mb-3 font-bold text-3xl">{{ __('webhook-manager::messages.cp.page_templates') }}</h1>
         </header>
 
         <EmptyStateMenu :heading="__('webhook-manager::messages.templates_empty_intro')">
@@ -115,26 +115,26 @@ function destroy() {
                 v-if="canCreate"
                 :href="createUrl"
                 icon="layout-grid"
-                :heading="__('Create Template')"
+                :heading="__('webhook-manager::messages.cp.templates_create_heading')"
                 :description="__('webhook-manager::messages.templates_create_description')"
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Templates')" url="https://github.com/goldnead/statamic-webhook-manager#templates" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_templates')" url="https://github.com/goldnead/statamic-webhook-manager#templates" />
     </div>
 
     <!-- ── Listing ─────────────────────────────────────────────────── -->
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Templates')" icon="layout-grid">
+        <Header :title="__('webhook-manager::messages.cp.page_templates')" icon="layout-grid">
             <Button
                 v-if="canCreate"
                 :href="createUrl"
-                :text="__('Create Template')"
+                :text="__('webhook-manager::messages.cp.templates_create_heading')"
                 variant="primary"
             />
             <CommandPaletteItem
                 category="Actions"
-                :text="__('Create Template')"
+                :text="__('webhook-manager::messages.cp.templates_create_heading')"
                 :url="createUrl"
             />
         </Header>
@@ -148,7 +148,7 @@ function destroy() {
                 <button
                     type="button"
                     class="shrink-0 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                    :aria-label="__('Dismiss')"
+                    :aria-label="__('webhook-manager::messages.cp.btn_dismiss')"
                     @click="dismissIntro"
                 >
                     <Icon name="x" class="h-4 w-4" />
@@ -193,17 +193,27 @@ function destroy() {
                 />
             </template>
 
+            <!-- updated cell — the column printed the raw ISO string the
+                 controller sends (`2026-08-25T18:12:16+00:00`) because no slot
+                 claimed it. Core's `<date-time>` renders it the way every
+                 other date in the CP is rendered, and it honours the formatting
+                 locale a user picks in their profile. -->
+            <template #cell-updated_at="{ row }">
+                <date-time v-if="row.updated_at" :of="row.updated_at" />
+                <span v-else class="text-gray-500 dark:text-gray-400">—</span>
+            </template>
+
             <!-- row actions -->
             <template #prepended-row-actions="{ row }">
                 <DropdownItem
                     v-if="row.can_edit"
-                    :text="__('Edit')"
+                    :text="__('webhook-manager::messages.cp.action_edit')"
                     :href="row.edit_url"
                     icon="cog"
                 />
                 <DropdownItem
                     v-if="row.duplicate_url"
-                    :text="__('Duplicate')"
+                    :text="__('webhook-manager::messages.cp.row_duplicate')"
                     :href="row.duplicate_url"
                     icon="duplicate"
                 />
@@ -212,7 +222,7 @@ function destroy() {
                      rendered in the ordinary style with a stray attribute. -->
                 <DropdownItem
                     v-if="row.can_delete"
-                    :text="__('Delete')"
+                    :text="__('webhook-manager::messages.cp.row_delete')"
                     icon="trash"
                     variant="destructive"
                     @click="confirmDestroy(row)"
@@ -224,9 +234,9 @@ function destroy() {
     <!-- ── Delete confirmation ────────────────────────────────────── -->
     <ConfirmationModal
         :open="confirmingDelete"
-        :title="__('Delete Template')"
-        :body-text="__('Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.')"
-        :button-text="__('Delete')"
+        :title="__('webhook-manager::messages.cp.templates_delete')"
+        :body-text="__('webhook-manager::messages.cp.templates_delete_confirm')"
+        :button-text="__('webhook-manager::messages.cp.row_delete')"
         :danger="true"
         @confirm="destroy"
         @update:open="confirmingDelete = $event"

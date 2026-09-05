@@ -98,17 +98,17 @@ function update(patch) {
             class="flex-1"
             :model-value="valueInput"
             @update:model-value="valueInput = $event"
-            :placeholder="isList ? __('comma, separated, values') : __('value')"
+            :placeholder="isList ? __('webhook-manager::messages.cp.placeholder_csv') : __('webhook-manager::messages.cp.placeholder_value')"
         />
         <span v-else class="text-xs text-gray-500 dark:text-gray-400 italic w-32 self-center px-2">
-            {{ __('No value needed') }}
+            {{ __('webhook-manager::messages.cp.rules_no_value_needed') }}
         </span>
 
         <Button
             variant="subtle"
             size="sm"
             icon="trash"
-            :aria-label="__('Remove')"
+            :aria-label="__('webhook-manager::messages.cp.row_remove')"
             @click="$emit('remove')"
         />
     </div>

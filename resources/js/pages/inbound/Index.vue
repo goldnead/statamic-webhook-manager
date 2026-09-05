@@ -13,9 +13,9 @@ import {
     EmptyStateItem,
     DocsCallout,
     Listing,
-    MiddleEllipsis,
     CommandPaletteItem,
 } from '@statamic/cms/ui';
+import UrlCell from '../../components/UrlCell.vue';
 
 /**
  * Inbound endpoint listing.
@@ -92,21 +92,21 @@ const actionErrors = ref({});
 </script>
 
 <template>
-    <Head :title="[__('Inbound Endpoints'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_inbound'), __('webhook-manager::messages.cp.app_name')]" />
 
     <!-- Empty state — shown when no endpoints exist yet -->
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
-            <h1 class="text-4xl font-bold">{{ __('Inbound Endpoints') }}</h1>
+            <h1 class="text-4xl font-bold">{{ __('webhook-manager::messages.cp.page_inbound') }}</h1>
         </header>
 
-        <EmptyStateMenu :heading="__('No inbound endpoints yet')">
+        <EmptyStateMenu :heading="__('webhook-manager::messages.cp.inbound_empty_heading')">
             <EmptyStateItem
                 v-if="canCreate"
                 :href="createUrl"
                 icon="download"
-                :heading="__('Create Inbound Endpoint')"
-                :description="__('Receive and process incoming webhook payloads from external services.')"
+                :heading="__('webhook-manager::messages.cp.inbound_create_heading')"
+                :description="__('webhook-manager::messages.cp.inbound_empty_sub')"
             />
         </EmptyStateMenu>
 
@@ -115,17 +115,17 @@ const actionErrors = ref({});
 
     <!-- Full listing — shown when at least one endpoint exists -->
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Inbound Endpoints')" icon="download">
+        <Header :title="__('webhook-manager::messages.cp.page_inbound')" icon="download">
             <template #actions>
                 <Button
                     v-if="canCreate"
                     :href="createUrl"
-                    :text="__('Create Endpoint')"
+                    :text="__('webhook-manager::messages.cp.inbound_create_button')"
                     variant="primary"
                 />
                 <CommandPaletteItem
                     category="Actions"
-                    :text="__('Create Inbound Endpoint')"
+                    :text="__('webhook-manager::messages.cp.inbound_create_heading')"
                     :url="createUrl"
                 />
             </template>
@@ -163,19 +163,19 @@ const actionErrors = ref({});
                 </div>
             </template>
 
-            <!-- Path column: full URL with copy button + MiddleEllipsis -->
+            <!-- Path column: the endpoint's own path first, its host under it,
+                 plus a copy button for the whole URL.
+                 `MiddleEllipsis` took a `:href` here — it has no such prop
+                 (`text` is the only one), so it was passed through as a plain
+                 attribute on a span and never made anything clickable. -->
             <template #cell-path="{ row }">
-                <div class="flex items-center gap-1.5 font-mono text-sm">
-                    <MiddleEllipsis
-                        :text="fullUrl(row)"
-                        :href="fullUrl(row)"
-                        class="text-primary"
-                    />
+                <div class="flex items-start gap-1.5">
+                    <UrlCell :url="fullUrl(row)" class="min-w-56 flex-1" />
                     <button
                         type="button"
                         class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
-                        :title="__('Copy URL')"
-                        :aria-label="__('Copy URL')"
+                        :title="__('webhook-manager::messages.cp.btn_copy_url')"
+                        :aria-label="__('webhook-manager::messages.cp.btn_copy_url')"
                         @click.prevent="$clipboard(fullUrl(row))"
                     >
                         <Icon name="duplicate" class="w-3.5 h-3.5" />
@@ -214,7 +214,7 @@ const actionErrors = ref({});
             <template #cell-enabled="{ row }">
                 <Badge
                     :color="row.enabled ? 'green' : 'default'"
-                    :text="row.enabled ? __('Active') : __('Disabled')"
+                    :text="row.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
                 />
             </template>
 
@@ -222,12 +222,12 @@ const actionErrors = ref({});
             <template #prepended-row-actions="{ row }">
                 <DropdownItem
                     v-if="row.can_edit"
-                    :text="__('Edit')"
+                    :text="__('webhook-manager::messages.cp.action_edit')"
                     :href="row.edit_url"
                     icon="cog"
                 />
                 <DropdownItem
-                    :text="row.enabled ? __('Disable') : __('Enable')"
+                    :text="row.enabled ? __('webhook-manager::messages.cp.row_disable') : __('webhook-manager::messages.cp.row_enable')"
                     :icon="row.enabled ? 'x' : 'checkmark'"
                     @click="toggle(row)"
                 />

@@ -70,13 +70,13 @@ function removeChild(index) {
                 <Button
                     size="sm"
                     :variant="modelValue.logic === 'and' ? 'primary' : 'default'"
-                    :text="__('AND')"
+                    :text="__('webhook-manager::messages.cp.rules_and')"
                     @click="setLogic('and')"
                 />
                 <Button
                     size="sm"
                     :variant="modelValue.logic === 'or' ? 'primary' : 'default'"
-                    :text="__('OR')"
+                    :text="__('webhook-manager::messages.cp.rules_or')"
                     @click="setLogic('or')"
                 />
             </div>
@@ -85,7 +85,7 @@ function removeChild(index) {
                 variant="subtle"
                 size="sm"
                 icon="trash"
-                :text="__('Remove group')"
+                :text="__('webhook-manager::messages.cp.rules_remove_group')"
                 @click="$emit('remove')"
             />
         </div>
@@ -93,8 +93,8 @@ function removeChild(index) {
         <!-- Empty state -->
         <p v-if="!items.length" class="text-xs text-gray-500 dark:text-gray-400 italic">
             {{ isRoot
-                ? __('No conditions — rule fires for every matching trigger.')
-                : __('Empty group — add a condition or another nested group below.') }}
+                ? __('webhook-manager::messages.cp.rules_conditions_empty')
+                : __('webhook-manager::messages.cp.rules_group_empty') }}
         </p>
 
         <!-- Children: leaves or nested groups -->
@@ -115,8 +115,8 @@ function removeChild(index) {
 
         <!-- Toolbar -->
         <div class="flex gap-2 pt-1">
-            <Button variant="default" size="sm" icon="plus" :text="__('Condition')" @click="addCondition" />
-            <Button variant="default" size="sm" icon="plus" :text="__('Group')" @click="addGroup" />
+            <Button variant="default" size="sm" icon="plus" :text="__('webhook-manager::messages.cp.rules_condition')" @click="addCondition" />
+            <Button variant="default" size="sm" icon="plus" :text="__('webhook-manager::messages.cp.rules_group')" @click="addGroup" />
         </div>
     </div>
 </template>

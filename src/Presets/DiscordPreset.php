@@ -26,7 +26,7 @@ class DiscordPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Post a message to a Discord channel via a channel webhook.';
+        return __('webhook-manager::messages.cp.preset_discord');
     }
 
     public function fields(): array

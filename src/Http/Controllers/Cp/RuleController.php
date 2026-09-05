@@ -180,11 +180,11 @@ class RuleController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['field' => 'name',         'label' => __('Name'),         'sortable' => true,  'visible' => true],
-            ['field' => 'trigger_type', 'label' => __('Trigger'),      'sortable' => true,  'visible' => true],
-            ['field' => 'action_count', 'label' => __('Actions'),      'sortable' => false, 'visible' => true],
-            ['field' => 'order_index',  'label' => __('Order'),        'sortable' => true,  'visible' => true],
-            ['field' => 'enabled',      'label' => __('Status'),       'sortable' => true,  'visible' => true],
+            ['field' => 'name',         'label' => __('webhook-manager::messages.cp.col_name'),         'sortable' => true,  'visible' => true],
+            ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'),      'sortable' => true,  'visible' => true],
+            ['field' => 'action_count', 'label' => __('webhook-manager::messages.cp.col_actions'),      'sortable' => false, 'visible' => true],
+            ['field' => 'order_index',  'label' => __('webhook-manager::messages.cp.col_order'),        'sortable' => true,  'visible' => true],
+            ['field' => 'enabled',      'label' => __('webhook-manager::messages.cp.col_status'),       'sortable' => true,  'visible' => true],
         ];
     }
 

@@ -11,7 +11,7 @@ class GenericJsonPreset extends AbstractPreset
 
     public function label(): string
     {
-        return 'Generic JSON endpoint';
+        return __('webhook-manager::messages.cp.preset_generic_label');
     }
 
     public function icon(): string
@@ -26,7 +26,7 @@ class GenericJsonPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'POST a JSON payload of your choice to any HTTP endpoint.';
+        return __('webhook-manager::messages.cp.preset_generic');
     }
 
     protected function urlField(): string

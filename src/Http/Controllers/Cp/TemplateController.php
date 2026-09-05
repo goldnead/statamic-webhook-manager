@@ -227,10 +227,10 @@ class TemplateController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['field' => 'name',       'label' => __('Name'),    'visible' => true, 'sortable' => true],
-            ['field' => 'handle',     'label' => __('Handle'),  'visible' => true, 'sortable' => true],
-            ['field' => 'type',       'label' => __('Type'),    'visible' => true, 'sortable' => true],
-            ['field' => 'updated_at', 'label' => __('Updated'), 'visible' => true, 'sortable' => true],
+            ['field' => 'name',       'label' => __('webhook-manager::messages.cp.col_name'),    'visible' => true, 'sortable' => true],
+            ['field' => 'handle',     'label' => __('webhook-manager::messages.cp.col_handle'),  'visible' => true, 'sortable' => true],
+            ['field' => 'type',       'label' => __('webhook-manager::messages.cp.col_type'),    'visible' => true, 'sortable' => true],
+            ['field' => 'updated_at', 'label' => __('webhook-manager::messages.cp.col_updated'), 'visible' => true, 'sortable' => true],
         ];
     }
 
@@ -240,9 +240,9 @@ class TemplateController extends CpController
     protected function typeOptions(): array
     {
         return [
-            Template::TYPE_OUTBOUND_BODY => __('Outbound request body'),
-            Template::TYPE_INBOUND_RESPONSE => __('Inbound response body'),
-            Template::TYPE_NOTIFICATION => __('Notification body'),
+            Template::TYPE_OUTBOUND_BODY => __('webhook-manager::messages.cp.templates_kind_outbound'),
+            Template::TYPE_INBOUND_RESPONSE => __('webhook-manager::messages.cp.templates_kind_inbound'),
+            Template::TYPE_NOTIFICATION => __('webhook-manager::messages.cp.templates_kind_notification'),
         ];
     }
 

@@ -14,9 +14,9 @@ import {
     EmptyStateItem,
     DocsCallout,
     Listing,
-    MiddleEllipsis,
     CommandPaletteItem,
 } from '@statamic/cms/ui';
+import UrlCell from '../../components/UrlCell.vue';
 
 /**
  * Outbound webhook listing.
@@ -106,13 +106,13 @@ const actionErrors = ref({});
 </script>
 
 <template>
-    <Head :title="[__('Outbound Webhooks'), __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.page_outbound'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div v-if="isEmpty" class="max-w-page mx-auto">
         <header class="py-8 pt-16 text-center">
             <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
                 <Icon name="arrow-up-right" class="size-5 text-gray-500 dark:text-gray-400" />
-                {{ __('Outbound Webhooks') }}
+                {{ __('webhook-manager::messages.cp.page_outbound') }}
             </h1>
         </header>
 
@@ -121,33 +121,33 @@ const actionErrors = ref({});
                 v-if="canCreate && integrationsUrl"
                 :href="integrationsUrl"
                 icon="flash-bolt-lightning"
-                :heading="__('Add an integration')"
-                :description="__('Slack, Discord, Zapier and more — pre-configured in a couple of clicks.')"
+                :heading="__('webhook-manager::messages.cp.integrations_add_heading')"
+                :description="__('webhook-manager::messages.cp.integrations_empty_item_sub')"
             />
             <EmptyStateItem
                 v-if="canCreate"
                 :href="createUrl"
                 icon="arrow-up-right"
-                :heading="__('Create Outbound Webhook')"
+                :heading="__('webhook-manager::messages.cp.outbound_create_heading')"
                 :description="__('webhook-manager::messages.outbound_create_description')"
             />
         </EmptyStateMenu>
 
-        <DocsCallout :topic="__('Outbound Webhooks')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_outbound')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
     </div>
 
     <div v-else class="max-w-page mx-auto">
-        <Header :title="__('Outbound Webhooks')" icon="arrow-up-right">
+        <Header :title="__('webhook-manager::messages.cp.page_outbound')" icon="arrow-up-right">
             <Button
                 v-if="canCreate && integrationsUrl"
                 :href="integrationsUrl"
-                :text="__('Add integration')"
+                :text="__('webhook-manager::messages.cp.page_add_integration')"
                 icon="flash-bolt-lightning"
             />
             <CommandPaletteItem
                 v-if="canCreate"
                 category="Actions"
-                :text="__('Create Outbound Webhook')"
+                :text="__('webhook-manager::messages.cp.outbound_create_heading')"
                 icon="arrow-up-right"
                 :url="createUrl"
                 v-slot="{ text, url }"
@@ -159,7 +159,7 @@ const actionErrors = ref({});
         <Alert
             v-if="testResult"
             :variant="testResult.ok ? 'success' : 'error'"
-            :heading="testResult.ok ? __('Test request succeeded') : __('Test request failed')"
+            :heading="testResult.ok ? __('webhook-manager::messages.cp.test_request_ok_short') : __('webhook-manager::messages.cp.test_request_failed_short')"
             :text="`${testResult.name} — HTTP ${testResult.response_status ?? '—'} — ${testResult.duration_ms ?? '?'}ms${testResult.error_message ? ' — ' + testResult.error_message : ''}`"
             class="mb-4"
             data-testid="outbound-test-result"
@@ -210,18 +210,15 @@ const actionErrors = ref({});
                  below roughly 1280px the URL collapsed back to 119px and
                  `ht...g` — six characters that tell no two rows apart. A floor
                  of 12rem keeps it readable and lets the table scroll instead,
-                 which is what core's `.data-table` is built for. `block` so
-                 MiddleEllipsis measures the cell, not a shrink-wrapped span. -->
+                 which is what core's `.data-table` is built for. -->
             <template #cell-url="{ value }">
-                <span class="block min-w-64 text-gray-900 dark:text-gray-100 font-mono text-xs">
-                    <MiddleEllipsis :text="value || ''" />
-                </span>
+                <UrlCell :url="value || ''" class="min-w-64" />
             </template>
 
             <template #cell-enabled="{ row: hook }">
                 <Badge
                     :color="hook.enabled ? 'green' : 'default'"
-                    :text="hook.enabled ? __('Active') : __('Disabled')"
+                    :text="hook.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
                 />
             </template>
 
@@ -229,18 +226,18 @@ const actionErrors = ref({});
                 <DropdownItem
                     v-if="hook.can_edit"
                     icon="cog"
-                    :text="__('Edit')"
+                    :text="__('webhook-manager::messages.cp.action_edit')"
                     :href="hook.edit_url"
                 />
                 <DropdownItem
                     v-if="hook.can_test && hook.test_url"
                     icon="arrow-up-right"
-                    :text="__('Test')"
+                    :text="__('webhook-manager::messages.cp.tab_test')"
                     @click="runTest(hook)"
                 />
             </template>
         </Listing>
 
-        <DocsCallout :topic="__('Outbound Webhooks')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
+        <DocsCallout :topic="__('webhook-manager::messages.cp.page_outbound')" url="https://github.com/goldnead/statamic-webhook-manager#usage-example" />
     </div>
 </template>

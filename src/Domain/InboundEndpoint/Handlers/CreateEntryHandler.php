@@ -32,7 +32,7 @@ class CreateEntryHandler implements InboundActionHandlerInterface
 
     public function label(): string
     {
-        return 'Create entry';
+        return __('webhook-manager::messages.cp.action_create_entry');
     }
 
     public function handleAction(InboundEndpoint $endpoint, array $mappedPayload, array $rawPayload): array

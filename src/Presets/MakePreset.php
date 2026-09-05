@@ -26,7 +26,7 @@ class MakePreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Send a structured JSON event to a Make custom-webhook trigger.';
+        return __('webhook-manager::messages.cp.preset_make');
     }
 
     public function fields(): array

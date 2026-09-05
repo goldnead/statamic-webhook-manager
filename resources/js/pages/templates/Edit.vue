@@ -69,11 +69,11 @@ const sourceType    = ref('entry');
 // Statamic's <Select> wraps <Combobox>, which expects `:options` as an
 // Array of { value, label } objects — not nested HTML <option> tags.
 const sourceTypeOptions = [
-    { value: 'entry',      label: __('Entry') },
-    { value: 'user',       label: __('User') },
-    { value: 'term',       label: __('Term') },
-    { value: 'asset',      label: __('Asset') },
-    { value: 'collection', label: __('Collection') },
+    { value: 'entry',      label: __('webhook-manager::messages.cp.source_entry') },
+    { value: 'user',       label: __('webhook-manager::messages.cp.source_user') },
+    { value: 'term',       label: __('webhook-manager::messages.cp.subject_term') },
+    { value: 'asset',      label: __('webhook-manager::messages.cp.source_asset') },
+    { value: 'collection', label: __('webhook-manager::messages.cp.subject_collection') },
 ];
 
 function objectToOptions(obj) {
@@ -86,11 +86,11 @@ const typeOptionsArray = computed(() => objectToOptions(props.typeOptions));
 // ── Computed ──────────────────────────────────────────────────────────
 const pageTitle = computed(() =>
     props.isNew
-        ? __('Create Template')
-        : (props.template.name || __('Template'))
+        ? __('webhook-manager::messages.cp.templates_create_heading')
+        : (props.template.name || __('webhook-manager::messages.cp.templates_fallback_title'))
 );
 
-const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
+const saveLabel = computed(() => props.isNew ? __('webhook-manager::messages.cp.btn_create') : __('webhook-manager::messages.cp.btn_save'));
 
 // CodeEditor mode: JSON makes sense for outbound_body when the content
 // looks like raw JSON; for notification / inbound_response we use text
@@ -156,7 +156,7 @@ async function runPreview() {
     } catch (e) {
         previewResult.value = {
             rendered: '',
-            issues:   [e?.response?.data?.message ?? e?.message ?? __('Preview failed.')],
+            issues:   [e?.response?.data?.message ?? e?.message ?? __('webhook-manager::messages.cp.templates_preview_failed')],
         };
     } finally {
         previewing.value = false;
@@ -181,7 +181,7 @@ function copyToClipboard(text) {
 </script>
 
 <template>
-    <Head :title="[pageTitle, __('Templates'), __('Webhook Manager')]" />
+    <Head :title="[pageTitle, __('webhook-manager::messages.cp.page_templates'), __('webhook-manager::messages.cp.app_name')]" />
 
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
@@ -203,7 +203,7 @@ function copyToClipboard(text) {
                     <DropdownItem
                         variant="destructive"
                         icon="trash"
-                        :text="__('Delete Template')"
+                        :text="__('webhook-manager::messages.cp.templates_delete')"
                         @click="showDelete = true"
                     />
                 </DropdownMenu>
@@ -221,7 +221,7 @@ function copyToClipboard(text) {
             <CommandPaletteItem
                 v-if="canDelete && deleteUrl"
                 category="Actions"
-                :text="__('Delete Template')"
+                :text="__('webhook-manager::messages.cp.templates_delete')"
                 icon="trash"
                 :action="() => (showDelete = true)"
             />
@@ -260,13 +260,13 @@ function copyToClipboard(text) {
                      no way to reach Body or Preview. The other three edit
                      pages use the default slot; this one now matches them. -->
                 <TabTrigger value="general" :class="{ 'text-red-500': tabsWithErrors.has('general') }">
-                    {{ __('General') }}
+                    {{ __('webhook-manager::messages.cp.tab_general_generic') }}
                 </TabTrigger>
                 <TabTrigger value="body" :class="{ 'text-red-500': tabsWithErrors.has('body') }">
-                    {{ __('Body') }}
+                    {{ __('webhook-manager::messages.cp.templates_body') }}
                 </TabTrigger>
                 <TabTrigger value="preview">
-                    {{ __('Preview') }}
+                    {{ __('webhook-manager::messages.cp.btn_preview') }}
                 </TabTrigger>
             </TabList>
 
@@ -275,34 +275,34 @@ function copyToClipboard(text) {
                 <Panel>
                     <Card inset class="p-6 space-y-6">
                         <Field inline
-                            :label="__('Name')"
+                            :label="__('webhook-manager::messages.cp.col_name')"
                             :error="form.errors.name"
                             required
                         >
                             <Input
                                 v-model="form.name"
                                 type="text"
-                                :placeholder="__('My template')"
+                                :placeholder="__('webhook-manager::messages.cp.templates_name_placeholder')"
                                 :has-error="!!form.errors.name"
                             />
                         </Field>
 
                         <Field inline
-                            :label="__('Handle')"
+                            :label="__('webhook-manager::messages.cp.col_handle')"
                             :error="form.errors.handle"
-                            :instructions="__('Lowercase letters, numbers, underscores and hyphens only.')"
+                            :instructions="__('webhook-manager::messages.cp.field_handle_hint_short')"
                             required
                         >
                             <Input
                                 v-model="form.handle"
                                 type="text"
-                                :placeholder="__('my_template')"
+                                :placeholder="__('webhook-manager::messages.cp.templates_handle_placeholder')"
                                 :has-error="!!form.errors.handle"
                             />
                         </Field>
 
                         <Field inline
-                            :label="__('Type')"
+                            :label="__('webhook-manager::messages.cp.col_type')"
                             :error="form.errors.type"
                             required
                         >
@@ -317,9 +317,9 @@ function copyToClipboard(text) {
                 <Panel>
                     <Card inset class="p-6 space-y-4">
                         <Field inline
-                            :label="__('Body')"
+                            :label="__('webhook-manager::messages.cp.templates_body')"
                             :error="form.errors.body"
-                            :instructions="__('Template body. Twig / Antlers syntax is supported for non-JSON types.')"
+                            :instructions="__('webhook-manager::messages.cp.templates_body_hint')"
                             required
                         >
                             <CodeEditor
@@ -342,7 +342,7 @@ function copyToClipboard(text) {
                 -->
                 <Panel
                     v-if="namespaces.length"
-                    :heading="__('Available variables')"
+                    :heading="__('webhook-manager::messages.cp.templates_variables')"
                     class="mt-4"
                 >
                     <Card>
@@ -356,7 +356,7 @@ function copyToClipboard(text) {
                                 <Button
                                     size="xs"
                                     variant="default"
-                                    :text="__('Copy')"
+                                    :text="__('webhook-manager::messages.cp.copy')"
                                     icon="duplicate"
                                     @click="copyToClipboard('{{ ' + ns + ' }}')"
                                 />
@@ -370,13 +370,13 @@ function copyToClipboard(text) {
             <TabContent value="preview">
                 <Panel>
                     <Card inset class="p-6 space-y-6">
-                        <Field inline :label="__('Source Type')">
+                        <Field inline :label="__('webhook-manager::messages.cp.col_source_type')">
                             <Select v-model="sourceType" :options="sourceTypeOptions" />
                         </Field>
 
                         <Field inline
-                            :label="__('Sample Payload')"
-                            :instructions="__('Provide a JSON object that will be passed as data to the template renderer.')"
+                            :label="__('webhook-manager::messages.cp.debug_sample_payload')"
+                            :instructions="__('webhook-manager::messages.cp.templates_preview_hint')"
                         >
                             <CodeEditor
                                 v-model="samplePayload"
@@ -387,7 +387,7 @@ function copyToClipboard(text) {
 
                         <div>
                             <Button
-                                :text="__('Render preview')"
+                                :text="__('webhook-manager::messages.cp.templates_render_preview')"
                                 variant="primary"
                                 :loading="previewing"
                                 icon="flash-bolt-lightning"
@@ -400,7 +400,7 @@ function copyToClipboard(text) {
                 <!-- Result panels, siblings of the form panel rather than
                      Panels nested inside its padding. -->
                 <template v-if="previewResult !== null">
-                    <Panel :heading="__('Rendered output')" class="mt-4">
+                    <Panel :heading="__('webhook-manager::messages.cp.templates_rendered_output_lc')" class="mt-4">
                         <Card>
                             <CodeEditor
                                 :model-value="previewResult.rendered || ''"
@@ -413,7 +413,7 @@ function copyToClipboard(text) {
 
                     <Panel
                         v-if="previewResult.issues?.length"
-                        :heading="__('Issues')"
+                        :heading="__('webhook-manager::messages.cp.issues')"
                         class="mt-4"
                     >
                         <Card>
@@ -436,9 +436,9 @@ function copyToClipboard(text) {
     <ConfirmationModal
         v-if="canDelete && deleteUrl"
         :open="showDelete"
-        :title="__('Delete Template')"
-        :body-text="__('Are you sure you want to delete this template? Outbound webhooks using it will have their body source detached.')"
-        :button-text="__('Delete')"
+        :title="__('webhook-manager::messages.cp.templates_delete')"
+        :body-text="__('webhook-manager::messages.cp.templates_delete_confirm')"
+        :button-text="__('webhook-manager::messages.cp.row_delete')"
         :danger="true"
         @confirm="destroy"
         @update:open="showDelete = $event"

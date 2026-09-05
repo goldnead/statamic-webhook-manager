@@ -26,7 +26,7 @@ class N8nPreset extends AbstractPreset
 
     public function description(): string
     {
-        return 'Send a structured JSON event to an n8n Webhook node.';
+        return __('webhook-manager::messages.cp.preset_n8n');
     }
 
     public function fields(): array

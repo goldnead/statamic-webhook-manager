@@ -243,7 +243,7 @@ function copyCurl() {
 </script>
 
 <template>
-    <Head :title="[__('webhook-manager::messages.cp.delivery'), `#${delivery.id}`, __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.delivery'), `#${delivery.id}`, __('webhook-manager::messages.cp.app_name')]" />
 
     <!-- The narrow detail container ui-vocabulary §2.3 sanctions for detail
          and settings screens (core: pages/forms/Show.vue,

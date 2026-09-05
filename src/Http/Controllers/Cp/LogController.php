@@ -98,11 +98,11 @@ class LogController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['field' => 'level',          'label' => __('Level'),          'visible' => true, 'sortable' => true],
-            ['field' => 'message',        'label' => __('Message'),        'visible' => true, 'sortable' => false],
-            ['field' => 'correlation_id', 'label' => __('Correlation ID'), 'visible' => true, 'sortable' => false],
-            ['field' => 'error_type',     'label' => __('Error Type'),     'visible' => true, 'sortable' => true],
-            ['field' => 'created_at',     'label' => __('When'),           'visible' => true, 'sortable' => true],
+            ['field' => 'level',          'label' => __('webhook-manager::messages.cp.col_level'),          'visible' => true, 'sortable' => true],
+            ['field' => 'message',        'label' => __('webhook-manager::messages.cp.col_message'),        'visible' => true, 'sortable' => false],
+            ['field' => 'correlation_id', 'label' => __('webhook-manager::messages.cp.col_correlation_id'), 'visible' => true, 'sortable' => false],
+            ['field' => 'error_type',     'label' => __('webhook-manager::messages.cp.col_error_type'),     'visible' => true, 'sortable' => true],
+            ['field' => 'created_at',     'label' => __('webhook-manager::messages.cp.col_when'),           'visible' => true, 'sortable' => true],
         ];
     }
 

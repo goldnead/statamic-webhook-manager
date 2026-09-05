@@ -247,11 +247,11 @@ class InboundController extends CpController
     protected function indexColumns(): array
     {
         return [
-            ['field' => 'name',        'label' => __('Name'),    'sortable' => true,  'visible' => true],
-            ['field' => 'path',        'label' => __('Path'),    'sortable' => false, 'visible' => true],
-            ['field' => 'auth_type',   'label' => __('Auth'),    'sortable' => true,  'visible' => true],
-            ['field' => 'action_type', 'label' => __('Action'),  'sortable' => true,  'visible' => true],
-            ['field' => 'enabled',     'label' => __('Status'),  'sortable' => true,  'visible' => true],
+            ['field' => 'name',        'label' => __('webhook-manager::messages.cp.col_name'),    'sortable' => true,  'visible' => true],
+            ['field' => 'path',        'label' => __('webhook-manager::messages.cp.col_path'),    'sortable' => false, 'visible' => true],
+            ['field' => 'auth_type',   'label' => __('webhook-manager::messages.cp.col_auth'),    'sortable' => true,  'visible' => true],
+            ['field' => 'action_type', 'label' => __('webhook-manager::messages.cp.tab_action'),  'sortable' => true,  'visible' => true],
+            ['field' => 'enabled',     'label' => __('webhook-manager::messages.cp.col_status'),  'sortable' => true,  'visible' => true],
         ];
     }
 
