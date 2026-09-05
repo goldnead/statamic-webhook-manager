@@ -1,5 +1,46 @@
 # Changelog
 
+## 2.7.0 — 2026-09-05
+
+### Die Übersicht zeigt die Webhooks selbst, nicht nur vier Zahlen
+
+Bisher standen dort vier Kacheln und keine einzige Zeile der eigentlichen
+Webhooks. Jetzt trägt die Seite die Kennzahlen als Merkmal/Wert-Tabelle und
+darunter die ausgehenden Webhooks als echtes Statamic-Listing, mit
+Spaltenköpfen, Sortierung, Mehrfachauswahl und „…"-Menü. Die Zustellungsliste
+war unbrauchbar — die URL-Spalte 60 px breit, jede Zeile nur „…" — und ist es
+nicht mehr.
+
+### Behoben: zwei Löcher in den Aktions-Endpunkten
+
+- Eine Auswahl, die serverseitig auf null Datensätze zusammenfiel (veraltete
+  Seite, gelöschte Zeile, Markenwechsel), ließ Core über die globale
+  Aktionsliste **aller** installierten Addons laufen und endete mit HTTP 500
+  samt Stacktrace. Jetzt antwortet der Endpunkt mit einer leeren Liste bzw.
+  404, bevor Core gefragt wird.
+- Eine Aktion des falschen Typs lief durch und meldete Erfolg — ein
+  ausgehender Webhook ließ sich als „Zustellung erneut senden" ausführen.
+  `visibleTo()` ist nur eine Wache für die Oberfläche; beim Ausführen prüft
+  Statamic ausschließlich `authorize()`. Alle fünf CP-Aktionen prüfen den Typ
+  jetzt dort, und jeder Endpunkt nimmt nur seine eigenen Aktionen an.
+
+### Das Control Panel spricht durchgehend Deutsch
+
+357 Zeichenketten lagen als globale Übersetzungsschlüssel im Code. Global
+heißt: ein Geschwister-Addon kann sie umdeuten — die Zustellungs-Detailseite
+hieß deshalb „Versand #266", weil ein anderes Addon `Delivery` mit „Versand"
+belegt. Alles liegt jetzt unter `webhook-manager::messages.*`. Ein Test hält
+den Zustand: er greift auch `trans_choice`, doppelte Anführungszeichen,
+`config/` und Aufrufe mit variablem Schlüssel.
+
+### Kleineres
+
+- Die Fehlerart auf der Protokollseite hatte nie aufgelöst: der Server schlug
+  in den Zustellungs-Fehlerklassen nach, während die Spalte Log-Ereignistypen
+  führt. Eigenes Vokabular mit 26 Ereignistypen, Spalte heißt jetzt „Ereignis".
+- Checkbox-Spalten ohne jede Wirkung auf vier Listen entfernt.
+- Ein Wort je Sache: „Zustellung", nicht mehr auch „Auslieferung".
+
 ## 2.6.1 — 2026-09-05
 
 ### Behoben: das Listen-JSON trägt seine Spalten mit
