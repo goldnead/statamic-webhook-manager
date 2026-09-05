@@ -93,7 +93,9 @@ const testing = ref(false);
 const testResult = ref(null);
 
 const pageTitle = computed(() =>
-    props.isNew ? __('Create outbound webhook') : (props.webhook.name || __('Outbound webhook'))
+    props.isNew
+        ? __('webhook-manager::messages.cp.edit_title_new')
+        : (props.webhook.name || __('webhook-manager::messages.cp.edit_title_fallback'))
 );
 const saveLabel = computed(() => props.isNew ? __('Create') : __('Save'));
 const hasLibraryTemplates = computed(() => Object.keys(props.availableTemplates).length > 0);
@@ -119,17 +121,25 @@ const methodOptionsArray = computed(() =>
 const payloadTypeOptionsArray = computed(() => {
     const opts = Object.keys(props.payloadTypeOptions).length
         ? props.payloadTypeOptions
-        : { raw_json: __('Raw JSON template'), mapped: __('Mapped object'), form: __('Form encoded') };
+        : {
+            raw_json: __('webhook-manager::messages.cp.payload_raw_json'),
+            mapped: __('webhook-manager::messages.cp.payload_mapped'),
+            form: __('webhook-manager::messages.cp.payload_form'),
+        };
     return objectToOptions(opts);
 });
 const logBodyModeOptionsArray = computed(() => {
     const opts = Object.keys(props.logBodyModeOptions).length
         ? props.logBodyModeOptions
-        : { full: __('Full'), partial: __('Partial'), none: __('None') };
+        : {
+            full: __('webhook-manager::messages.cp.log_full'),
+            partial: __('webhook-manager::messages.cp.log_partial'),
+            none: __('webhook-manager::messages.cp.log_none'),
+        };
     return objectToOptions(opts);
 });
 const availableTemplatesArray = computed(() => [
-    { value: '', label: __('— Pick a template —') },
+    { value: '', label: __('webhook-manager::messages.cp.template_pick') },
     ...objectToOptions(props.availableTemplates),
 ]);
 
@@ -226,23 +236,35 @@ const authPlaceholder = computed(() => {
 
 const authInstructions = computed(() => {
     if (props.webhook.auth_configured) {
-        return __('A secret is already configured. Leave blank to keep it. Paste new JSON to replace — the value is encrypted at rest.');
+        return __('webhook-manager::messages.cp.auth_hint_configured');
     }
-    return __('Stored encrypted. Format depends on the auth type — see the placeholder for an example.');
+
+    return __('webhook-manager::messages.cp.auth_hint_new');
 });
 </script>
 
 <template>
-    <Head :title="[pageTitle, __('Outbound'), __('Webhook Manager')]" />
+    <Head :title="[pageTitle, __('webhook-manager::messages.cp.webhooks_heading'), __('Webhook Manager')]" />
 
+    <!-- The narrow detail container ui-vocabulary §2.3 sanctions for detail
+         and settings screens; `data-max-width-wrapper` is what lets the
+         header's expand-layout toggle still widen it. -->
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
-        <Header :title="pageTitle" icon="arrow-up-right">
-            <template v-if="!isNew" #subtitle>
-                <StatusIndicator :status="webhook.enabled ? 'published' : 'draft'" />
-                <Badge
-                    :color="webhook.enabled ? 'green' : 'default'"
-                    :text="webhook.enabled ? __('Active') : __('Disabled')"
-                />
+        <Header icon="arrow-up-right">
+            <!-- The status used to sit in a `#subtitle` slot. `Header` has no
+                 such slot (only `title` and `actions`), so it rendered
+                 nothing — silently, the way an unknown slot always does. -->
+            <template #title>
+                <span class="flex flex-wrap items-center gap-3">
+                    {{ pageTitle }}
+                    <template v-if="!isNew">
+                        <StatusIndicator :status="webhook.enabled ? 'published' : 'draft'" />
+                        <Badge
+                            :color="webhook.enabled ? 'green' : 'default'"
+                            :text="webhook.enabled ? __('webhook-manager::messages.cp.status_active') : __('webhook-manager::messages.cp.status_disabled')"
+                        />
+                    </template>
+                </span>
             </template>
 
             <!-- Header order is core's: the `…` dropdown first, the primary
@@ -257,7 +279,7 @@ const authInstructions = computed(() => {
                     <DropdownItem
                         variant="destructive"
                         icon="trash"
-                        :text="__('Delete webhook')"
+                        :text="__('webhook-manager::messages.cp.delete_webhook')"
                         @click="showDelete = true"
                     />
                 </DropdownMenu>
@@ -265,7 +287,7 @@ const authInstructions = computed(() => {
             <Button
                 v-if="!isNew && canTest && testUrl"
                 :loading="testing"
-                :text="__('Test')"
+                :text="__('webhook-manager::messages.cp.action_test')"
                 icon="arrow-up-right"
                 @click="runTest"
             />
@@ -279,14 +301,14 @@ const authInstructions = computed(() => {
             <CommandPaletteItem
                 v-if="!isNew && canTest && testUrl"
                 category="Actions"
-                :text="__('Test webhook')"
+                :text="__('webhook-manager::messages.cp.test_webhook')"
                 icon="arrow-up-right"
                 :action="runTest"
             />
             <CommandPaletteItem
                 v-if="!isNew && canDelete && deleteUrl"
                 category="Actions"
-                :text="__('Delete webhook')"
+                :text="__('webhook-manager::messages.cp.delete_webhook')"
                 icon="trash"
                 :action="() => (showDelete = true)"
             />
@@ -307,7 +329,7 @@ const authInstructions = computed(() => {
         <Alert
             v-if="testResult"
             :variant="testResult.ok ? 'success' : 'error'"
-            :heading="testResult.ok ? __('Test request succeeded') : __('Test request failed')"
+            :heading="testResult.ok ? __('webhook-manager::messages.cp.test_ok') : __('webhook-manager::messages.cp.test_failed')"
             :text="`HTTP ${testResult.response_status ?? '—'} — ${testResult.duration_ms ?? '?'}ms${testResult.error_message ? ' — ' + testResult.error_message : ''}`"
             class="mb-4"
         />
@@ -315,74 +337,126 @@ const authInstructions = computed(() => {
         <Tabs v-model="activeTab" class="mt-4">
             <TabList>
                 <TabTrigger value="general">
-                    {{ __('General') }}
-                    <Badge v-if="tabsWithErrors.has('general')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_general') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('general')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
                 <TabTrigger value="trigger">
-                    {{ __('Trigger') }}
-                    <Badge v-if="tabsWithErrors.has('trigger')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_trigger') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('trigger')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
                 <TabTrigger value="request">
-                    {{ __('Request') }}
-                    <Badge v-if="tabsWithErrors.has('request')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_request') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('request')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
                 <TabTrigger value="auth">
-                    {{ __('Authentication') }}
-                    <Badge v-if="tabsWithErrors.has('auth')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_auth') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('auth')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
                 <TabTrigger value="payload">
-                    {{ __('Payload') }}
-                    <Badge v-if="tabsWithErrors.has('payload')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_payload') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('payload')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
                 <TabTrigger value="delivery">
-                    {{ __('Delivery') }}
-                    <Badge v-if="tabsWithErrors.has('delivery')" color="red" class="ms-1.5" :text="__('!')" />
+                    {{ __('webhook-manager::messages.cp.tab_delivery') }}
+                    <!-- `__('!')` was a translation key made of a single
+                         exclamation mark. The marker is not text to translate;
+                         the wording belongs on the aria-label. -->
+                    <Badge
+                        v-if="tabsWithErrors.has('delivery')"
+                        color="red"
+                        class="ms-1.5"
+                        text="!"
+                        :aria-label="__('webhook-manager::messages.cp.tab_has_errors')"
+                    />
                 </TabTrigger>
             </TabList>
 
             <!-- ───────── General ───────── -->
             <TabContent value="general">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('Name')"
+                            :label="__('webhook-manager::messages.cp.field_name')"
                             id="name"
                             :required="true"
                             :error="form.errors.name"
-                            :instructions="__('Human-readable name shown across the CP.')"
+                            :instructions="__('webhook-manager::messages.cp.field_name_hint')"
                         >
                             <Input id="name" v-model="form.name" autofocus />
                         </Field>
 
                         <Field inline
-                            :label="__('Handle')"
+                            :label="__('webhook-manager::messages.cp.field_handle')"
                             id="handle"
                             :required="true"
                             :error="form.errors.handle"
-                            :instructions="__('Internal identifier. Lowercase, hyphens or underscores only.')"
+                            :instructions="__('webhook-manager::messages.cp.field_handle_hint')"
                         >
                             <Input id="handle" v-model="form.handle" pattern="[a-z0-9_-]+" />
                         </Field>
 
                         <Field inline
-                            :label="__('Description')"
+                            :label="__('webhook-manager::messages.cp.field_description')"
                             id="description"
-                            class="md:col-span-2"
                             :error="form.errors.description"
                         >
                             <Textarea id="description" v-model="form.description" :rows="2" />
                         </Field>
 
                         <Field inline
-                            :label="__('Status')"
+                            :label="__('webhook-manager::messages.cp.field_status')"
                             id="enabled"
-                            class="md:col-span-2"
                             :error="form.errors.enabled"
                         >
                             <Switch
                                 id="enabled"
                                 v-model="form.enabled"
-                                :text="form.enabled ? __('Enabled') : __('Disabled')"
+                                :text="form.enabled ? __('webhook-manager::messages.cp.field_status_on') : __('webhook-manager::messages.cp.field_status_off')"
                             />
                         </Field>
                     </Card>
@@ -392,13 +466,13 @@ const authInstructions = computed(() => {
             <!-- ───────── Trigger ───────── -->
             <TabContent value="trigger">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('Trigger type')"
+                            :label="__('webhook-manager::messages.cp.field_trigger_type')"
                             id="trigger_type"
                             :required="true"
                             :error="form.errors.trigger_type"
-                            :instructions="__('Internal event that fires this webhook.')"
+                            :instructions="__('webhook-manager::messages.cp.field_trigger_type_hint')"
                         >
                             <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
                         </Field>
@@ -409,20 +483,19 @@ const authInstructions = computed(() => {
             <!-- ───────── Request ───────── -->
             <TabContent value="request">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('URL')"
+                            :label="__('webhook-manager::messages.cp.field_url')"
                             id="url"
                             :required="true"
-                            class="md:col-span-2"
                             :error="form.errors.url"
-                            :instructions="__('The destination URL the webhook will hit on each delivery.')"
+                            :instructions="__('webhook-manager::messages.cp.field_url_hint')"
                         >
                             <Input id="url" v-model="form.url" type="url" placeholder="https://example.com/hooks/incoming" />
                         </Field>
 
                         <Field inline
-                            :label="__('Method')"
+                            :label="__('webhook-manager::messages.cp.field_method')"
                             id="method"
                             :error="form.errors.method"
                         >
@@ -430,24 +503,23 @@ const authInstructions = computed(() => {
                         </Field>
 
                         <Field inline
-                            :label="__('Timeout (seconds)')"
+                            :label="__('webhook-manager::messages.cp.field_timeout')"
                             id="timeout_seconds"
                             :error="form.errors.timeout_seconds"
-                            :instructions="__('Hard cap per request, including TLS + redirects.')"
+                            :instructions="__('webhook-manager::messages.cp.field_timeout_hint')"
                         >
                             <Input id="timeout_seconds" v-model.number="form.timeout_seconds" type="number" min="1" max="120" />
                         </Field>
 
                         <Field inline
-                            :label="__('Follow redirects')"
+                            :label="__('webhook-manager::messages.cp.field_follow_redirects')"
                             id="follow_redirects"
-                            class="md:col-span-2"
                             :error="form.errors.follow_redirects"
                         >
                             <Switch
                                 id="follow_redirects"
                                 v-model="form.follow_redirects"
-                                :text="__('Follow HTTP redirects')"
+                                :text="__('webhook-manager::messages.cp.field_follow_redirects_text')"
                             />
                         </Field>
                     </Card>
@@ -457,9 +529,9 @@ const authInstructions = computed(() => {
             <!-- ───────── Authentication ───────── -->
             <TabContent value="auth">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('Type')"
+                            :label="__('webhook-manager::messages.cp.field_auth_type')"
                             id="auth_type"
                             :error="form.errors.auth_type"
                         >
@@ -477,16 +549,15 @@ const authInstructions = computed(() => {
                                  replaces that secret for good. -->
                             <Alert
                                 variant="warning"
-                                :heading="__('Secret already configured')"
-                                :text="__('Leave the field below empty to keep the existing encrypted secret.')"
+                                :heading="__('webhook-manager::messages.cp.auth_secret_set_heading')"
+                                :text="__('webhook-manager::messages.cp.auth_secret_set_text')"
                             />
                         </div>
 
                         <Field inline
                             v-if="form.auth_type !== 'none'"
-                            :label="__('Auth config (JSON)')"
+                            :label="__('webhook-manager::messages.cp.field_auth_config')"
                             id="auth_config_json"
-                            class="md:col-span-2"
                             :error="form.errors.auth_config_json"
                             :instructions="authInstructions"
                         >
@@ -505,9 +576,9 @@ const authInstructions = computed(() => {
             <!-- ───────── Payload ───────── -->
             <TabContent value="payload">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('Type')"
+                            :label="__('webhook-manager::messages.cp.field_payload_type')"
                             id="payload_type"
                             :error="form.errors.payload_type"
                         >
@@ -515,15 +586,15 @@ const authInstructions = computed(() => {
                         </Field>
 
                         <Field inline
- :label="__('Body source')"
- id="body_source"
- :instructions="__('Use an template, or pick a reusable template from the library. Library templates win when both are set.')"
- >
+                            :label="__('webhook-manager::messages.cp.field_body_source')"
+                            id="body_source"
+                            :instructions="__('webhook-manager::messages.cp.field_body_source_hint')"
+                        >
                             <RadioGroup v-model="bodySource" id="body_source">
-                                <Radio value="inline" :label="__('Inline template')" />
+                                <Radio value="inline" :label="__('webhook-manager::messages.cp.body_source_inline')" />
                                 <Radio
                                     value="library"
-                                    :label="__('Library template')"
+                                    :label="__('webhook-manager::messages.cp.body_source_library')"
                                     :disabled="!hasLibraryTemplates"
                                 />
                             </RadioGroup>
@@ -531,12 +602,12 @@ const authInstructions = computed(() => {
 
                         <Field inline
                             v-if="bodySource === 'library'"
-                            :label="__('Library template')"
+                            :label="__('webhook-manager::messages.cp.field_library_template')"
                             id="payload_template_handle"
                             :error="form.errors.payload_template_handle"
                             :instructions="hasLibraryTemplates
-                                ? __('Pick a reusable outbound-body template. The renderer loads + renders it on each delivery.')
-                                : __('No outbound-body templates yet. Create one under Webhook Manager → Templates first.')"
+                                ? __('webhook-manager::messages.cp.field_library_template_hint')
+                                : __('webhook-manager::messages.cp.field_library_template_empty')"
                         >
                             <Select
                                 id="payload_template_handle"
@@ -548,10 +619,10 @@ const authInstructions = computed(() => {
 
                         <Field inline
                             v-else
-                            :label="__('Template')"
+                            :label="__('webhook-manager::messages.cp.field_template')"
                             id="payload_template"
                             :error="form.errors.payload_template"
-                            :instructions="__('Use tokens like {{ entry:title }} or {{ system:timestamp_iso }}.')"
+                            :instructions="__('webhook-manager::messages.cp.field_template_hint')"
                         >
                             <CodeEditor
                                 id="payload_template"
@@ -567,26 +638,25 @@ const authInstructions = computed(() => {
             <!-- ───────── Delivery ───────── -->
             <TabContent value="delivery">
                 <Panel class="mt-4">
-                    <Card inset class="p-6 space-y-6">
+                    <Card class="space-y-6">
                         <Field inline
-                            :label="__('Queue')"
+                            :label="__('webhook-manager::messages.cp.field_queue')"
                             id="queue_enabled"
-                            class="md:col-span-2"
                             :error="form.errors.queue_enabled"
-                            :instructions="__('Recommended. Synchronous delivery only when latency is critical.')"
+                            :instructions="__('webhook-manager::messages.cp.field_queue_hint')"
                         >
                             <Switch
                                 id="queue_enabled"
                                 v-model="form.queue_enabled"
-                                :text="__('Send asynchronously via the queue')"
+                                :text="__('webhook-manager::messages.cp.field_queue_text')"
                             />
                         </Field>
 
                         <Field inline
-                            :label="__('Body logging')"
+                            :label="__('webhook-manager::messages.cp.field_log_body')"
                             id="log_body_mode"
                             :error="form.errors.log_body_mode"
-                            :instructions="__('Controls how much of request/response bodies is persisted to delivery logs.')"
+                            :instructions="__('webhook-manager::messages.cp.field_log_body_hint')"
                         >
                             <Select id="log_body_mode" v-model="form.log_body_mode" :options="logBodyModeOptionsArray" />
                         </Field>
@@ -598,9 +668,9 @@ const authInstructions = computed(() => {
         <ConfirmationModal
             v-if="!isNew && deleteUrl"
             :open="showDelete"
-            :title="__('Delete webhook')"
-            :body-text="__('This permanently removes the webhook configuration. Past deliveries are kept.')"
-            :button-text="__('Delete')"
+            :title="__('webhook-manager::messages.cp.delete_webhook')"
+            :body-text="__('webhook-manager::messages.cp.delete_webhook_confirm')"
+            :button-text="__('webhook-manager::messages.cp.delete')"
             :danger="true"
             @confirm="destroy"
             @update:open="showDelete = $event"

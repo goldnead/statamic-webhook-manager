@@ -2,6 +2,10 @@
 
 namespace Goldnead\WebhookManager;
 
+use Goldnead\WebhookManager\Actions\Cp\DeleteOutboundWebhook;
+use Goldnead\WebhookManager\Actions\Cp\DisableOutboundWebhook;
+use Goldnead\WebhookManager\Actions\Cp\EnableOutboundWebhook;
+use Goldnead\WebhookManager\Actions\Cp\ReplayDelivery;
 use Goldnead\WebhookManager\Actions\Cp\SendWebhook;
 use Goldnead\WebhookManager\Auth\Support\ReplayProtectionService;
 use Goldnead\WebhookManager\Console\Commands\DispatchDueRetriesCommand;
@@ -186,6 +190,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
      */
     protected $actions = [
         SendWebhook::class,
+        EnableOutboundWebhook::class,
+        DisableOutboundWebhook::class,
+        DeleteOutboundWebhook::class,
+        ReplayDelivery::class,
     ];
 
     public function bootAddon(): void

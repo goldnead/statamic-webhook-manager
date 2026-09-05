@@ -7,10 +7,12 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestInboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestOutboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\TestRuleController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DebugController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\DeliveryActionController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\DeliveryController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\InboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\InsightsController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\LogController;
+use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundActionController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OverviewController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\PresetController;
@@ -30,6 +32,12 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
 
     Route::prefix('outbound')->name('outbound.')->group(function () {
         Route::get('/', [OutboundController::class, 'index'])->name('index');
+        // The two endpoints core's <Listing> posts to for row and bulk actions.
+        // Declared before `{webhookOutbound}` so the literal segment cannot be
+        // read as a webhook id, the same reason `for-subject` sits first in the
+        // deliveries group.
+        Route::post('/actions', [OutboundActionController::class, 'run'])->name('actions.run');
+        Route::post('/actions/list', [OutboundActionController::class, 'bulkActions'])->name('actions.list');
         Route::get('/create', [OutboundController::class, 'create'])->name('create');
         Route::post('/', [OutboundController::class, 'store'])->name('store');
         Route::get('/{webhookOutbound}', [OutboundController::class, 'edit'])->name('edit');
@@ -64,6 +72,8 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::get('/', [DeliveryController::class, 'index'])->name('index');
         // Before `{delivery}`, or the literal segment binds as a delivery id.
         Route::get('/for-subject', [DeliveryController::class, 'forSubject'])->name('for-subject');
+        Route::post('/actions', [DeliveryActionController::class, 'run'])->name('actions.run');
+        Route::post('/actions/list', [DeliveryActionController::class, 'bulkActions'])->name('actions.list');
         Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show');
     });
 

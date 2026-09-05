@@ -10,6 +10,7 @@ use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\ToggleOutboundWebhook
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Actions\UpdateOutboundWebhookAction;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsOutboundWebhooks;
 use Goldnead\WebhookManager\Http\Requests\SaveOutboundWebhookRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
@@ -19,6 +20,8 @@ use Statamic\Http\Controllers\CP\CpController;
 
 class OutboundController extends CpController
 {
+    use PresentsOutboundWebhooks;
+
     public function index(
         Request $request,
         OutboundWebhookRepositoryInterface $repository,
@@ -36,7 +39,7 @@ class OutboundController extends CpController
         $triggerLabels = $triggers->options();
 
         $rows = $hooks->getCollection()
-            ->map(fn (OutboundWebhook $hook) => $this->row($hook, $request, $triggerLabels))
+            ->map(fn (OutboundWebhook $hook) => $this->outboundRow($hook, $request, $triggerLabels))
             ->values();
 
         $listingPayload = [
@@ -51,7 +54,7 @@ class OutboundController extends CpController
                 // Pflicht fuer <Listing>: fehlt der Schluessel, laufen die
                 // Spalten auf undefined und der Fehler landet im generischen
                 // `.catch` als „Etwas ist schiefgelaufen" — bei HTTP 200.
-                'columns' => $this->indexColumns(),
+                'columns' => $this->outboundColumns(),
             ],
         ];
 
@@ -64,15 +67,13 @@ class OutboundController extends CpController
 
         return Inertia::render('webhook-manager::Outbound/Index', [
             'webhooks' => $listingPayload,
-            'initialColumns' => $this->indexColumns(),
+            'initialColumns' => $this->outboundColumns(),
             'listingUrl' => cp_route('webhook-manager.outbound.index'),
-            // No dedicated bulk-actions endpoint yet — point at the index
-            // route so <Listing> can issue its AJAX refresh against it,
-            // and the bulk-actions dropdown stays empty until we add a
-            // real `actions.run` controller (v2). cp_route() THROWS for
-            // unknown route names, so we cannot use it inside a `??`
-            // chain — keep it pointing at a real route.
-            'actionUrl' => cp_route('webhook-manager.outbound.index'),
+            // The real action endpoint. This used to point back at the index
+            // route, which gave the listing a checkbox column and an empty
+            // bulk menu — checkboxes that did nothing. <Listing> posts the
+            // selection to this URL and asks `{url}/list` which actions apply.
+            'actionUrl' => cp_route('webhook-manager.outbound.actions.run'),
             'createUrl' => cp_route('webhook-manager.outbound.create'),
             'integrationsUrl' => cp_route('webhook-manager.integrations.index'),
             'canCreate' => (bool) $request->user()?->can('manage outbound webhooks'),
@@ -194,62 +195,6 @@ class OutboundController extends CpController
             : __('webhook-manager::messages.disabled'));
     }
 
-    /**
-     * Column definitions for the <Listing> component on the index page.
-     *
-     * Each entry maps to a slot name (`cell-{field}`) the Vue page binds.
-     *
-     * @return array<int,array{field:string,label:string,sortable?:bool,visible?:bool}>
-     */
-    protected function indexColumns(): array
-    {
-        return [
-            ['field' => 'name',         'label' => __('Name'),     'sortable' => true,  'visible' => true],
-            ['field' => 'trigger_type', 'label' => __('Trigger'),  'sortable' => true,  'visible' => true],
-            ['field' => 'method',       'label' => __('Method'),   'sortable' => false, 'visible' => true],
-            ['field' => 'url',          'label' => __('URL'),      'sortable' => false, 'visible' => true],
-            ['field' => 'enabled',      'label' => __('Status'),   'sortable' => true,  'visible' => true],
-        ];
-    }
-
-    /**
-     * Single-row payload for the listing. Includes pre-computed
-     * permission flags + helper URLs so the Vue page never has to
-     * check abilities or build routes itself.
-     *
-     * @param  array<string,string>  $triggerLabels
-     * @return array<string,mixed>
-     */
-    protected function row(OutboundWebhook $hook, Request $request, array $triggerLabels): array
-    {
-        $user = $request->user();
-        $canManage = (bool) $user?->can('manage outbound webhooks');
-
-        return [
-            'id' => $hook->id,
-            'uuid' => $hook->uuid,
-            'name' => $hook->name,
-            'handle' => $hook->handle,
-            'trigger_type' => $hook->trigger_type,
-            'trigger_label' => $triggerLabels[$hook->trigger_type] ?? $hook->trigger_type,
-            'url' => $hook->url,
-            'method' => $hook->method,
-            'enabled' => (bool) $hook->enabled,
-
-            // Permissions surfaced to the UI (so v-if conditions stay
-            // declarative and don't leak ability strings into Vue).
-            'can_edit' => $canManage,
-            'can_toggle' => $canManage,
-            'can_test' => $this->canTest($user),
-            'can_delete' => $canManage,
-
-            'edit_url' => cp_route('webhook-manager.outbound.edit', $hook),
-            'toggle_url' => cp_route('webhook-manager.outbound.toggle', $hook),
-            'delete_url' => cp_route('webhook-manager.outbound.destroy', $hook),
-            'test_url' => cp_route('webhook-manager.actions.test-outbound', $hook),
-        ];
-    }
-
     /** @return array<string,mixed> */
     protected function editPayload(OutboundWebhook $hook): array
     {
@@ -286,9 +231,9 @@ class OutboundController extends CpController
     protected function payloadTypeOptions(): array
     {
         return [
-            'raw_json' => __('Raw JSON template'),
-            'mapped' => __('Mapped object'),
-            'form' => __('Form encoded'),
+            'raw_json' => __('webhook-manager::messages.cp.payload_raw_json'),
+            'mapped' => __('webhook-manager::messages.cp.payload_mapped'),
+            'form' => __('webhook-manager::messages.cp.payload_form'),
         ];
     }
 
@@ -296,9 +241,9 @@ class OutboundController extends CpController
     protected function logBodyModeOptions(): array
     {
         return [
-            'full' => __('Full'),
-            'partial' => __('Partial'),
-            'none' => __('None'),
+            'full' => __('webhook-manager::messages.cp.log_full'),
+            'partial' => __('webhook-manager::messages.cp.log_partial'),
+            'none' => __('webhook-manager::messages.cp.log_none'),
         ];
     }
 
@@ -345,25 +290,6 @@ class OutboundController extends CpController
         }
 
         return $attributes;
-    }
-
-    /**
-     * Firing a test request is allowed for holders of the dedicated
-     * `test outbound webhooks` ability, and for anyone who may manage
-     * outbound webhooks anyway — they can change the URL and save, so
-     * withholding the button would only be theatre.
-     *
-     * Kept in one place so the list row, the edit screen and
-     * TestOutboundController can never drift apart.
-     */
-    public static function canTest(mixed $user): bool
-    {
-        if ($user === null) {
-            return false;
-        }
-
-        return (bool) $user->can('test outbound webhooks')
-            || (bool) $user->can('manage outbound webhooks');
     }
 
     private function authorizeOr403(Request $request, string $ability): void

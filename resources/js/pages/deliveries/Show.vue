@@ -10,23 +10,42 @@ import {
     Card,
     Panel,
     Alert,
+    Label,
+    Table,
+    TableRows,
+    TableRow,
+    TableCell,
     CodeEditor,
 } from '@statamic/cms/ui';
 
 /**
  * Delivery detail / debug view.
  *
- * Uses a custom two-column layout (Request | Response side-by-side on lg+)
- * rather than PublishForm because the goal is debugging, not data-entry.
- * No tabs — all context is visible at once and the user can scroll.
+ * Request and Response sit side by side on lg+ rather than in a PublishForm,
+ * because the goal is debugging, not data entry. No tabs — all context is
+ * visible at once and the user can scroll.
+ *
+ * What changed on 05.09.2026 (F33):
+ *  - The status badge was in a `#subtitle` slot. `Header` has no such slot
+ *    (only `title` and `actions`), so an unknown slot rendered nothing and
+ *    said nothing: the single fact this page exists for — did the delivery
+ *    succeed? — was nowhere on the screen. It sits next to the title now.
+ *  - The facts block was a hand-built 5-column grid with uppercase
+ *    letter-spaced micro-labels. Statamic uses neither: labels are `Label`,
+ *    and a fact/value block is a table. Both are core components now.
+ *  - Every visible string is translated through the addon's own namespace.
+ *    They used to be plain `__('Delivery')` etc., which is a *global* JSON
+ *    key: `statamic-marketing` defines `"Delivery": "Versand"`, so this
+ *    screen was titled "Versand #266" in German — a marketing word for a
+ *    webhook delivery, contributed by an unrelated addon.
  *
  * Controller pre-computes `status_color`, `method_color`, `response_code_color`
  * so colour logic stays server-side and consistent with the Index view.
  */
 const props = defineProps({
-    delivery:   { type: Object, required: true },
-    replayUrl:  { type: String, default: null },
-    indexUrl:   { type: String, required: true },
+    delivery: { type: Object, required: true },
+    replayUrl: { type: String, default: null },
+    indexUrl: { type: String, required: true },
 });
 
 // ── Replay ──────────────────────────────────────────────────────────────────
@@ -59,7 +78,7 @@ function replay() {
         .catch((e) => {
             lastReplayResult.value = {
                 success: false,
-                message: e?.response?.data?.message ?? e.message ?? 'Replay failed.',
+                message: e?.response?.data?.message ?? e.message ?? __('webhook-manager::messages.cp.replay_failed'),
             };
         })
         .finally(() => {
@@ -76,6 +95,17 @@ const statusColor = computed(() => props.delivery.status_color ?? ({
     pending: 'amber',
     retry:   'amber',
 }[props.delivery.status] ?? 'default'));
+
+/**
+ * Human wording for the status. The raw value is a database enum
+ * (`failed`, `success`, …) and read as English in every locale.
+ */
+const statusLabel = computed(() => {
+    const key = `webhook-manager::messages.cp.delivery_status.${props.delivery.status}`;
+    const translated = __(key);
+
+    return translated === key ? props.delivery.status : translated;
+});
 
 /** HTTP method → Statamic Badge colour token. */
 const methodColor = computed(() => props.delivery.method_color ?? ({
@@ -170,6 +200,17 @@ function responseMode() {
     return byHeader === 'text' ? bodyMode(props.delivery.response?.body) : byHeader;
 }
 
+const durationText = computed(() =>
+    props.delivery.duration_ms != null ? `${props.delivery.duration_ms} ms` : '—'
+);
+
+const subjectUrl = computed(() => {
+    if (!props.delivery.subject_type || !props.delivery.subject_id) return null;
+
+    return `${props.indexUrl}?subject_type=${encodeURIComponent(props.delivery.subject_type)}`
+        + `&subject_id=${encodeURIComponent(props.delivery.subject_id)}`;
+});
+
 // ── cURL ────────────────────────────────────────────────────────────────────
 
 /**
@@ -202,20 +243,32 @@ function copyCurl() {
 </script>
 
 <template>
-    <Head :title="[__('Delivery'), `#${delivery.id}`, __('Webhook Manager')]" />
+    <Head :title="[__('webhook-manager::messages.cp.delivery'), `#${delivery.id}`, __('Webhook Manager')]" />
 
+    <!-- The narrow detail container ui-vocabulary §2.3 sanctions for detail
+         and settings screens (core: pages/forms/Show.vue,
+         pages/preferences/Edit.vue). `data-max-width-wrapper` is the part that
+         must not be dropped: without it the wrapper ignores the header's
+         expand-layout toggle. -->
     <div class="max-w-5xl 3xl:max-w-6xl mx-auto" data-max-width-wrapper>
 
-        <!-- ── Page header ───────────────────────────────────────────── -->
-        <Header :title="`${__('Delivery')} #${delivery.id}`" icon="arrow-up-right">
-            <template #subtitle>
-                <Badge :color="statusColor" :text="delivery.status" />
+        <!-- ── Page header ───────────────────────────────────────────
+             The status badge lives in the `title` slot. It used to be in a
+             `#subtitle` slot, which `Header` does not have — it rendered
+             nothing at all, silently. -->
+        <Header icon="arrow-up-right">
+            <template #title>
+                <span class="flex flex-wrap items-center gap-3">
+                    {{ __('webhook-manager::messages.cp.delivery') }} #{{ delivery.id }}
+                    <Badge :color="statusColor" :text="statusLabel" data-testid="delivery-status" />
+                </span>
             </template>
 
             <Button
                 v-if="canReplay"
                 :loading="replaying"
-                :text="__('Replay')"
+                :text="__('webhook-manager::messages.cp.replay')"
+                icon="sync"
                 @click="replay"
             />
         </Header>
@@ -228,83 +281,76 @@ function copyCurl() {
         <Alert
             v-if="lastReplayResult"
             :variant="lastReplayResult.success ? 'success' : 'error'"
-            :heading="lastReplayResult.success ? __('Replayed successfully') : __('Replay failed')"
+            :heading="lastReplayResult.success ? __('webhook-manager::messages.cp.replay_ok') : __('webhook-manager::messages.cp.replay_failed')"
             :text="lastReplayResult.message ?? ''"
-            class="mt-4"
+            class="mb-4"
         />
 
         <!-- ── Delivery facts ────────────────────────────────────────
-             Trigger, correlation ID and the attempt counter used to be
-             reachable only by reading the raw request-header JSON, or (for
-             attempts) only on failed deliveries. They are the fields one
-             actually needs to correlate a delivery with a log line, so they
-             get their own panel.
-        -->
-        <Panel :heading="__('Delivery')" class="mt-4">
+             Trigger, subject, attempt counter, duration and correlation ID as
+             a two-column table. They are the fields one needs to correlate a
+             delivery with a log line; they used to be a bespoke five-column
+             grid with uppercase micro-labels, a pattern core uses nowhere. -->
+        <Panel :heading="__('webhook-manager::messages.cp.delivery')">
             <Card>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 *:min-w-0">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Trigger') }}
-                        </p>
-                        <Badge color="blue" :text="delivery.trigger_label || delivery.trigger_type || '—'" />
-                        <p
-                            v-if="delivery.trigger_reference"
-                            class="text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all"
-                        >
-                            {{ delivery.trigger_reference }}
-                        </p>
-                    </div>
+                <!-- No column header: this is a definition table (one fact per
+                     row), not a listing of records. A "Metric | Value" header
+                     over "Trigger" and "Subject" would only be noise. -->
+                <Table>
+                    <TableRows>
+                        <TableRow>
+                            <TableCell class="w-64">{{ __('webhook-manager::messages.cp.col_trigger') }}</TableCell>
+                            <TableCell>
+                                <Badge color="blue" :text="delivery.trigger_label || delivery.trigger_type || '—'" />
+                                <span
+                                    v-if="delivery.trigger_reference"
+                                    class="block text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all"
+                                >{{ delivery.trigger_reference }}</span>
+                            </TableCell>
+                        </TableRow>
 
-                    <!-- The object the delivery was about; links back to the
-                         listing filtered to that object. -->
-                    <div data-testid="delivery-subject">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('webhook-manager::messages.subject') }}
-                        </p>
-                        <template v-if="delivery.subject_type && delivery.subject_id">
-                            <Badge
-                                color="default"
-                                :text="delivery.subject_label || delivery.subject_type"
-                                :href="`${indexUrl}?subject_type=${encodeURIComponent(delivery.subject_type)}&subject_id=${encodeURIComponent(delivery.subject_id)}`"
-                            />
-                            <p class="font-mono text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all">
-                                {{ delivery.subject_id }}
-                            </p>
-                        </template>
-                        <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
-                    </div>
+                        <!-- The object the delivery was about; links back to
+                             the listing filtered to that object. -->
+                        <TableRow data-testid="delivery-subject">
+                            <TableCell class="w-64">{{ __('webhook-manager::messages.subject') }}</TableCell>
+                            <TableCell>
+                                <template v-if="subjectUrl">
+                                    <Badge
+                                        color="default"
+                                        :text="delivery.subject_label || delivery.subject_type"
+                                        :href="subjectUrl"
+                                    />
+                                    <span class="block font-mono text-2xs text-gray-500 dark:text-gray-400 mt-1 break-all">{{ delivery.subject_id }}</span>
+                                </template>
+                                <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
+                            </TableCell>
+                        </TableRow>
 
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Attempts') }}
-                        </p>
-                        <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
-                            {{ delivery.attempts ?? '—' }}
-                        </span>
-                    </div>
+                        <TableRow>
+                            <TableCell class="w-64">{{ __('webhook-manager::messages.cp.attempts') }}</TableCell>
+                            <TableCell>
+                                <span class="tabular-nums">{{ delivery.attempts ?? '—' }}</span>
+                            </TableCell>
+                        </TableRow>
 
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Duration') }}
-                        </p>
-                        <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
-                            {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
-                        </span>
-                    </div>
+                        <TableRow>
+                            <TableCell class="w-64">{{ __('webhook-manager::messages.cp.duration') }}</TableCell>
+                            <TableCell>
+                                <span class="tabular-nums">{{ durationText }}</span>
+                            </TableCell>
+                        </TableRow>
 
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                            {{ __('Correlation ID') }}
-                        </p>
-                        <code
-                            class="font-mono text-xs break-all text-gray-800 dark:text-gray-200"
-                            data-testid="correlation-id"
-                        >
-                            {{ delivery.correlation_id || '—' }}
-                        </code>
-                    </div>
-                </div>
+                        <TableRow>
+                            <TableCell class="w-64">{{ __('webhook-manager::messages.cp.correlation_id') }}</TableCell>
+                            <TableCell>
+                                <code
+                                    class="font-mono text-xs break-all text-gray-800 dark:text-gray-200"
+                                    data-testid="correlation-id"
+                                >{{ delivery.correlation_id || '—' }}</code>
+                            </TableCell>
+                        </TableRow>
+                    </TableRows>
+                </Table>
             </Card>
         </Panel>
 
@@ -313,33 +359,25 @@ function copyCurl() {
             lg+ → 2-column grid (request | response)
             < lg → single column (stacked)
         -->
-        <div class="grid lg:grid-cols-2 items-start gap-4 mt-4 *:min-w-0">
+        <div class="grid lg:grid-cols-2 items-start gap-4 *:min-w-0">
 
             <!-- Request panel -->
-            <Panel :heading="__('Request')">
+            <Panel :heading="__('webhook-manager::messages.cp.request')">
                 <Card>
                     <div class="space-y-4">
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Method') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.col_method')" />
                             <Badge :color="methodColor" :text="delivery.method" />
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('URL') }}
-                            </p>
-                            <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">
-                                {{ delivery.url }}
-                            </code>
+                            <Label :text="__('webhook-manager::messages.cp.col_url')" />
+                            <code class="font-mono text-sm break-all text-gray-800 dark:text-gray-200">{{ delivery.url }}</code>
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Headers') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.headers')" />
                             <CodeEditor
                                 mode="json"
                                 :model-value="headersJson(delivery.request?.headers)"
@@ -349,9 +387,7 @@ function copyCurl() {
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Body') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.body')" />
                             <CodeEditor
                                 :mode="bodyMode(delivery.request?.body)"
                                 :model-value="delivery.request?.body ?? ''"
@@ -364,14 +400,12 @@ function copyCurl() {
             </Panel>
 
             <!-- Response panel -->
-            <Panel :heading="__('Response')">
+            <Panel :heading="__('webhook-manager::messages.cp.response')">
                 <Card>
                     <div class="space-y-4">
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Status Code') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.status_code')" />
                             <Badge
                                 :color="responseCodeColor"
                                 :text="String(delivery.response_code ?? '—')"
@@ -379,18 +413,12 @@ function copyCurl() {
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Duration') }}
-                            </p>
-                            <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">
-                                {{ delivery.duration_ms != null ? `${delivery.duration_ms} ms` : '—' }}
-                            </span>
+                            <Label :text="__('webhook-manager::messages.cp.duration')" />
+                            <span class="text-sm tabular-nums text-gray-900 dark:text-gray-100">{{ durationText }}</span>
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Headers') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.headers')" />
                             <CodeEditor
                                 mode="json"
                                 :model-value="headersJson(delivery.response?.headers)"
@@ -400,9 +428,7 @@ function copyCurl() {
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
-                                {{ __('Body') }}
-                            </p>
+                            <Label :text="__('webhook-manager::messages.cp.body')" />
                             <CodeEditor
                                 :mode="responseMode()"
                                 :model-value="delivery.response?.body ?? ''"
@@ -417,52 +443,45 @@ function copyCurl() {
 
         <!-- ── Timing & Errors (only when error data present) ───────── -->
         <Panel
-            v-if="delivery.error || delivery.error_type"
-            :heading="__('Timing & Errors')"
-            class="mt-4"
+            v-if="delivery.error || delivery.error_type || delivery.next_retry_at"
+            :heading="__('webhook-manager::messages.cp.timing_errors')"
         >
             <Card>
-                <div class="space-y-3">
+                <Table>
+                    <TableRows>
+                        <TableRow v-if="delivery.error_type">
+                            <TableCell class="w-48">{{ __('webhook-manager::messages.cp.error_type') }}</TableCell>
+                            <TableCell>
+                                <Badge
+                                    :color="delivery.error_type_color ?? 'default'"
+                                    :text="delivery.error_type_label ?? delivery.error_type"
+                                />
+                            </TableCell>
+                        </TableRow>
 
-                    <div v-if="delivery.error_type" class="flex items-center gap-2">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
-                            {{ __('Error Type') }}
-                        </p>
-                        <Badge
-                            :color="delivery.error_type_color ?? 'default'"
-                            :text="delivery.error_type_label ?? delivery.error_type"
-                        />
-                    </div>
+                        <TableRow v-if="delivery.error">
+                            <TableCell class="w-48">{{ __('webhook-manager::messages.cp.error_message') }}</TableCell>
+                            <TableCell>
+                                <span class="text-sm text-red-700 dark:text-red-400 break-words">{{ delivery.error }}</span>
+                            </TableCell>
+                        </TableRow>
 
-                    <div v-if="delivery.error" class="flex items-start gap-2">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0 pt-0.5">
-                            {{ __('Message') }}
-                        </p>
-                        <span class="text-sm text-red-700 dark:text-red-400 break-words">
-                            {{ delivery.error }}
-                        </span>
-                    </div>
-
-                    <div v-if="delivery.next_retry_at" class="flex items-center gap-2">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 w-28 shrink-0">
-                            {{ __('Next Retry') }}
-                        </p>
-                        <date-time :of="delivery.next_retry_at" class="text-sm" />
-                    </div>
-                </div>
+                        <TableRow v-if="delivery.next_retry_at">
+                            <TableCell class="w-48">{{ __('webhook-manager::messages.cp.next_retry') }}</TableCell>
+                            <TableCell><date-time :of="delivery.next_retry_at" /></TableCell>
+                        </TableRow>
+                    </TableRows>
+                </Table>
             </Card>
         </Panel>
 
         <!-- ── Payload Snapshot (when stored) ───────────────────────── -->
         <Panel
             v-if="delivery.snapshot"
-            :heading="__('Payload Snapshot')"
-            class="mt-4"
+            :heading="__('webhook-manager::messages.cp.payload_snapshot')"
+            :subheading="__('webhook-manager::messages.cp.payload_snapshot_sub')"
         >
             <Card>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    {{ __('The original event payload that triggered this delivery, stored at dispatch time.') }}
-                </p>
                 <CodeEditor
                     mode="json"
                     :model-value="typeof delivery.snapshot === 'string'
@@ -475,19 +494,20 @@ function copyCurl() {
         </Panel>
 
         <!-- ── Reproduce with cURL ──────────────────────────────────── -->
-        <Panel v-if="curl" :heading="__('Reproduce')" class="mt-4">
+        <Panel
+            v-if="curl"
+            :heading="__('webhook-manager::messages.cp.reproduce')"
+            :subheading="__('webhook-manager::messages.cp.reproduce_sub')"
+        >
+            <template #header-actions>
+                <Button
+                    size="sm"
+                    icon="duplicate"
+                    :text="curlCopied ? __('webhook-manager::messages.cp.copied') : __('webhook-manager::messages.cp.copy')"
+                    @click="copyCurl"
+                />
+            </template>
             <Card>
-                <div class="flex items-center justify-between gap-4 mb-2">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ __('The exact request as a cURL command. Masked headers stay masked.') }}
-                    </p>
-                    <Button
-                        size="sm"
-                        icon="duplicate"
-                        :text="curlCopied ? __('Copied') : __('Copy')"
-                        @click="copyCurl"
-                    />
-                </div>
                 <CodeEditor
                     mode="shell"
                     :model-value="curl"

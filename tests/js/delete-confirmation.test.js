@@ -50,7 +50,13 @@ const pages = {
             deleteUrl: '/cp/webhook-manager/outbound/1',
             indexUrl: '/cp/webhook-manager/outbound',
         },
-        title: 'Delete webhook',
+        // Outbound was translated through the addon's own namespace on
+        // 05.09.2026 (F33); the test bootstrap's `__()` hands the key back, so
+        // the key is what the modal receives. The other three still carry
+        // plain global keys and are the reason `title`/`buttonText` are per
+        // page here rather than one shared literal.
+        title: 'webhook-manager::messages.cp.delete_webhook',
+        buttonText: 'webhook-manager::messages.cp.delete',
     },
     Inbound: {
         component: InboundEdit,
@@ -65,6 +71,7 @@ const pages = {
             indexUrl: '/cp/webhook-manager/inbound',
         },
         title: 'Delete endpoint?',
+        buttonText: 'Delete',
     },
     Rules: {
         component: RulesEdit,
@@ -79,6 +86,7 @@ const pages = {
             indexUrl: '/cp/webhook-manager/rules',
         },
         title: 'Delete rule',
+        buttonText: 'Delete',
     },
     Templates: {
         component: TemplatesEdit,
@@ -94,6 +102,7 @@ const pages = {
             indexUrl: '/cp/webhook-manager/templates',
         },
         title: 'Delete Template',
+        buttonText: 'Delete',
     },
 };
 
@@ -131,7 +140,7 @@ describe.each(Object.entries(pages))('%s Edit', (_name, page) => {
 
         // `buttonText`, not `confirmText`. With the wrong name the attribute is
         // simply absent and the button silently reads "Confirm".
-        expect(modal(wrapper).attributes('data-attr-button-text')).toBe('Delete');
+        expect(modal(wrapper).attributes('data-attr-button-text')).toBe(page.buttonText);
         expect(modal(wrapper).attributes('data-attr-confirm-text')).toBeUndefined();
     });
 });

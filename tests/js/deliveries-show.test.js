@@ -58,7 +58,11 @@ function mountShow(deliveryOverrides = {}) {
 
 /** The Response panel, located by its heading rather than by position. */
 function responsePanel(wrapper) {
-    const panel = wrapper.find('[data-stub="Panel"][data-attr-heading="Response"]');
+    // The heading is the translation KEY here: the test bootstrap's `__()`
+    // returns what it is given. The keys are namespaced (`webhook-manager::`)
+    // because a global JSON key is redefinable by any sibling addon — and one
+    // of them does redefine "Delivery".
+    const panel = wrapper.find('[data-stub="Panel"][data-attr-heading="webhook-manager::messages.cp.response"]');
 
     expect(panel.exists(), 'The Response panel did not render at all.').toBe(true);
 
@@ -145,11 +149,11 @@ describe('deliveries/Show — the response panel itself', () => {
         const panel = responsePanel(wrapper);
         const text = panel.text();
 
-        expect(text).toContain('Status Code');
+        expect(text).toContain('webhook-manager::messages.cp.status_code');
         expect(text).toContain('200');
         expect(text).toContain('128 ms');
-        expect(text).toContain('Headers');
-        expect(text).toContain('Body');
+        expect(text).toContain('webhook-manager::messages.cp.headers');
+        expect(text).toContain('webhook-manager::messages.cp.body');
 
         // The headers editor shows the raw PSR-7 shape, unflattened.
         const editors = panel.findAll('[data-stub="CodeEditor"]');

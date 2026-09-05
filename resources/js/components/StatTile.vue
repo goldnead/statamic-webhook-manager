@@ -3,8 +3,10 @@
  * Compact dashboard stat tile — a small muted label (with optional icon)
  * sitting above a large value.
  *
- * Shared by the Overview and Insights dashboards so both render identical,
- * native Statamic card optics (design tokens, radius, spacing, dark mode).
+ * Used by the Insights dashboard. The Overview used to share it; its four
+ * figures now sit in a static table instead, because Statamic has no card grid
+ * for numbers on a sub-page (see pages/overview/Index.vue for the reasoning
+ * and the approval it follows).
  *
  * Previously both screens used the core `Widget` component for stat tiles.
  * `Widget` is a chart-sized container (`min-h-54` on both the card and its

@@ -73,7 +73,10 @@ class DeliveryController extends CpController
             'deliveries' => $listingPayload,
             'initialColumns' => $this->indexColumns(),
             'listingUrl' => cp_route('webhook-manager.deliveries.index'),
-            'actionUrl' => cp_route('webhook-manager.deliveries.index'),
+            // The real action endpoint (bulk replay). Pointing this at the
+            // index route, as it did, gave the listing checkboxes with an
+            // empty bulk menu.
+            'actionUrl' => cp_route('webhook-manager.deliveries.actions.run'),
             'subjectTypes' => $this->subjectTypeOptions($repository),
             'subjectFilter' => [
                 'type' => $filters['subject_type'] ?? null,
