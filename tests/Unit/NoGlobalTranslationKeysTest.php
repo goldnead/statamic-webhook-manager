@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager\Tests\Unit;
 
+use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Services\FailureClassifier;
 use Goldnead\WebhookManager\Tests\TestCase;
 use RecursiveDirectoryIterator;
@@ -32,8 +33,23 @@ use ReflectionClass;
  * language file knows. Laravel and Statamic's JS `__()` both hand THE KEY back
  * on a miss, so what reaches the screen is `webhook-man…`. That is how
  * `failure_types.unknown` printed itself into the insights panel. Static
- * scanning cannot resolve those keys, so the last two tests come at it from
- * the data side and check the handles instead.
+ * scanning cannot resolve those keys, so the tests below come at it from the
+ * data side and check the handles instead.
+ *
+ * Every place in the addon that builds a key at runtime, and what checks it —
+ * a map worth keeping current, because an unlisted one is a blind spot:
+ *
+ *   failure_types.*        FailureClassifier constants + `unknown`   here
+ *   cp.log_types.*         every SystemLogger call in src/           here
+ *   cp.condition_ops.*     the OPS list in ConditionRow.vue          here
+ *   cp.delivery_status.*   Delivery::STATUS_* constants              here
+ *   insights.status.*      the same constants                        here
+ *   subject_types.*        config `subjects` + the built-in triggers here
+ *   settings.fields.*      Settings::groups(), both locales          SettingsEditorTest
+ *   settings.options.*     the same                                  SettingsEditorTest
+ *
+ * The remaining one, `insights.no_<dimension>`, has a single call site passing
+ * a literal, so the scan above already sees it.
  */
 class NoGlobalTranslationKeysTest extends TestCase
 {
@@ -115,6 +131,63 @@ class NoGlobalTranslationKeysTest extends TestCase
     }
 
     /**
+     * A translation call whose argument is a VARIABLE is invisible to the scan
+     * above: it sees `__($key)` and cannot know what `$key` holds. That blind
+     * spot hid twelve English operator labels in the condition editor for
+     * months — `ConditionRow.vue` kept them in a list, passed each through
+     * `__()`, and since a global key resolves to itself, the English source
+     * string arrived on screen looking like a deliberate translation.
+     *
+     * So the rule is not "variable keys are exempt" but "a variable key must
+     * demonstrably be built inside this addon's namespace". Every legitimate
+     * one in the codebase assembles its key from a
+     * `webhook-manager::…` literal a line or two above the call; the broken one
+     * had no such literal anywhere near it. That is what this checks — and the
+     * VALUES behind those keys are then checked by the data-driven tests below,
+     * which is the only thing that can reach them.
+     */
+    public function test_no_translation_call_takes_a_key_assembled_outside_the_namespace(): void
+    {
+        $offenders = [];
+
+        foreach ($this->sourceFiles(self::SCANNED) as $file) {
+            $source = file_get_contents($file);
+            $relative = str_replace(realpath(__DIR__.'/../..').'/', '', $file);
+
+            // A call whose first argument does not open with a quote.
+            preg_match_all('/\b(__|trans_choice)\(\s*(?![\'"])([^\s,);]+)/', $source, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+
+            foreach ($matches as $match) {
+                $offset = $match[0][1];
+                $lineStart = strrpos(substr($source, 0, $offset), "\n");
+                $line = substr_count(substr($source, 0, $offset), "\n") + 1;
+                $before = trim(substr($source, $lineStart + 1, $offset - $lineStart - 1));
+
+                if (preg_match('/^(\*|\/\/|\/\*|<!--|#)/', $before)) {
+                    continue;
+                }
+
+                // The five lines above the call are where the key gets built.
+                $context = implode("\n", array_slice(explode("\n", $source), max(0, $line - 6), 6));
+
+                if (str_contains($context, self::NAMESPACE_PREFIX)) {
+                    continue;
+                }
+
+                $offenders[] = "{$relative}:{$line}: {$match[1][0]}({$match[2][0]}) — no ".self::NAMESPACE_PREFIX.' literal builds this key';
+            }
+        }
+
+        $this->assertSame([], $offenders, implode("\n", array_merge(
+            ['A translation key assembled from something other than this addon\'s'],
+            ['namespace. `__()` returns the key when it cannot resolve one, so an'],
+            ['English handle passed in here reaches the screen as its own'],
+            ['"translation" and reads as intentional:'],
+            $offenders,
+        )));
+    }
+
+    /**
      * The log listing builds `cp.log_types.<handle>` the same way, out of the
      * first argument of every SystemLogger call in the addon. Read from the
      * source so a newly logged event cannot quietly arrive without a label.
@@ -138,6 +211,67 @@ class NoGlobalTranslationKeysTest extends TestCase
 
         $this->assertNotEmpty($handles, 'No SystemLogger calls found — the scan is broken, not the labels.');
         $this->assertHandlesAreTranslated('cp.log_types', $handles);
+    }
+
+    /**
+     * The condition editor builds `cp.condition_ops.<handle>` from its own OPS
+     * list. Read that list out of the component, so an operator added there
+     * cannot arrive without wording — which is exactly how all twelve of them
+     * stood on screen in English.
+     */
+    public function test_every_condition_operator_has_a_label_in_both_languages(): void
+    {
+        $source = file_get_contents(__DIR__.'/../../resources/js/components/rules/ConditionRow.vue');
+
+        $this->assertSame(1, preg_match('/const OPS = \[(.*?)\];/s', $source, $m),
+            'The OPS list in ConditionRow.vue could not be read — this test is measuring nothing.');
+
+        preg_match_all("/'([a-z_]+)'/", $m[1], $handles);
+
+        $this->assertNotEmpty($handles[1]);
+        $this->assertHandlesAreTranslated('cp.condition_ops', $handles[1]);
+    }
+
+    /**
+     * The remaining runtime-built keys, each read from the source of truth for
+     * its handles rather than from a list repeated here:
+     *
+     *  - `cp.delivery_status.*` — Deliveries/Show.vue and PresentsDeliveryStatuses
+     *  - `insights.status.*`    — WebhookMetric, for the sibling analytics addon
+     *  - `messages.subject_types.*` — DeliveryController, for the types this
+     *    addon ships defaults for. A type contributed by another package
+     *    legitimately has no entry and falls back to `ucfirst()`, so only the
+     *    configured ones are required.
+     */
+    public function test_every_delivery_status_has_a_label_in_both_languages(): void
+    {
+        $handles = array_values(array_filter(
+            (new ReflectionClass(Delivery::class))->getConstants(),
+            fn (string $name) => str_starts_with($name, 'STATUS_'),
+            ARRAY_FILTER_USE_KEY,
+        ));
+
+        $this->assertNotEmpty($handles);
+        $this->assertHandlesAreTranslated('cp.delivery_status', $handles);
+
+        $insights = require __DIR__.'/../../resources/lang/de/insights.php';
+        $insightsEn = require __DIR__.'/../../resources/lang/en/insights.php';
+
+        foreach ($handles as $handle) {
+            $this->assertArrayHasKey($handle, $insights['status'], "de: insights.status.$handle");
+            $this->assertArrayHasKey($handle, $insightsEn['status'], "en: insights.status.$handle");
+        }
+    }
+
+    public function test_every_configured_subject_type_has_a_label_in_both_languages(): void
+    {
+        $config = require __DIR__.'/../../config/webhook-manager.php';
+        $configured = array_map('strval', array_keys((array) ($config['subjects'] ?? [])));
+
+        // The four built-in triggers resolve a subject with no configuration.
+        $handles = array_values(array_unique([...$configured, 'entry', 'user', 'asset', 'form_submission']));
+
+        $this->assertHandlesAreTranslated('subject_types', $handles);
     }
 
     /**

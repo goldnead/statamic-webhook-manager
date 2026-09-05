@@ -482,6 +482,28 @@ return [
         'rules_conditions_hint' => 'Optional. AND/OR groups of leaf conditions. Leave empty to always match.',
         'rules_conditions_empty' => 'No conditions — rule fires for every matching trigger.',
         'rules_group_empty' => 'Empty group — add a condition or another nested group below.',
+        /*
+         * The comparison operators in the condition editor. They came out of a
+         * list in ConditionRow.vue as English strings and went through a
+         * `__()` whose argument was a variable — that is, through a global key
+         * no addon can define. The screen read "equals", "is set",
+         * "matches regex".
+         */
+        'condition_ops' => [
+            'equals' => 'equals',
+            'not_equals' => 'not equals',
+            'in' => 'is one of',
+            'not_in' => 'is not one of',
+            'contains' => 'contains',
+            'exists' => 'is set',
+            'empty' => 'is empty',
+            'gt' => 'greater than',
+            'gte' => 'greater or equal',
+            'lt' => 'less than',
+            'lte' => 'less or equal',
+            'regex' => 'matches regex',
+        ],
+
         'rules_condition' => 'Condition',
         'rules_group' => 'Group',
         'rules_remove_group' => 'Remove group',

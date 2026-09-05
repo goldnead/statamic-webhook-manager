@@ -20,25 +20,34 @@ const emit = defineEmits(['update:modelValue', 'remove']);
 
 const FIELD_SHORTCUTS = ['site', 'locale', 'trigger', 'replay'];
 
-const OPS = [
-    { value: 'equals',     label: 'equals' },
-    { value: 'not_equals', label: 'not equals' },
-    { value: 'in',         label: 'is one of' },
-    { value: 'not_in',     label: 'is not one of' },
-    { value: 'contains',   label: 'contains' },
-    { value: 'exists',     label: 'is set' },
-    { value: 'empty',      label: 'is empty' },
-    { value: 'gt',         label: 'greater than' },
-    { value: 'gte',        label: 'greater or equal' },
-    { value: 'lt',         label: 'less than' },
-    { value: 'lte',        label: 'less or equal' },
-    { value: 'regex',      label: 'matches regex' },
-];
+/**
+ * The operators, as handles only.
+ *
+ * Each entry used to carry an English `label` — `'equals'`, `'is set'`,
+ * `'matches regex'` — that was then passed to `__()`. Two things were wrong
+ * with that, and a comment right here claimed the opposite ("Labels run
+ * through __() so they stay translatable"):
+ *
+ *   - The key was GLOBAL. Any installed addon could redefine `contains`.
+ *   - No addon could define it either, because a global key is nobody's to
+ *     claim. `__()` hands back what it cannot resolve, so the English source
+ *     string reached the screen as its own translation and looked deliberate.
+ *
+ * The key is now derived from the handle the condition actually stores, which
+ * is what makes the wording testable: `NoGlobalTranslationKeysTest` reads this
+ * list and requires an entry for every handle in both languages. That is the
+ * only kind of check that reaches a `__()` whose argument is a variable — a
+ * scanner sees the call, never the value.
+ */
+const OPS = ['equals', 'not_equals', 'in', 'not_in', 'contains', 'exists',
+    'empty', 'gt', 'gte', 'lt', 'lte', 'regex'];
 
-// Statamic's <Select> wraps <Combobox>, which expects `:options` as an
-// array of { value, label } objects. Labels run through __() so they stay
-// translatable rather than hard-coded English.
-const opOptions = computed(() => OPS.map(o => ({ value: o.value, label: __(o.label) })));
+// Statamic's <Select> wraps <Combobox>, which expects `:options` as an array
+// of { value, label } objects.
+const opOptions = computed(() => OPS.map((op) => ({
+    value: op,
+    label: __(`webhook-manager::messages.cp.condition_ops.${op}`),
+})));
 
 const showsValue = computed(() => !['exists', 'empty'].includes(props.modelValue.op));
 const isList = computed(() => ['in', 'not_in'].includes(props.modelValue.op));

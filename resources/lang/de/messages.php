@@ -493,6 +493,28 @@ return [
         'rules_conditions_hint' => 'Optional. UND/ODER-Gruppen aus einzelnen Bedingungen. Leer lassen, damit die Regel immer greift.',
         'rules_conditions_empty' => 'Keine Bedingungen. Die Regel greift bei jedem passenden Trigger.',
         'rules_group_empty' => 'Leere Gruppe. Füge unten eine Bedingung oder eine weitere Gruppe hinzu.',
+        /*
+         * Die Vergleichsoperatoren im Bedingungs-Editor. Sie kamen als
+         * englische Zeichenketten aus einer Liste in ConditionRow.vue und
+         * liefen von dort durch ein `__()` mit variablem Argument — also durch
+         * einen globalen Schlüssel, den kein Addon definieren kann. Auf dem
+         * Schirm stand „equals", „is set", „matches regex".
+         */
+        'condition_ops' => [
+            'equals' => 'ist gleich',
+            'not_equals' => 'ist ungleich',
+            'in' => 'ist eines von',
+            'not_in' => 'ist keines von',
+            'contains' => 'enthält',
+            'exists' => 'ist gesetzt',
+            'empty' => 'ist leer',
+            'gt' => 'größer als',
+            'gte' => 'größer oder gleich',
+            'lt' => 'kleiner als',
+            'lte' => 'kleiner oder gleich',
+            'regex' => 'passt auf Regex',
+        ],
+
         'rules_condition' => 'Bedingung',
         'rules_group' => 'Gruppe',
         'rules_remove_group' => 'Gruppe entfernen',
