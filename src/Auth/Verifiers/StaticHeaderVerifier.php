@@ -17,7 +17,7 @@ class StaticHeaderVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'Static header secret';
+        return __('webhook-manager::messages.cp.auth_static_header');
     }
 
     public function verify(Request $request, array $config): bool

@@ -15,7 +15,7 @@ class UserSavedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'User — saved';
+        return __('webhook-manager::messages.cp.trigger_user_saved');
     }
 
     public function sourceType(): string

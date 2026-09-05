@@ -15,7 +15,7 @@ class EntryPublishedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Entry — published';
+        return __('webhook-manager::messages.cp.trigger_entry_published');
     }
 
     public function sourceType(): string

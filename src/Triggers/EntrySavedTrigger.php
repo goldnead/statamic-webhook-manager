@@ -15,7 +15,7 @@ class EntrySavedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Entry — saved';
+        return __('webhook-manager::messages.cp.trigger_entry_saved');
     }
 
     public function sourceType(): string

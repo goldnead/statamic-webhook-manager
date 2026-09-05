@@ -14,7 +14,7 @@ class BearerTokenVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'Bearer token';
+        return __('webhook-manager::messages.cp.auth_bearer');
     }
 
     public function verify(Request $request, array $config): bool

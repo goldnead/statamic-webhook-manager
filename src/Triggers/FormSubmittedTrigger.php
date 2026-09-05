@@ -15,7 +15,7 @@ class FormSubmittedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Form — submitted';
+        return __('webhook-manager::messages.cp.trigger_form_submitted');
     }
 
     public function sourceType(): string

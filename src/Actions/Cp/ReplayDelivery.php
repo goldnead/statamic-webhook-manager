@@ -39,9 +39,17 @@ class ReplayDelivery extends Action
         return $item instanceof Delivery && $item->isReplayable();
     }
 
+    /**
+     * `visibleTo()` is a UI filter — core never consults it in `run()`
+     * (`ActionController.php:26-36`). Without the type check here, posting this
+     * action's handle to the *outbound* endpoint replayed an OutboundWebhook as
+     * a delivery and reported success; the id then went into ReplayDeliveryJob,
+     * which resolves with `Delivery::find()` outside the CP's brand context.
+     */
     public function authorize($user, $item)
     {
-        return (bool) $user?->can('replay webhook deliveries');
+        return $item instanceof Delivery
+            && (bool) $user?->can('replay webhook deliveries');
     }
 
     public function buttonText()
@@ -51,7 +59,14 @@ class ReplayDelivery extends Action
 
     public function run($items, $values)
     {
+        // Third lock, and the only one that is a hard type error rather than a
+        // policy decision: whatever slipped past the endpoint allowlist and
+        // `authorize()` stops here instead of putting a foreign id on the queue.
         foreach ($items as $delivery) {
+            if (! $delivery instanceof Delivery) {
+                throw new \RuntimeException(__('webhook-manager::messages.cp.action_wrong_type'));
+            }
+
             ReplayDeliveryJob::dispatch($delivery->id, false)
                 ->onConnection(config('webhook-manager.queue.connection'))
                 ->onQueue(config('webhook-manager.queue.name', 'default'));

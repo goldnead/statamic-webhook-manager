@@ -19,7 +19,7 @@ class HmacSignatureVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'HMAC signature';
+        return __('webhook-manager::messages.cp.auth_hmac');
     }
 
     public function verify(Request $request, array $config): bool

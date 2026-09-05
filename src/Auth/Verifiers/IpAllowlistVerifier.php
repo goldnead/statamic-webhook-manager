@@ -14,7 +14,7 @@ class IpAllowlistVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'IP allowlist';
+        return __('webhook-manager::messages.cp.auth_ip_allowlist');
     }
 
     /**

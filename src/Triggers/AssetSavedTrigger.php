@@ -15,7 +15,7 @@ class AssetSavedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Asset — saved';
+        return __('webhook-manager::messages.cp.trigger_asset_saved');
     }
 
     public function sourceType(): string

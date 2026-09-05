@@ -15,7 +15,7 @@ class EntryDeletedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Entry — deleted';
+        return __('webhook-manager::messages.cp.trigger_entry_deleted');
     }
 
     public function sourceType(): string

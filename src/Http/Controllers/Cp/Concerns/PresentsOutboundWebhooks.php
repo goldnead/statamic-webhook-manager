@@ -23,12 +23,18 @@ trait PresentsOutboundWebhooks
      */
     protected function outboundColumns(): array
     {
+        // `width` reaches the <td> (core's Listing/TableBody.vue:102). Without
+        // it the auto-layout table gives the URL column whatever the four
+        // badge columns leave over — measured at 108px, of which
+        // MiddleEllipsis could use 80px, so every URL rendered as `ht...g` and
+        // no two rows could be told apart. Percentages rather than pixels, so
+        // the widths survive the header's max-width toggle.
         return [
-            ['field' => 'name', 'label' => __('webhook-manager::messages.cp.col_name'), 'sortable' => true, 'visible' => true],
-            ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'sortable' => true, 'visible' => true],
-            ['field' => 'method', 'label' => __('webhook-manager::messages.cp.col_method'), 'sortable' => false, 'visible' => true],
-            ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'sortable' => false, 'visible' => true],
-            ['field' => 'enabled', 'label' => __('webhook-manager::messages.cp.col_status'), 'sortable' => true, 'visible' => true],
+            ['field' => 'name', 'label' => __('webhook-manager::messages.cp.col_name'), 'sortable' => true, 'visible' => true, 'width' => '24%'],
+            ['field' => 'trigger_type', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'sortable' => true, 'visible' => true, 'width' => '17%'],
+            ['field' => 'method', 'label' => __('webhook-manager::messages.cp.col_method'), 'sortable' => false, 'visible' => true, 'width' => '8%'],
+            ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'sortable' => false, 'visible' => true, 'width' => '39%'],
+            ['field' => 'enabled', 'label' => __('webhook-manager::messages.cp.col_status'), 'sortable' => true, 'visible' => true, 'width' => '12%'],
         ];
     }
 

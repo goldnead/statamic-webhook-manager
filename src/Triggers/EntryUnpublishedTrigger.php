@@ -15,7 +15,7 @@ class EntryUnpublishedTrigger implements TriggerInterface
 
     public function label(): string
     {
-        return 'Entry — unpublished';
+        return __('webhook-manager::messages.cp.trigger_entry_unpublished');
     }
 
     public function sourceType(): string

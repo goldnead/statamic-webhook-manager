@@ -14,7 +14,7 @@ class NoAuthVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'No authentication';
+        return __('webhook-manager::messages.cp.auth_none');
     }
 
     public function verify(Request $request, array $config): bool

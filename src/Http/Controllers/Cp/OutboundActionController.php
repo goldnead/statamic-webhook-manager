@@ -2,7 +2,11 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Actions\Cp\DeleteOutboundWebhook;
+use Goldnead\WebhookManager\Actions\Cp\DisableOutboundWebhook;
+use Goldnead\WebhookManager\Actions\Cp\EnableOutboundWebhook;
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\ScopesActionsToItsEndpoint;
 use Statamic\Http\Controllers\CP\ActionController;
 
 /**
@@ -22,7 +26,19 @@ use Statamic\Http\Controllers\CP\ActionController;
  */
 class OutboundActionController extends ActionController
 {
+    use ScopesActionsToItsEndpoint;
+
     protected static $key = 'webhook-manager.outbound';
+
+    /** @return array<int, string> */
+    protected function allowedActions(): array
+    {
+        return [
+            EnableOutboundWebhook::handle(),
+            DisableOutboundWebhook::handle(),
+            DeleteOutboundWebhook::handle(),
+        ];
+    }
 
     protected function getSelectedItems($items, $context)
     {

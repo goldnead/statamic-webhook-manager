@@ -14,7 +14,7 @@ class BasicAuthVerifier implements AuthVerifierInterface
 
     public function label(): string
     {
-        return 'Basic auth';
+        return __('webhook-manager::messages.cp.auth_basic');
     }
 
     public function verify(Request $request, array $config): bool

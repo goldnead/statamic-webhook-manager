@@ -3,6 +3,7 @@
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryErrors;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
 use Goldnead\WebhookManager\Services\DeliveryMaskingService;
@@ -12,6 +13,8 @@ use Statamic\Http\Controllers\CP\CpController;
 
 class DeliveryController extends CpController
 {
+    use PresentsDeliveryErrors;
+
     /**
      * List deliveries (server-driven Listing).
      *
@@ -410,31 +413,5 @@ class DeliveryController extends CpController
         }
 
         return 'gray';
-    }
-
-    protected function errorTypeColor(?string $type): string
-    {
-        return match ($type) {
-            'network' => 'orange',
-            'timeout' => 'amber',
-            'auth' => 'red',
-            'client' => 'yellow',
-            'server' => 'red',
-            'payload' => 'purple',
-            'configuration' => 'blue',
-            'internal' => 'gray',
-            default => 'gray',
-        };
-    }
-
-    protected function errorTypeLabel(?string $type): ?string
-    {
-        if ($type === null) {
-            return null;
-        }
-        $key = 'webhook-manager::messages.failure_types.'.$type;
-        $translated = __($key);
-
-        return $translated === $key ? $type : $translated;
     }
 }

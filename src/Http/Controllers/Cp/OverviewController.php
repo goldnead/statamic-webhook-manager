@@ -7,6 +7,7 @@ use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInte
 use Goldnead\WebhookManager\Contracts\Repositories\RuleRepositoryInterface;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
 use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryErrors;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsOutboundWebhooks;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
@@ -16,6 +17,7 @@ use Statamic\Http\Controllers\CP\CpController;
 
 class OverviewController extends CpController
 {
+    use PresentsDeliveryErrors;
     use PresentsOutboundWebhooks;
 
     public function index(
@@ -89,11 +91,16 @@ class OverviewController extends CpController
             'outboundActionUrl' => cp_route('webhook-manager.outbound.actions.run'),
 
             'recentFailures' => $this->buildRecentFailures($triggerLabels),
+            // `width` reaches the <td> (Listing/TableBody.vue:102). Without it
+            // the auto-layout table hands the URL column whatever the badges
+            // leave over, and MiddleEllipsis — which measures its container —
+            // truncates a URL down to six characters that tell no two rows
+            // apart. Percentages, so it survives the max-width toggle.
             'failureColumns' => [
-                ['field' => 'when', 'label' => __('webhook-manager::messages.cp.col_when'), 'visible' => true, 'sortable' => true],
-                ['field' => 'trigger', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'visible' => true, 'sortable' => true],
-                ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'visible' => true, 'sortable' => false],
-                ['field' => 'status', 'label' => __('webhook-manager::messages.cp.col_error'), 'visible' => true, 'sortable' => true],
+                ['field' => 'when', 'label' => __('webhook-manager::messages.cp.col_when'), 'visible' => true, 'sortable' => true, 'width' => '18%'],
+                ['field' => 'trigger', 'label' => __('webhook-manager::messages.cp.col_trigger'), 'visible' => true, 'sortable' => true, 'width' => '20%'],
+                ['field' => 'url', 'label' => __('webhook-manager::messages.cp.col_url'), 'visible' => true, 'sortable' => false, 'width' => '44%'],
+                ['field' => 'status', 'label' => __('webhook-manager::messages.cp.col_error'), 'visible' => true, 'sortable' => true, 'width' => '18%'],
             ],
             'deliveriesIndexUrl' => cp_route('webhook-manager.deliveries.index'),
             'deliveryActionUrl' => cp_route('webhook-manager.deliveries.actions.run'),
@@ -122,8 +129,6 @@ class OverviewController extends CpController
      */
     private function buildRecentFailures(array $triggerLabels): array
     {
-        $canReplay = (bool) request()->user()?->can('replay webhook deliveries');
-
         return Delivery::query()
             ->where('status', Delivery::STATUS_FAILED)
             ->orderByDesc('created_at')
@@ -136,8 +141,11 @@ class OverviewController extends CpController
                 'trigger' => $d->trigger_type,
                 'trigger_label' => $triggerLabels[$d->trigger_type] ?? $d->trigger_type,
                 'url' => $d->request_url,
-                'status' => $d->error_type ?? 'failed',
-                'can_replay' => $canReplay,
+                // The raw enum (`network`, `auth`) used to go straight into a
+                // badge that was hard-coded red, while the same field one click
+                // away read "Authentifizierungsfehler" in its own colour.
+                'status' => $this->errorTypeLabel($d->error_type) ?? __('webhook-manager::messages.cp.delivery_status.failed'),
+                'status_color' => $this->errorTypeColor($d->error_type),
                 'show_url' => cp_route('webhook-manager.deliveries.show', $d),
             ])
             ->values()

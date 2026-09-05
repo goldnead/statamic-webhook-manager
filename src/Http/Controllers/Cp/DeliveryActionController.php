@@ -2,7 +2,9 @@
 
 namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
+use Goldnead\WebhookManager\Actions\Cp\ReplayDelivery;
 use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
+use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\ScopesActionsToItsEndpoint;
 use Statamic\Http\Controllers\CP\ActionController;
 
 /**
@@ -15,7 +17,15 @@ use Statamic\Http\Controllers\CP\ActionController;
  */
 class DeliveryActionController extends ActionController
 {
+    use ScopesActionsToItsEndpoint;
+
     protected static $key = 'webhook-manager.deliveries';
+
+    /** @return array<int, string> */
+    protected function allowedActions(): array
+    {
+        return [ReplayDelivery::handle()];
+    }
 
     protected function getSelectedItems($items, $context)
     {

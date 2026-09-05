@@ -57,28 +57,20 @@ const methodColor = (method) => {
     }
 };
 
-/**
- * Enable / disable straight from the row.
+/*
+ * Enable / disable used to be a hand-rolled row action here: a `router.patch()`
+ * against `toggle_url` that flipped `hook.enabled` locally, because <Listing>
+ * keeps its own copy of the rows and never sees an Inertia prop update.
  *
- * <Listing> owns its own copy of the rows (it re-fetches them over AJAX), so
- * an Inertia prop reload left the Status badge showing the old value until a
- * full page reload — the row said "Active" while the database already said 0.
- * The row object is reactive, so it is flipped locally the moment the request
- * succeeds, and the listing is asked to re-fetch as well.
+ * It is gone because on 05.09.2026 the listing got a real action endpoint, and
+ * the same job is now done by the native Statamic actions
+ * `webhook_manager_enable_outbound` / `_disable_outbound`. Keeping both left
+ * two "Disable" entries in one "…" menu, one of them untranslated — a move with
+ * only one end. Core's RowActions calls `refresh()` after an action, so the row
+ * state that the old comment worried about is handled by the listing itself.
+ *
+ * The PATCH route stays; it is what the edit screen uses.
  */
-function toggle(hook) {
-    if (!hook.toggle_url) return;
-    router.patch(hook.toggle_url, {}, {
-        preserveScroll: true,
-        preserveState: true,
-        onError: (errors) => { actionErrors.value = errors || {}; },
-        onSuccess: () => {
-            hook.enabled = !hook.enabled;
-            actionErrors.value = {};
-            reloadPage();
-        },
-    });
-}
 
 // ── Test ────────────────────────────────────────────────────────────────────
 
@@ -211,8 +203,12 @@ const actionErrors = ref({});
                 <Badge :color="methodColor(hook.method)" :text="hook.method" />
             </template>
 
+            <!-- `block min-w-0` so MiddleEllipsis measures the cell rather than
+                 the shrink-wrapped inline span; the column itself gets a width
+                 from PresentsOutboundWebhooks::outboundColumns(). Before both,
+                 every URL here rendered as `ht...g`. -->
             <template #cell-url="{ value }">
-                <span class="text-gray-900 dark:text-gray-100 font-mono text-xs">
+                <span class="block min-w-0 text-gray-900 dark:text-gray-100 font-mono text-xs">
                     <MiddleEllipsis :text="value || ''" />
                 </span>
             </template>
@@ -236,12 +232,6 @@ const actionErrors = ref({});
                     icon="arrow-up-right"
                     :text="__('Test')"
                     @click="runTest(hook)"
-                />
-                <DropdownItem
-                    v-if="hook.can_toggle"
-                    icon="fieldtype-toggle"
-                    :text="hook.enabled ? __('Disable') : __('Enable')"
-                    @click="toggle(hook)"
                 />
             </template>
         </Listing>

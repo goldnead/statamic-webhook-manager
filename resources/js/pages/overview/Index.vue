@@ -259,8 +259,12 @@ async function runTest(hook) {
                     <Badge :color="methodColor(hook.method)" :text="hook.method" />
                 </template>
 
+                <!-- `block min-w-0` so MiddleEllipsis measures the cell rather
+                     than the shrink-wrapped inline span it sat in; the column
+                     gets its share from the `width` in the column definition.
+                     Without both, every URL rendered as six characters. -->
                 <template #cell-url="{ value }">
-                    <span class="font-mono text-xs text-gray-900 dark:text-gray-100">
+                    <span class="block min-w-0 font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="value || ''" />
                     </span>
                 </template>
@@ -336,14 +340,22 @@ async function runTest(hook) {
                     <Badge color="blue" :text="row.trigger_label || row.trigger" />
                 </template>
 
+                <!-- `block min-w-0` so MiddleEllipsis measures the cell rather
+                     than the shrink-wrapped inline span it sat in; the column
+                     gets its share from the `width` in the column definition.
+                     Without both, every URL rendered as six characters. -->
                 <template #cell-url="{ value }">
-                    <span class="font-mono text-xs text-gray-900 dark:text-gray-100">
+                    <span class="block min-w-0 font-mono text-xs text-gray-900 dark:text-gray-100">
                         <MiddleEllipsis :text="value || ''" />
                     </span>
                 </template>
 
+                <!-- Wording and colour come from the controller. The badge used
+                     to be hard-coded red around the raw database enum
+                     (`network`, `auth`), while one click further the same field
+                     read "Authentifizierungsfehler" in its own colour. -->
                 <template #cell-status="{ row }">
-                    <Badge color="red" :text="row.status" />
+                    <Badge :color="row.status_color || 'red'" :text="row.status" />
                 </template>
 
                 <template #prepended-row-actions="{ row }">

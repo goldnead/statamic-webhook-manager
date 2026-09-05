@@ -191,6 +191,24 @@ return [
         'create_inbound' => 'Eingehenden Endpunkt anlegen',
         'create_rule' => 'Regel anlegen',
 
+        // Trigger and auth-scheme labels. They come out of the registries
+        // (TriggerRegistry / AuthSchemeRegistry) and were the last English
+        // strings on otherwise German screens: they render as badges in both
+        // listings, on the delivery page and inside the editor's own tabs.
+        'trigger_entry_saved' => 'Eintrag — gespeichert',
+        'trigger_entry_published' => 'Eintrag — veröffentlicht',
+        'trigger_entry_unpublished' => 'Eintrag — Veröffentlichung zurückgenommen',
+        'trigger_entry_deleted' => 'Eintrag — gelöscht',
+        'trigger_form_submitted' => 'Formular — abgeschickt',
+        'trigger_user_saved' => 'Benutzer:in — gespeichert',
+        'trigger_asset_saved' => 'Datei — gespeichert',
+        'auth_none' => 'Keine Authentifizierung',
+        'auth_static_header' => 'Fester Header mit Geheimnis',
+        'auth_bearer' => 'Bearer-Token',
+        'auth_basic' => 'Basic Auth',
+        'auth_hmac' => 'HMAC-Signatur',
+        'auth_ip_allowlist' => 'IP-Freigabeliste',
+
         // Gemeinsame Spaltenköpfe
         'col_name' => 'Name',
         'col_trigger' => 'Trigger',
@@ -203,9 +221,10 @@ return [
         // Zeilenaktionen
         'action_edit' => 'Bearbeiten',
         'action_test' => 'Testen',
-        'action_enable' => 'Aktivieren',
-        'action_disable' => 'Deaktivieren',
         'action_open_delivery' => 'Zustellung öffnen',
+        'action_not_available_here' => 'Diese Aktion gibt es auf diesem Bildschirm nicht.',
+        'action_selection_gone' => 'Keiner der gewählten Datensätze existiert noch. Seite neu laden.',
+        'action_wrong_type' => 'Diese Aktion passt nicht zu den gewählten Datensätzen.',
         'status_active' => 'Aktiv',
         'status_disabled' => 'Deaktiviert',
 

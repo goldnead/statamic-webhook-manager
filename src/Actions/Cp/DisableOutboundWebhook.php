@@ -31,9 +31,16 @@ class DisableOutboundWebhook extends Action
         return $item instanceof OutboundWebhook && (bool) $item->enabled;
     }
 
+    /**
+     * `visibleTo()` is a UI filter — core never consults it in `run()`
+     * (`ActionController.php:26-36`). `authorize()` is the one core does ask,
+     * per item, so the type check belongs here as well: without it this action
+     * runs against anything whose id someone posts.
+     */
     public function authorize($user, $item)
     {
-        return (bool) $user?->can('manage outbound webhooks');
+        return $item instanceof OutboundWebhook
+            && (bool) $user?->can('manage outbound webhooks');
     }
 
     public function buttonText()

@@ -183,6 +183,24 @@ return [
         'create_inbound' => 'Create inbound endpoint',
         'create_rule' => 'Add a rule',
 
+        // Trigger and auth-scheme labels. They come out of the registries
+        // (TriggerRegistry / AuthSchemeRegistry) and were the last English
+        // strings on otherwise German screens: they render as badges in both
+        // listings, on the delivery page and inside the editor's own tabs.
+        'trigger_entry_saved' => 'Entry — saved',
+        'trigger_entry_published' => 'Entry — published',
+        'trigger_entry_unpublished' => 'Entry — unpublished',
+        'trigger_entry_deleted' => 'Entry — deleted',
+        'trigger_form_submitted' => 'Form — submitted',
+        'trigger_user_saved' => 'User — saved',
+        'trigger_asset_saved' => 'Asset — saved',
+        'auth_none' => 'No authentication',
+        'auth_static_header' => 'Static header secret',
+        'auth_bearer' => 'Bearer token',
+        'auth_basic' => 'Basic auth',
+        'auth_hmac' => 'HMAC signature',
+        'auth_ip_allowlist' => 'IP allowlist',
+
         // Shared column labels
         'col_name' => 'Name',
         'col_trigger' => 'Trigger',
@@ -195,9 +213,10 @@ return [
         // Row actions
         'action_edit' => 'Edit',
         'action_test' => 'Test',
-        'action_enable' => 'Enable',
-        'action_disable' => 'Disable',
         'action_open_delivery' => 'Open delivery',
+        'action_not_available_here' => 'That action is not available on this screen.',
+        'action_selection_gone' => 'None of the selected records exist any more. Reload the page.',
+        'action_wrong_type' => 'That action does not apply to the selected records.',
         'status_active' => 'Active',
         'status_disabled' => 'Disabled',
 
