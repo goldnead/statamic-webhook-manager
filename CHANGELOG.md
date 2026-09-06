@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.8.1 — 2026-09-06
+
+### Doku: die README beschrieb noch den alten Einstellungs-Bildschirm
+
+Nachtrag zu 2.8.0. Der Abschnitt zu den Einstellungen nannte weiterhin
+`webhook_settings`, den eigenen Bildschirm und „Settings → Storage". Er nennt
+jetzt den gemeinsamen Bildschirm, `brand_settings`, den Markenbezug, den
+Migrationsschritt beim Upgrade und den Debug-Bildschirm als neuen Ort für die
+Deployment-Werte und den Speichertreiber-Umschalter. Nur Text, kein Code.
+
 ## 2.8.0 — 2026-09-06
 
 ### Die Einstellungen liegen jetzt auf dem gemeinsamen Bildschirm der Suite

@@ -66,14 +66,20 @@ See `config/webhook-manager.php` after publishing — feature toggles, retry pol
 
 Most of that file can also be changed under **Settings** in the Control Panel (permission: `manage webhook settings`): modules, retry policy, HTTP defaults, inbound limits, signature headers, logging and retention.
 
-Only the **difference** to the config file is stored, one row per changed key in `webhook_settings`. A value set back to what the file says deletes its row again, so the config file stays the default and a later release can still move it. An install that never opens the screen behaves exactly as before.
+The screen is the suite's shared one, from `goldnead/statamic-brand-context`, and every addon of the suite that offers settings appears on it as its own section — one place to look instead of sixteen. `Webhooks → Settings` in the sidebar leads there. The values are **per brand**, which the addon's own screen could not do: on a multi-brand install two brands no longer share one setting.
+
+Only the **difference** to the config file is stored, one row per changed key in `brand_settings`. A value set back to what the file says deletes its row again, so the config file stays the default and a later release can still move it. An install that never opens the screen behaves exactly as before.
+
+> **Upgrading.** Settings saved with an earlier release live in `webhook_settings`. They are carried over to `brand_settings` on the default brand by `php artisan migrate`. The old table is left in place for one minor version so a rollback does not lose them.
 
 Not editable there, on purpose:
 
-- anything resolved from `env()` — queue connection and name, failure alerts, circuit breaker. The deployment owns them, and `WEBHOOK_MANAGER_ALERT_SLACK_URL` is a credential that has no business in a database backup. They are shown on the screen read-only, so you can still see what is active.
+- anything resolved from `env()` — queue connection and name, failure alerts, circuit breaker. The deployment owns them, and `WEBHOOK_MANAGER_ALERT_SLACK_URL` is a credential that has no business in a database backup. They are shown read-only on the **Debug** screen, so you can still see what is active.
 - `inbound.route_prefix`, its legacy prefixes and its middleware — read while routes are registered and frozen by `route:cache`.
 - `retry.schedule` — read before the addon boots, so a control for it would only take effect after the next deploy.
-- `storage.driver` — switched through the storage panel below, which moves the stored configuration with it.
+- `storage.driver` — switched through the storage panel on the **Debug** screen, which moves the stored configuration with it.
+
+The Debug screen also prints the resolved config tree with its secrets masked, which is the quickest answer to "what is this install actually running". It is reachable with either `use webhook debug tools` or `manage webhook settings`.
 
 ### Storage driver
 
@@ -92,7 +98,7 @@ Webhook **configuration** (outbound webhooks, inbound endpoints, rules, template
 - **`eloquent`** (default) — config lives in database tables. Run `php artisan migrate`.
 - **`flat`** — config lives as human-readable YAML under `content/webhooks/`, git-versionable alongside the rest of your site.
 
-You can switch the active driver **in the Control Panel** (Settings → Storage) — it migrates the existing config to the target store and activates it, no `.env` access needed. A Control-Panel choice is persisted under `storage/` and takes precedence over the config/env default.
+You can switch the active driver **in the Control Panel** (Debug → Storage) — it migrates the existing config to the target store and activates it, no `.env` access needed. A Control-Panel choice is persisted under `storage/` and takes precedence over the config/env default.
 
 Or do it from the CLI (records are copied id-for-id either way):
 
