@@ -2,7 +2,12 @@
 
 namespace Goldnead\WebhookManager\Tests\Feature;
 
-use Goldnead\WebhookManager\Domain\Settings\Models\WebhookSetting;
+use Goldnead\BrandContext\Models\BrandSetting;
+use Goldnead\BrandContext\Settings\SettingsManager;
+use Goldnead\BrandContext\Settings\SettingsRegistry;
+use Goldnead\WebhookManager\Domain\Delivery\Models\Delivery;
+use Goldnead\WebhookManager\Domain\OutboundWebhook\Models\OutboundWebhook;
+use Goldnead\WebhookManager\Services\RetryPlanner;
 use Goldnead\WebhookManager\Support\Settings;
 use Goldnead\WebhookManager\Tests\CpTestCase;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -10,13 +15,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 
 /**
- * The settings screen writes, and what it writes reaches the config.
+ * The settings this addon offers, saved through the suite's shared screen.
  *
- * The screen was read-only until now: it printed `config/webhook-manager.php`
- * and told the operator to go and edit a file on the server. Everything here is
- * about the two properties that make the replacement trustworthy — a saved
- * value is the value the rest of the addon reads, and a value returned to its
- * default stops being stored at all.
+ * The addon's own screen is gone: no `webhook_settings` model, no
+ * `UpdateSettingsRequest`, no `SettingsController`, no Vue page. What is left
+ * is {@see Settings}, the field list, registered with
+ * {@see SettingsRegistry}. Everything asserted here therefore crosses a package
+ * boundary on purpose — the point is not that `statamic-brand-context` works
+ * (its own suite covers that) but that **this addon's** fields reach the
+ * screen, survive the round trip with their types intact, and end up on the
+ * config where the delivery engine and the retry planner read them.
  */
 class SettingsEditorTest extends CpTestCase
 {
@@ -37,10 +45,10 @@ class SettingsEditorTest extends CpTestCase
      * Sent as an Inertia visit, because that is what the screen sends. The
      * endpoint answers a successful write with `back()`, so a saved settings
      * form is a 302 and a rejected one is a 302 back with an error bag — not
-     * a 200 with a JSON body and not a 422. That is the whole point of the
-     * change: the CP gets its progress bar, its toast and its dirty guard, and
-     * the page is re-rendered so every prop on it (not only the form) reflects
-     * the write.
+     * a 200 with a JSON body and not a 422.
+     *
+     * `namespace` rides along: the shared screen saves one addon's section at a
+     * time, so a validation failure in one package cannot block saving another.
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -48,34 +56,110 @@ class SettingsEditorTest extends CpTestCase
     {
         $settings = [];
 
-        foreach (array_keys(Settings::fields()) as $key) {
-            $settings[$key] = config('webhook-manager.'.$key);
+        foreach ($this->fields() as $key => $field) {
+            $value = config('webhook-manager.'.$key);
+
+            // A `list` control on the shared screen is one textarea of lines,
+            // so what actually arrives at the server is an array of strings —
+            // and the shared validation insists on that (`settings.<key>.*` is
+            // `string`). `retry.retry_on_status` holds integers in the config
+            // file, so a payload built straight from `config()` would be
+            // rejected where a real browser's is not, and every test here would
+            // fail for the wrong reason. Mirrored rather than worked around:
+            // the consequence of the strings surviving into storage is asserted
+            // in test_a_saved_status_list_still_triggers_a_retry() below.
+            if (($field['type'] ?? null) === 'list') {
+                $value = array_map('strval', (array) $value);
+            }
+
+            $settings[$key] = $value;
         }
 
         $request = $as ? $this->actingAs($as) : $this;
 
         return $request
             ->withHeaders($this->inertiaHeaders())
-            ->patch(
-                cp_route('webhook-manager.settings.update'),
-                ['settings' => array_replace($settings, $overrides)],
-            );
+            ->patch(cp_route('brand-context.settings.update'), [
+                'namespace' => Settings::settingsNamespace(),
+                'settings' => array_replace($settings, $overrides),
+            ]);
     }
 
-    /** The props the settings page hands the form on a fresh render. */
-    protected function settingsProps(): array
+    /** This addon's section of the shared screen, on a fresh render. */
+    protected function section(): array
     {
-        return $this->withHeaders($this->inertiaHeaders())
-            ->get(cp_route('webhook-manager.settings'))
+        $sections = $this->withHeaders($this->inertiaHeaders())
+            ->get(cp_route('brand-context.settings.index'))
             ->assertOk()
-            ->json('props');
+            ->json('props.sections');
+
+        foreach ($sections as $section) {
+            if ($section['namespace'] === Settings::settingsNamespace()) {
+                return $section;
+            }
+        }
+
+        $this->fail('The shared settings screen has no section for '.Settings::settingsNamespace().'.');
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    protected function fields(): array
+    {
+        return app(SettingsRegistry::class)->fields(Settings::settingsNamespace());
+    }
+
+    /** How many stored rows this addon has for one key. */
+    protected function rowCount(string $key): int
+    {
+        return BrandSetting::query()
+            ->where('namespace', Settings::settingsNamespace())
+            ->where('key', $key)
+            ->count();
+    }
+
+    public function test_the_old_settings_url_leads_to_the_shared_screen(): void
+    {
+        // `/cp/webhook-manager/settings` is in bookmarks, in the docs and in
+        // the sidebar. A 404 there tells nobody where the settings went, and
+        // the nav item still points at it on purpose so that exactly one place
+        // in this package knows the new address.
+        $this->get(cp_route('webhook-manager.settings'))
+            ->assertRedirect(cp_route('brand-context.settings.index'));
+    }
+
+    public function test_the_addon_registers_itself_with_the_shared_registry(): void
+    {
+        // Three strings that are frozen once a site has saved anything: the
+        // namespace is stamped on every stored row, the config path decides
+        // which config tree the overrides land on, and the permission is
+        // assigned to real user groups. A rename of any of them is silent —
+        // the screen simply stops showing this addon, or writes somewhere else.
+        $registry = app(SettingsRegistry::class);
+
+        $this->assertTrue($registry->has('webhook-manager'));
+        $this->assertSame(Settings::class, $registry->provider('webhook-manager'));
+        $this->assertSame('webhook-manager', $registry->configPath('webhook-manager'));
+        $this->assertSame('manage webhook settings', $registry->permission('webhook-manager'));
+
+        // The permission is the one the service provider actually registers,
+        // not one derived from the namespace.
+        $this->assertContains('manage webhook settings', $this->registeredAbilities());
     }
 
     public function test_it_stores_a_changed_setting_and_applies_it_to_the_config(): void
     {
         $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
 
-        $this->assertSame(5, WebhookSetting::where('key', 'retry.max_attempts')->first()?->value);
+        $row = BrandSetting::query()
+            ->where('namespace', 'webhook-manager')
+            ->where('key', 'retry.max_attempts')
+            ->first();
+
+        $this->assertNotNull($row);
+        $this->assertSame(5, $row->value);
+        // Brand-scoped now, which the addon's own table never was.
+        $this->assertSame(app('brand-context')->currentId(), $row->brand_id);
+
         $this->assertSame(5, config('webhook-manager.retry.max_attempts'));
     }
 
@@ -93,34 +177,33 @@ class SettingsEditorTest extends CpTestCase
     public function test_it_deletes_the_override_when_a_value_goes_back_to_the_default(): void
     {
         $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
-        $this->assertSame(1, WebhookSetting::count());
+        $this->assertSame(1, $this->rowCount('retry.max_attempts'));
 
         // Not "stores 3" — stores nothing. A row pinning a value to what it
         // already was would freeze that default across package upgrades.
         $this->patchSettings(['retry.max_attempts' => 3])->assertRedirect();
 
-        $this->assertSame(0, WebhookSetting::count());
+        $this->assertSame(0, $this->rowCount('retry.max_attempts'));
 
         // And the running application has to agree in the same breath.
-        // `apply()` only writes the overrides that exist, so a deleted one used
-        // to leave the old value standing until the next boot: the row gone,
-        // the screen saying "default", and every reader still getting 5.
+        // `apply()` only writes the overrides that exist, so a deleted one
+        // would leave the old value standing until the next boot: the row
+        // gone, the screen saying "default", and every reader still getting 5.
         $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
     }
 
     public function test_the_page_it_redirects_to_shows_the_settings_as_they_now_stand(): void
     {
         // Keyed by the dotted path, flat — the same shape the form indexes by,
-        // so the screen can take the answer without knowing the config nesting.
-        // Read off the re-rendered page rather than out of a JSON body: the
-        // point of redirecting back is that the whole page is rebuilt, not
-        // just the form.
+        // so the screen never has to know how the config file is nested. Read
+        // off the re-rendered page rather than out of a JSON body: the point of
+        // redirecting back is that the whole page is rebuilt.
         $this->patchSettings([
             'retry.max_attempts' => '5',
             'logging.mask_headers' => ['authorization', ' cookie ', ''],
         ])->assertRedirect();
 
-        $values = $this->settingsProps()['values'];
+        $values = $this->section()['values'];
 
         $this->assertSame(5, $values['retry.max_attempts']);
         $this->assertSame(['authorization', 'cookie'], $values['logging.mask_headers']);
@@ -128,20 +211,19 @@ class SettingsEditorTest extends CpTestCase
 
     public function test_it_says_so_when_the_settings_were_saved(): void
     {
-        // The screen dropped its own success banner when saving moved onto the
-        // Inertia router: the confirmation is now core's flash toast, which
-        // only appears if the controller actually flashes one.
+        // The confirmation is core's flash toast, which only appears if the
+        // controller actually flashes one. It now names the addon, because the
+        // screen carries every addon's section at once.
         $this->patchSettings(['retry.max_attempts' => 5])
             ->assertRedirect()
-            ->assertSessionHas('success', __('webhook-manager::settings.saved'));
+            ->assertSessionHas('success');
     }
 
     public function test_a_rejected_field_comes_back_in_the_error_bag(): void
     {
         // An Inertia visit carries validation failures in the session error
-        // bag, keyed the same way the form indexes its controls, and `useForm`
-        // / `router`'s `onError` hands them straight to the field. A 422 with
-        // a JSON body would arrive as an unhandled rejection instead.
+        // bag, keyed the same way the form indexes its controls. A 422 with a
+        // JSON body would arrive as an unhandled rejection instead.
         $this->patchSettings(['retry.max_attempts' => 0])
             ->assertRedirect()
             ->assertSessionHasErrors('settings.retry.max_attempts');
@@ -158,13 +240,63 @@ class SettingsEditorTest extends CpTestCase
         $this->assertSame(['password', 'iban'], config('webhook-manager.logging.mask_payload_keys'));
     }
 
-    public function test_it_stores_retry_status_codes_as_integers(): void
+    public function test_a_saved_status_list_still_triggers_a_retry(): void
     {
-        // They are compared against a real response status, and `"429"` never
-        // equals `429`.
+        // A textarea hands back strings, and the planner compares a saved
+        // status list against a real response status with a strict `in_array`
+        // — `"429"` never equals `429`, so a stringified list silently stops
+        // retrying anything, which looks exactly like a healthy endpoint.
+        //
+        // `settingsGroups()` declares `items => 'integer'` for this field, and
+        // since brand-context 1.12.0 the layer honours it: the lines come back
+        // as integers. Asserted here rather than trusted, because the failure
+        // it prevents is invisible from the outside.
         $this->patchSettings(['retry.retry_on_status' => ['429', '503']])->assertRedirect();
 
         $this->assertSame([429, 503], config('webhook-manager.retry.retry_on_status'));
+
+        // Unsaved on purpose: the planner reads attributes, not rows, and the
+        // hook carries no `retry_strategy` of its own so the config decides.
+        $hook = new OutboundWebhook;
+        $delivery = new Delivery(['attempts' => 1]);
+
+        // `ok => true` on purpose: without it the classifier calls this an
+        // internal failure and the planner never reaches the status list at
+        // all, so the test would pass with the list ignored entirely.
+        $this->assertNotNull(
+            app(RetryPlanner::class)->plan($delivery, $hook, ['ok' => true, 'status' => 429]),
+            'A 429 is on the saved retry list but no retry was planned.',
+        );
+
+        // And a status that is not on the list still gets none, or the
+        // assertion above would hold for any response.
+        $this->assertNull(
+            app(RetryPlanner::class)->plan($delivery, $hook, ['ok' => true, 'status' => 418]),
+        );
+    }
+
+    public function test_an_integer_list_returns_to_its_packaged_default(): void
+    {
+        // This was written as a known gap and is now the assertion that the
+        // gap is closed. Until brand-context 1.12.0 the layer validated every
+        // line of a list as a string and stored it as one, so a field whose
+        // packaged default holds integers — `[500, 502, 503, 504]` here —
+        // could never satisfy "value equals the packaged default, delete the
+        // row". A row was written on the first save and stayed forever: the
+        // setting was pinned, a later release changing the shipped status list
+        // would not reach an install that once pressed Save, and nothing on
+        // screen said so.
+        //
+        // With `items => 'integer'` in `settingsGroups()` the layer keeps the
+        // type, so saving the form untouched stores nothing at all.
+        $this->patchSettings([])->assertRedirect();
+
+        $this->assertSame(
+            0,
+            $this->rowCount('retry.retry_on_status'),
+            'Saving the form untouched pinned the status list instead of leaving it on the packaged default.',
+        );
+        $this->assertSame(0, $this->rowCount('retry.max_attempts'));
     }
 
     public function test_it_refuses_zero_delivery_attempts(): void
@@ -173,14 +305,6 @@ class SettingsEditorTest extends CpTestCase
             ->assertSessionHasErrors('settings.retry.max_attempts');
 
         $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
-    }
-
-    public function test_it_refuses_a_strategy_that_is_not_one_of_the_offered_ones(): void
-    {
-        $this->patchSettings(['retry.strategy' => 'whenever'])
-            ->assertSessionHasErrors('settings.retry.strategy');
-
-        $this->assertSame('exponential', config('webhook-manager.retry.strategy'));
     }
 
     public function test_it_allows_a_rate_limit_of_zero_because_that_means_no_throttling(): void
@@ -198,7 +322,9 @@ class SettingsEditorTest extends CpTestCase
         // `config()` even if one somehow existed.
         $this->patchSettings(['storage.driver' => 'flat'])->assertRedirect();
 
-        $this->assertFalse(WebhookSetting::where('key', 'storage.driver')->exists());
+        $this->assertFalse(
+            BrandSetting::query()->where('namespace', 'webhook-manager')->where('key', 'storage.driver')->exists()
+        );
         $this->assertSame('eloquent', config('webhook-manager.storage.driver'));
     }
 
@@ -209,56 +335,45 @@ class SettingsEditorTest extends CpTestCase
             $this->cpUser(['view webhooks', 'manage outbound webhooks']),
         )->assertStatus(403);
 
-        $this->assertSame(0, WebhookSetting::count());
+        $this->assertSame(0, BrandSetting::query()->where('namespace', 'webhook-manager')->count());
         $this->assertSame(3, config('webhook-manager.retry.max_attempts'));
+    }
+
+    public function test_the_shared_screen_hides_the_section_without_the_permission(): void
+    {
+        // Statamic core hides what you cannot reach rather than greying it out,
+        // and a read-only section invites a question nobody on the site can
+        // answer. Asserted from this side too: the addon declares the
+        // permission, so the addon is where a wrong one would be noticed.
+        $sections = $this->actingAs($this->cpUser(['view webhooks']))
+            ->withHeaders($this->inertiaHeaders())
+            ->get(cp_route('brand-context.settings.index'))
+            ->assertOk()
+            ->json('props.sections');
+
+        $this->assertSame([], array_filter(
+            $sections,
+            fn (array $section) => $section['namespace'] === 'webhook-manager',
+        ));
     }
 
     public function test_it_hands_the_page_the_form_definition_and_the_current_values(): void
     {
         $this->patchSettings(['retry.max_attempts' => 5])->assertRedirect();
 
-        $props = $this->settingsProps();
+        $section = $this->section();
 
-        $this->assertNotEmpty($props['groups']);
-        $this->assertSame(5, $props['values']['retry.max_attempts']);
+        $this->assertNotEmpty($section['groups']);
+        $this->assertSame(5, $section['values']['retry.max_attempts']);
 
         // Every field the form draws has a value handed to it. A field without
         // one renders an empty control that saves an empty value over a good
         // default the first time somebody presses Save.
-        foreach ($props['groups'] as $group) {
+        foreach ($section['groups'] as $group) {
             foreach ($group['fields'] as $field) {
-                $this->assertArrayHasKey($field['key'], $props['values']);
+                $this->assertArrayHasKey($field['key'], $section['values']);
             }
         }
-    }
-
-    public function test_it_does_not_print_the_alert_credential_into_the_page(): void
-    {
-        // The diagnostics panel prints the resolved config tree so an operator
-        // can see what the installation actually resolved to. The chat alert
-        // URL *is* the credential — anybody holding it can post into that
-        // channel — and printed verbatim it lands in screen shares,
-        // screenshots and every front-end error report.
-        //
-        // Asserted against the whole page payload, not against the one prop:
-        // a secret that reappears somewhere else in the props is the same
-        // leak, and a test aimed at `rawConfig` alone would miss it.
-        $url = 'https://hooks.slack.com/services/T000/B000/xoxbSuperSecretValue';
-        config()->set('webhook-manager.alerts.slack.webhook_url', $url);
-
-        $response = $this->withHeaders($this->inertiaHeaders())
-            ->get(cp_route('webhook-manager.settings'))
-            ->assertOk();
-
-        $this->assertStringNotContainsString($url, $response->getContent());
-        $this->assertStringNotContainsString('xoxbSuperSecretValue', $response->getContent());
-
-        // Masked, not dropped. The operator still has to be able to tell that
-        // a value is set and to recognise which one it is.
-        $raw = $response->json('props.rawConfig');
-        $this->assertStringContainsString('http', $raw);
-        $this->assertStringContainsString('alue', $raw);
-        $this->assertStringContainsString('\u2022', $raw);
     }
 
     public function test_every_field_group_and_option_is_actually_translated(): void
@@ -277,7 +392,7 @@ class SettingsEditorTest extends CpTestCase
         foreach (['en', 'de'] as $locale) {
             app()->setLocale($locale);
 
-            foreach (Settings::groups() as $group) {
+            foreach (Settings::settingsGroups() as $group) {
                 $this->assertUntranslatedKeysAbsent($group, $locale);
 
                 foreach ($group['fields'] as $field) {
@@ -311,49 +426,41 @@ class SettingsEditorTest extends CpTestCase
         }
     }
 
-    public function test_it_does_not_bake_overrides_into_a_cached_config(): void
-    {
-        // `config:cache` boots the app and dumps the resolved config to disk.
-        // An override written into that dump outlives the row it came from:
-        // deleting the setting afterwards has no effect at all until somebody
-        // runs `config:clear`. It also poisons the "back to default" rule —
-        // the next boot reads the baked file as the packaged default, so a
-        // value reset to the file's own default is stored as a row instead of
-        // being deleted, and that key is then stuck for good.
-        WebhookSetting::create(['key' => 'retry.max_attempts', 'value' => 9]);
-
-        $packaged = config('webhook-manager.retry.max_attempts');
-
-        $settings = app(Settings::class);
-        $settings->forget();
-
-        // What the config-cache build looks like from in here.
-        $argv = $_SERVER['argv'] ?? [];
-        $_SERVER['argv'] = ['artisan', 'config:cache'];
-
-        try {
-            $settings->apply();
-        } finally {
-            $_SERVER['argv'] = $argv;
-        }
-
-        $this->assertSame(
-            $packaged,
-            config('webhook-manager.retry.max_attempts'),
-            'The config-cache build must dump the file value, not the override.',
-        );
-    }
-
     public function test_it_applies_stored_settings_on_a_fresh_boot(): void
     {
-        WebhookSetting::create(['key' => 'features.inbound', 'value' => false]);
+        BrandSetting::query()->create([
+            'brand_id' => app('brand-context')->currentId(),
+            'namespace' => 'webhook-manager',
+            'key' => 'features.inbound',
+            'value' => false,
+        ]);
 
         // The overrides are read once and cached; a queue worker booting later
-        // must still see them, which is the whole reason apply() runs in
-        // bootAddon rather than in a Control-Panel middleware.
-        app(Settings::class)->forget();
-        app(Settings::class)->apply();
+        // must still see them, which is the whole reason the shared manager
+        // applies from `booted()` rather than from a Control-Panel middleware.
+        $settings = app(SettingsManager::class);
+        $settings->forget('webhook-manager');
+        $settings->apply(force: true);
 
         $this->assertFalse(config('webhook-manager.features.inbound'));
+    }
+
+    public function test_a_row_left_over_from_an_older_release_cannot_reach_the_config(): void
+    {
+        // `storage.driver` and the alert credentials are one string away from
+        // an arbitrary config path, so a row for a key the addon no longer
+        // offers must be inert rather than authoritative.
+        BrandSetting::query()->create([
+            'brand_id' => app('brand-context')->currentId(),
+            'namespace' => 'webhook-manager',
+            'key' => 'storage.driver',
+            'value' => 'flat',
+        ]);
+
+        $settings = app(SettingsManager::class);
+        $settings->forget('webhook-manager');
+        $settings->apply(force: true);
+
+        $this->assertSame('eloquent', config('webhook-manager.storage.driver'));
     }
 }

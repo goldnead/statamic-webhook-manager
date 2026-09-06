@@ -148,6 +148,19 @@ abstract class TestCase extends BaseTestCase
         ];
     }
 
+    /**
+     * Where the installed statamic-brand-context package lives.
+     *
+     * Resolved off the provider rather than written out, because the suite's
+     * shared settings screen, its routes and its Vue page all live in that
+     * package and several tests here read them — this addon's fields have to
+     * reach a screen this addon does not own.
+     */
+    protected function brandContextPath(): string
+    {
+        return dirname((new \ReflectionClass(BrandContextServiceProvider::class))->getFileName(), 2);
+    }
+
     protected function defineDatabaseMigrations(): void
     {
         // brand-context migrations first — they create the `brands` table + the

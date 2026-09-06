@@ -12,7 +12,11 @@
 return [
 
     'title' => 'Webhook-Manager-Einstellungen',
-    'intro' => 'Diese Einstellungen gelten für die ganze Installation, nicht für eine Marke. Alles Unangetastete folgt :path — ein geänderter Wert wird als Abweichung gespeichert, ein zurückgesetzter Wert löscht sie wieder.',
+    // Steht auf dem Diagnose-Bildschirm über dem aufgelösten Konfigurationsbaum.
+    // Die frühere Fassung sagte, die Einstellungen gälten für die ganze
+    // Installation und nicht für eine Marke — seit der Umstellung auf die
+    // gemeinsame Einstellungs-Schicht ist genau das Gegenteil richtig.
+    'intro' => 'Alles, was nicht über die Einstellungen geändert wurde, kommt aus :path.',
     'save' => 'Speichern',
     'saving' => 'Speichere…',
     'saved' => 'Einstellungen gespeichert.',

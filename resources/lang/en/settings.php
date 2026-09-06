@@ -14,7 +14,11 @@
 return [
 
     'title' => 'Webhook Manager Settings',
-    'intro' => 'These settings apply to the whole installation, not to one brand. Anything left untouched follows :path — changing a value here stores the difference, and setting it back to the shipped value removes it again.',
+    // Sits on the Debug screen above the resolved config tree. The previous
+    // wording said these settings apply to the whole installation and not to
+    // one brand — since the move to the shared settings layer the opposite is
+    // true.
+    'intro' => 'Anything not changed on the settings screen comes from :path.',
     'save' => 'Save',
     'saving' => 'Saving…',
     'saved' => 'Settings saved.',

@@ -17,7 +17,6 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\OutboundController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\OverviewController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\PresetController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\RuleController;
-use Goldnead\WebhookManager\Http\Controllers\Cp\SettingsController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\TemplateController;
 use Illuminate\Support\Facades\Route;
 
@@ -90,14 +89,29 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::delete('/{webhookTemplate}', [TemplateController::class, 'destroy'])->name('destroy');
     });
 
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
-    // JSON, not an Inertia redirect: the page takes the saved state back from
-    // the answer (an integer as an integer, a value returned to its default as
-    // the default), and a `back()` would only re-render whatever the next GET
-    // happened to resolve.
-    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
-    Route::post('/settings/storage', [SettingsController::class, 'switchStorage'])->name('settings.storage');
+    /*
+     * The settings screen moved to the suite's shared one in
+     * statamic-brand-context. This route stays as a redirect rather than being
+     * deleted: `/cp/webhook-manager/settings` is in bookmarks, in the docs and
+     * in the sidebar, and a 404 there tells nobody where the settings went.
+     *
+     * A redirect, not a nav item pointed straight at the shared route: one
+     * place in this package knows the new address, and both the sidebar and
+     * every old link go through it.
+     *
+     * `cp_route()` is resolved inside the closure, not while the file is read.
+     * Route files are evaluated before every provider has registered its own,
+     * and route:cache evaluates them all in one pass — resolving a sibling
+     * package's route name at file level would throw during caching on the
+     * unlucky ordering.
+     */
+    Route::get('/settings', fn () => redirect(cp_route('brand-context.settings.index')))->name('settings');
     Route::get('/debug', [DebugController::class, 'index'])->name('debug');
+    // The storage driver switch, which was never a setting: it moves the stored
+    // webhook configuration between stores and only then flips the flag. It
+    // came over from the deleted SettingsController with the Debug screen and
+    // keeps its own permission (`manage webhook settings`).
+    Route::post('/debug/storage', [DebugController::class, 'switchStorage'])->name('debug.storage');
 
     /*
      * Action endpoints (POST handlers for the test/replay/preview/simulate

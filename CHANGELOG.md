@@ -1,5 +1,47 @@
 # Changelog
 
+## 2.8.0 — 2026-09-06
+
+### Die Einstellungen liegen jetzt auf dem gemeinsamen Bildschirm der Suite
+
+Dieses Addon hatte einen eigenen Einstellungs-Bildschirm: eine Tabelle, ein
+Model, ein Request, ein Controller und eine Vue-Seite, zusammen rund 900 Zeilen
+für eine Mechanik, die `automations` und `leadhub` unabhängig davon je noch
+einmal gebaut hatten. Die Mechanik liegt jetzt einmal in
+`goldnead/statamic-brand-context`; hier bleibt nur die Feldliste
+(`Support\Settings`), die sich im `boot()` bei der gemeinsamen Registry
+anmeldet.
+
+Was sich für einen Betreiber ändert:
+
+- **Ein Bildschirm für die ganze Suite.** Jedes Addon ist ein Abschnitt darauf.
+  Der Sidebar-Eintrag „Webhooks → Einstellungen" führt weiterhin dorthin, und
+  `/cp/webhook-manager/settings` leitet um — Lesezeichen bleiben gültig.
+- **Einstellungen sind ab jetzt markenbezogen.** Auf einer Mehrmarken-
+  Installation teilten sich vorher zwei Marken einen Wert, weil die alte
+  Tabelle keine Markenspalte hatte.
+- **Bestehende Werte wandern mit.** `php artisan migrate` überträgt jede Zeile
+  aus `webhook_settings` nach `brand_settings` auf die Standardmarke. Die alte
+  Tabelle bleibt eine Minor-Version stehen, damit ein Rollback nichts verliert.
+- **Was keine Einstellung war, ist auf den Debug-Bildschirm gezogen:** die vom
+  Deployment vorgegebenen Werte, der aufgelöste Config-Baum mit maskierten
+  Geheimnissen und der Umschalter für den Speichertreiber. Der Debug-Bildschirm
+  ist dafür jetzt auch mit `manage webhook settings` erreichbar, nicht nur mit
+  `use webhook debug tools` — die Debug-Werkzeuge selbst bleiben gesperrt.
+
+### Behoben
+
+- Eine gespeicherte Status-Liste schaltete die Wiederholung stumm ab. Ein
+  Textfeld gibt Zeichenketten zurück; `RetryPlanner` verglich sie streng gegen
+  einen echten HTTP-Status, und `"429"` ist nie `429`. Zwei Reparaturen: der
+  Planer wandelt die Liste beim Lesen in Ganzzahlen — das konnte auch eine von
+  Hand bearbeitete `config/webhook-manager.php` schon vorher auslösen —, und
+  die gemeinsame Schicht kennt seit `brand-context` 1.12.0 einen Typ je
+  Listeneintrag, den `settingsGroups()` hier mit `items => 'integer'`
+  deklariert. Damit ist die Liste auch wieder auf ihren Paket-Standard
+  zurücksetzbar; vorher blieb sie nach dem ersten Speichern für immer
+  festgeschrieben, und ein späteres Release konnte sie nicht mehr verschieben.
+
 ## 2.7.0 — 2026-09-05
 
 ### Die Übersicht zeigt die Webhooks selbst, nicht nur vier Zahlen

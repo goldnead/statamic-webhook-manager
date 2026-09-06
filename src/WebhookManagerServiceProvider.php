@@ -2,6 +2,7 @@
 
 namespace Goldnead\WebhookManager;
 
+use Goldnead\BrandContext\Settings\SettingsRegistry;
 use Goldnead\WebhookManager\Actions\Cp\DeleteOutboundWebhook;
 use Goldnead\WebhookManager\Actions\Cp\DisableOutboundWebhook;
 use Goldnead\WebhookManager\Actions\Cp\EnableOutboundWebhook;
@@ -199,7 +200,7 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     public function bootAddon(): void
     {
         $this->bootWebhookConfig();
-        $this->bootSettingsOverrides();
+        $this->bootSettingsRegistration();
         $this->bootMigrations();
         $this->bootBindings();
         $this->bootWebhookPublishables();
@@ -503,23 +504,28 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
     }
 
     /**
-     * Put the settings changed in the Control Panel onto the live config.
+     * Announce this addon's settings to the suite's shared settings layer.
      *
-     * Directly after the config file is merged and before anything reads it:
-     * the feature toggles gate navigation and inbound route registration, both
-     * of which happen further down this same method, and a queue worker booting
-     * this addon has to see the operator's retry and HTTP values without any
-     * Control-Panel middleware having run.
+     * That is the whole of it now. The registry hands {@see Settings} to
+     * `statamic-brand-context`, which owns the table, the screen, the
+     * validation, the routes and the config override — and which applies the
+     * current brand's overrides itself, per brand, which this addon's own
+     * version could not do.
      *
-     * Not everything can be reached from here. `bootSchedule()` runs *before*
+     * Registration only, no `apply()`. Pushing the values onto the config from
+     * here would race the shared manager's own baseline snapshot: whichever ran
+     * second would record the first one's override as the packaged default, and
+     * a value reset to its default would then be stored as a row instead of
+     * deleted.
+     *
+     * Directly after the config file is merged, and before anything reads it.
+     * Not everything can be reached even so: `bootSchedule()` runs *before*
      * `bootAddon()` in Statamic's AddonServiceProvider, which is why
      * `retry.schedule` is deliberately not an editable setting.
      */
-    protected function bootSettingsOverrides(): void
+    protected function bootSettingsRegistration(): void
     {
-        $this->app->singleton(Settings::class);
-
-        $this->app->make(Settings::class)->apply();
+        $this->app->make(SettingsRegistry::class)->register(Settings::class);
     }
 
     protected function bootMigrations(): void
@@ -682,6 +688,13 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
                 $children[] = $nav->item(__('webhook-manager::nav.templates'))->route('webhook-manager.templates.index')->can('manage webhook templates');
             }
 
+            // Kept, not removed, and still pointing at this addon's own URL.
+            // The settings themselves now live on the suite's shared screen,
+            // but the item stays here because that is where somebody looks for
+            // them — under Webhooks, next to the screens they configure. The
+            // route behind it is a redirect (routes/cp.php), so the one URL
+            // that has been bookmarked and linked for a year keeps working and
+            // there is exactly one place that knows where settings went.
             $children[] = $nav->item(__('webhook-manager::nav.settings'))->route('webhook-manager.settings')->can('manage webhook settings');
 
             if ($enabled('debug_tools')) {

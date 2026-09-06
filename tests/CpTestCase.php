@@ -43,6 +43,26 @@ abstract class CpTestCase extends TestCase
             ->prefix('cp')
             ->name('statamic.cp.')
             ->group(__DIR__.'/../routes/cp.php');
+
+        // The suite's shared settings screen, from statamic-brand-context. Its
+        // provider pushes these the same way Statamic pushes ours — inside the
+        // boot lifecycle testbench does not run — so they are registered by
+        // hand here too. Without them `/cp/webhook-manager/settings` redirects
+        // to a route name that does not exist, which is a failure of the test
+        // bed rather than of the redirect.
+        $router->middleware([StartSession::class, SubstituteBindings::class])
+            ->prefix('cp')
+            ->name('statamic.cp.')
+            ->group($this->brandContextPath().'/routes/cp-settings.php');
+
+        // `statamic.cp.addons.index` is a core CP route
+        // (statamic/cms routes/cp.php: `Route::get('addons', …)`), and the
+        // shared settings screen points its empty state at it. testbench
+        // registers none of core's CP routes, so it is stubbed rather than
+        // faked: nothing in this suite follows it, and without it every render
+        // of that screen dies on a route lookup that always succeeds in a real
+        // install.
+        $router->get('cp/addons', fn () => '')->name('statamic.cp.addons.index');
     }
 
     /**

@@ -31,7 +31,18 @@ class RetryPlanner
         $maxAttempts = (int) ($strategy['max_attempts'] ?? config('webhook-manager.retry.max_attempts', 3));
         $base = (int) ($strategy['base_delay_seconds'] ?? config('webhook-manager.retry.base_delay_seconds', 30));
         $cap = (int) ($strategy['max_delay_seconds'] ?? config('webhook-manager.retry.max_delay_seconds', 3600));
-        $allowedStatus = (array) ($strategy['retry_on_status'] ?? config('webhook-manager.retry.retry_on_status', [500, 502, 503, 504]));
+        // `intval` on the way in, because the comparison below is strict and
+        // `"429"` never equals `429`. The list reaches here from three places
+        // that can all hand back strings: a host-edited
+        // `config/webhook-manager.php`, the hook's own `retry_strategy` JSON,
+        // and — since the settings screen moved to the suite's shared layer —
+        // the settings form, whose list control has no per-item type and
+        // stores every line as a string. Without this cast a saved status list
+        // silently stops matching anything and nothing is ever retried.
+        $allowedStatus = array_map(
+            'intval',
+            (array) ($strategy['retry_on_status'] ?? config('webhook-manager.retry.retry_on_status', [500, 502, 503, 504]))
+        );
         $retryNetwork = (bool) ($strategy['retry_on_network_errors'] ?? config('webhook-manager.retry.retry_on_network_errors', true));
 
         if ($type === 'none' || $maxAttempts <= 0) {

@@ -12,7 +12,6 @@ import OutboundEdit from './pages/outbound/Edit.vue';
 import DeliveriesIndex from './pages/deliveries/Index.vue';
 import DeliveriesShow from './pages/deliveries/Show.vue';
 import LogsIndex from './pages/logs/Index.vue';
-import SettingsIndex from './pages/settings/Index.vue';
 import DebugIndex from './pages/debug/Index.vue';
 import InboundIndex from './pages/inbound/Index.vue';
 import InboundEdit from './pages/inbound/Edit.vue';
@@ -38,7 +37,10 @@ Statamic.booting(() => {
     Statamic.$inertia.register('webhook-manager::Deliveries/Index', DeliveriesIndex);
     Statamic.$inertia.register('webhook-manager::Deliveries/Show', DeliveriesShow);
     Statamic.$inertia.register('webhook-manager::Logs/Index', LogsIndex);
-    Statamic.$inertia.register('webhook-manager::Settings/Index', SettingsIndex);
+    // No `Settings/Index` any more: the settings screen is the suite's shared
+    // one in statamic-brand-context, which registers its own page. What was on
+    // the old screen and is not a setting (the deployment-owned values, the
+    // resolved config tree, the storage driver) moved to `Debug/Index`.
     Statamic.$inertia.register('webhook-manager::Debug/Index', DebugIndex);
     Statamic.$inertia.register('webhook-manager::Inbound/Index', InboundIndex);
     Statamic.$inertia.register('webhook-manager::Inbound/Edit', InboundEdit);

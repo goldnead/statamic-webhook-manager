@@ -6,7 +6,7 @@ import InboundEdit from '../../resources/js/pages/inbound/Edit.vue';
 import RulesEdit from '../../resources/js/pages/rules/Edit.vue';
 import TemplatesEdit from '../../resources/js/pages/templates/Edit.vue';
 import IntegrationSetup from '../../resources/js/pages/integrations/Setup.vue';
-import SettingsIndex from '../../resources/js/pages/settings/Index.vue';
+import DebugIndex from '../../resources/js/pages/debug/Index.vue';
 
 /**
  * Does a rejected input actually reach the screen?
@@ -147,34 +147,31 @@ const pages = {
         // handle, so the field list is part of the contract.
         keys: ['name', 'trigger_type', 'slack_url'],
     },
-    'settings/Index': {
-        component: SettingsIndex,
+    'debug/Index': {
+        component: DebugIndex,
+        // Shape mirrors DebugController::index(). The settings form itself is
+        // the suite's shared screen now; what stayed behind is the storage
+        // driver switch, which is the one thing on this page that can be
+        // refused and has no field to show it in.
         props: {
-            // Shape mirrors SettingsController::index(); the form is generated
-            // from `groups`, so one group with one field is enough to render it.
-            groups: [{
-                title: 'Retry defaults',
-                description: 'What happens after a delivery fails.',
-                fields: [{
-                    key: 'retry.max_attempts',
-                    type: 'integer',
-                    label: 'Maximum attempts',
-                    description: '',
-                    nullable: false,
-                    min: 1,
-                }],
-            }],
-            values: { 'retry.max_attempts': 3 },
-            updateUrl: '/cp/webhook-manager/settings',
-            canEdit: true,
+            triggers: [],
+            resolvers: [],
+            previewUrl: null,
+            simulateUrl: null,
+            canManageSettings: true,
             environment: [],
             rawConfig: '{}',
             configFilePath: '/app/config/webhook-manager.php',
+            settingsUrl: '/cp/webhook-manager/settings',
             storage: {
                 driver: 'flat',
+                driver_label: 'Flat file (YAML)',
+                source: 'config',
+                flat_path: '/app/content/webhooks',
                 target: 'eloquent',
+                target_label: 'Database',
                 counts: {},
-                switch_url: '/cp/webhook-manager/settings/storage',
+                switch_url: '/cp/webhook-manager/debug/storage',
             },
         },
         keys: ['driver'],

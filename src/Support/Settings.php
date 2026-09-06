@@ -2,25 +2,34 @@
 
 namespace Goldnead\WebhookManager\Support;
 
-use Goldnead\WebhookManager\Domain\Settings\Models\WebhookSetting;
+use Goldnead\BrandContext\Contracts\ProvidesSettings;
+use Goldnead\BrandContext\Settings\SettingsRegistry;
+use Goldnead\WebhookManager\Http\Controllers\Cp\DebugController;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The settings an operator may change from the Control Panel, and the one place
  * that knows what those are.
  *
- * Three readers share this definition — the boot-time override, the validation
- * on the way in, and the screen that draws the form — so a setting is added by
- * adding one entry to {@see groups()} and nothing else falls out of step. The
- * screen in particular is generated from here rather than from a hand-kept list
- * of labels, which is what the read-only version was: a second description of
- * `config/webhook-manager.php`, down to its own copy of every default
- * (`?? 30`, `?? 'exponential'`, `?? false`). Those copies had already drifted —
- * the screen's fallback for `debug.expose_full_response_in_dev` is `false`
- * where the config file ships `true`.
+ * **Only the field list lives here now.** The table, the form, the validation,
+ * the routes and the config override come from the suite's shared settings
+ * layer in `statamic-brand-context`; this class is the one part of the old
+ * mechanism that was legitimately the addon's own, and it is registered with
+ * {@see SettingsRegistry} in the service
+ * provider's boot. Everything else that used to sit next to it — a model on
+ * `webhook_settings`, an `UpdateSettingsRequest`, a `SettingsController`, a Vue
+ * page — is gone.
+ *
+ * Three readers still share this definition — the config override, the
+ * validation on the way in, and the screen that draws the form — so a setting
+ * is added by adding one entry to {@see settingsGroups()} and nothing else
+ * falls out of step. The screen in particular is generated from here rather
+ * than from a hand-kept list of labels, which is what the read-only version
+ * was: a second description of `config/webhook-manager.php`, down to its own
+ * copy of every default (`?? 30`, `?? 'exponential'`, `?? false`). Those copies
+ * had already drifted — the screen's fallback for
+ * `debug.expose_full_response_in_dev` is `false` where the config file ships
+ * `true`.
  *
  * **Overrides, not a copy.** Only keys somebody actually changed are stored.
  * Everything else keeps following `config/webhook-manager.php`, so upgrading
@@ -50,8 +59,8 @@ use Illuminate\Support\Facades\DB;
  *   class names on top of that, and the config file already warns what adding
  *   `web` to it does.
  * - `retry.schedule`: Statamic's `AddonServiceProvider::boot()` calls
- *   `bootSchedule()` *before* `bootAddon()`, so the flag is read before
- *   {@see apply()} has put anything on the config. A control that takes effect
+ *   `bootSchedule()` *before* `bootAddon()`, so the flag is read before the
+ *   shared layer has put anything on the config. A control that takes effect
  *   only after the next deploy is worse than no control.
  * - `event_triggers`: closures and class-strings, i.e. code.
  * - `security.hash_algorithms`: which algorithms exist is a property of PHP and
@@ -59,14 +68,64 @@ use Illuminate\Support\Facades\DB;
  *   selectable algorithm that fails at signing time, far away from this screen.
  *   The one thing that *is* a choice — which of them is the default — is here.
  * - The storage panel's driver, record counts and source: those are a detection
- *   plus an action, not a setting, and stay where they are.
+ *   plus an action, not a setting. They moved to the Debug screen with the
+ *   rest of the old page's non-settings furniture — see
+ *   {@see DebugController}.
+ *
+ * **Two arguments the deleted readers carried**, restated here because the code
+ * that made them is gone and the shared layer makes them in its own words:
+ *
+ * - `apply()` returned early during `php artisan config:cache`. An override
+ *   baked into `bootstrap/cache/config.php` outlives the row it came from, and
+ *   the next boot reads the baked file as the packaged default — so a value
+ *   reset to its default is stored instead of deleted, and that key is stuck.
+ * - The packaged default is what the config *files* say, snapshotted before
+ *   anything stored covers it, so a host that edited its own published
+ *   `config/webhook-manager.php` can return to *its* value rather than to the
+ *   copy inside the package.
  */
-class Settings
+class Settings implements ProvidesSettings
 {
-    /** Cache key for the stored overrides. */
-    public const CACHE_KEY = 'webhook-manager.settings.overrides';
+    /**
+     * The namespace every stored row of this addon carries.
+     *
+     * `webhook-manager`, the addon's own handle: it is already the config root,
+     * the lang namespace, the CP route prefix, the Inertia page prefix and the
+     * `extra.statamic.slug` in composer.json. Anything else would be a second
+     * name for this package, and this one is stamped on every row in
+     * `brand_settings` — renaming it later orphans every override an
+     * installation has made, so it is chosen to match what the addon already
+     * calls itself everywhere else and never changed again.
+     */
+    public static function settingsNamespace(): string
+    {
+        return 'webhook-manager';
+    }
 
-    public function __construct(protected Application $app) {}
+    /**
+     * The config root unset values keep following.
+     *
+     * `config/webhook-manager.php`, merged under the key `webhook-manager` by
+     * `bootWebhookConfig()`. Read off the provider rather than assumed equal to
+     * the namespace — they happen to match here, which is not a rule.
+     */
+    public static function settingsConfigPath(): string
+    {
+        return 'webhook-manager';
+    }
+
+    /**
+     * The permission that gates this addon's section of the shared screen.
+     *
+     * Exactly the string the service provider registers and the nav item asks
+     * for. It is assigned to real user groups on installed sites; a name
+     * derived from the namespace (`manage webhook-manager settings`) would
+     * match nothing and take the section away without saying why.
+     */
+    public static function settingsPermission(): string
+    {
+        return 'manage webhook settings';
+    }
 
     /**
      * The editable settings, in the order and grouping the screen shows them.
@@ -79,7 +138,7 @@ class Settings
      *
      * @return array<int, array{title: string, description: string, fields: array<int, array<string, mixed>>}>
      */
-    public static function groups(): array
+    public static function settingsGroups(): array
     {
         return [
             [
@@ -236,214 +295,5 @@ class Settings
             'value' => $value,
             'label' => $value,
         ], $algorithms);
-    }
-
-    /**
-     * Every editable field, flattened.
-     *
-     * @return array<string, array<string, mixed>> key => field
-     */
-    public static function fields(): array
-    {
-        $fields = [];
-
-        foreach (static::groups() as $group) {
-            foreach ($group['fields'] as $field) {
-                $fields[$field['key']] = $field;
-            }
-        }
-
-        return $fields;
-    }
-
-    /**
-     * The stored overrides, keyed by dotted path.
-     *
-     * Cached because this is read on every boot, including the boot of every
-     * queue worker that processes a delivery. A missing table (installed but not
-     * migrated) or an unreachable cache is not fatal: no overrides means the
-     * config file, which is exactly the behaviour before this screen existed.
-     *
-     * @return array<string, mixed>
-     */
-    public function overrides(): array
-    {
-        try {
-            return Cache::rememberForever(self::CACHE_KEY, fn () => $this->read());
-        } catch (\Throwable) {
-            try {
-                return $this->read();
-            } catch (\Throwable) {
-                return [];
-            }
-        }
-    }
-
-    /** @return array<string, mixed> */
-    protected function read(): array
-    {
-        return WebhookSetting::query()
-            ->pluck('value', 'key')
-            ->all();
-    }
-
-    /**
-     * Push the stored overrides onto the live config.
-     *
-     * Overriding the config rather than teaching every reader about this class
-     * is the whole point: `config('webhook-manager.retry.max_attempts')` is read
-     * from the delivery engine, the retry planner, the console commands and the
-     * jobs, and a second source of truth next to it would be one missed call
-     * site away from a setting that looks changed and is not.
-     */
-    public function apply(): void
-    {
-        // `config:cache` boots the app fully and then dumps the whole resolved
-        // config to `bootstrap/cache/config.php`. Applying here during that
-        // build would bake the overrides into the cached file, and a baked
-        // override outlives the row it came from: deleting a setting would
-        // then have no effect at all until somebody ran `config:clear`.
-        //
-        // It would also poison the baseline below. On the next boot
-        // `mergeConfigFrom` is skipped (the config is cached), so
-        // `config('webhook-manager')` *is* the baked file — the snapshot would
-        // record the override as the packaged default, and a value reset to
-        // the file's default would then be stored as a row instead of deleted,
-        // which is precisely the property this class promises.
-        //
-        // Skipping is safe: the cached config keeps the file values, and every
-        // process that reads it applies the overrides on its own boot.
-        if (method_exists($this->app, 'runningConsoleCommand') && $this->app->runningConsoleCommand('config:cache')) {
-            return;
-        }
-
-        // Snapshot what the config *files* say, before anything stored covers
-        // it. This is what "back to default" means on this install: the package
-        // config as the host published and edited it, not the copy inside the
-        // package — a site that changed a default in its own
-        // `config/webhook-manager.php` must be able to return to that value.
-        $this->baseline ??= config('webhook-manager', []);
-
-        $overrides = $this->overrides();
-
-        // The common case is an install that never opened the screen, and this
-        // runs on every boot — including every queue worker's. Nothing stored,
-        // nothing to do, and in particular no reason to build the field
-        // definition, which translates every label in it.
-        if ($overrides === []) {
-            return;
-        }
-
-        $fields = static::fields();
-
-        foreach ($overrides as $key => $value) {
-            // Only keys this class offers. A row left behind by an older release
-            // must not be able to set an arbitrary config path — `storage.driver`
-            // and the alert credentials are one string away otherwise.
-            if (! isset($fields[$key])) {
-                continue;
-            }
-
-            config()->set('webhook-manager.'.$key, $value);
-        }
-    }
-
-    /**
-     * The value on screen for one field: the override if there is one, else
-     * whatever the config file says.
-     */
-    public function value(string $key): mixed
-    {
-        return config('webhook-manager.'.$key);
-    }
-
-    /**
-     * Write the changed settings.
-     *
-     * A value equal to the packaged default is *deleted* rather than stored, so
-     * "back to default" is reachable from the form and the table does not
-     * accumulate rows that pin a value to what it already was.
-     *
-     * @param  array<string, mixed>  $values  key => value, keys from {@see fields()}
-     */
-    public function save(array $values): void
-    {
-        $fields = static::fields();
-
-        // All of it or none of it. A failure halfway through leaves a settings
-        // table that matches no coherent state, and `update()` answers with
-        // that half-written state as though it were the truth.
-        DB::transaction(function () use ($values, $fields): void {
-            $this->write($values, $fields);
-        });
-
-        $this->forget();
-        $this->apply();
-    }
-
-    /**
-     * @param  array<string, mixed>  $values
-     * @param  array<string, mixed>  $fields
-     */
-    protected function write(array $values, array $fields): void
-    {
-        foreach ($values as $key => $value) {
-            if (! isset($fields[$key])) {
-                continue;
-            }
-
-            if ($value === $this->packagedDefault($key)) {
-                WebhookSetting::query()->where('key', $key)->delete();
-
-                // Put the file's value back on the live config by hand.
-                // `apply()` below only writes the overrides that exist, so a
-                // deleted one would leave the old value standing in this
-                // process — the row is gone, the screen says "default", and
-                // everything reading `config()` until the next boot still gets
-                // the value that was just taken away.
-                config()->set('webhook-manager.'.$key, $value);
-
-                continue;
-            }
-
-            WebhookSetting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
-        }
-    }
-
-    /** Drop the cached overrides so the next read sees the table. */
-    public function forget(): void
-    {
-        try {
-            Cache::forget(self::CACHE_KEY);
-        } catch (\Throwable) {
-            // No cache store is a running-without-cache install, not a failure
-            // to save: `read()` then hits the table on every call anyway.
-        }
-    }
-
-    /**
-     * The config as the files have it, taken before any override was applied.
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $baseline = null;
-
-    /**
-     * What the config files say, ignoring any override already applied to the
-     * live config.
-     *
-     * Never `config()`: by the time anything asks, {@see apply()} has already
-     * overwritten the live value with the override, so comparing against it
-     * would report every stored value as equal to the default and delete the
-     * lot on the next save. The package file is the last resort, for a call
-     * that happens before `apply()` ever ran.
-     */
-    protected function packagedDefault(string $key): mixed
-    {
-        if ($this->baseline === null) {
-            $this->baseline = require __DIR__.'/../../config/webhook-manager.php';
-        }
-
-        return data_get($this->baseline, $key);
     }
 }

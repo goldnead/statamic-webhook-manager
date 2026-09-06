@@ -99,7 +99,7 @@ class StorageDriverManagerTest extends TestCase
             $this->app->make(OutboundWebhookRepositoryInterface::class),
         );
 
-        // This is exactly what SettingsController::switchStorage does.
+        // This is exactly what DebugController::switchStorage does.
         $this->app->make(StorageMigrator::class)->migrate('eloquent', 'flat');
         $this->manager()->setDriver('flat');
 
