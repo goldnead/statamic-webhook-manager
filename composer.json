@@ -60,7 +60,7 @@
             "description": "Central integration layer for inbound and outbound webhooks with deliveries, retries, rules and templates.",
             "url": "https://github.com/goldnead/statamic-webhook-manager",
             "developer": "Adrian Goldner",
-            "developer-url": "https://gldnr.studio"
+            "developer-url": "https://adriangoldner.dev"
         },
         "laravel": {
             "providers": [
