@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.8.2 — 2026-09-07
+
+### Geändert: `goldnead/statamic-brand-context` ab 1.13
+
+Der gemeinsame Einstellungs-Bildschirm, auf den dieses Addon mit 2.8.0 gezogen ist, arbeitet
+unter älteren Fassungen nicht verlässlich. Auf einer Installation mit einer einzigen Marke
+wurden die Werte der zuletzt angemeldeten Addons gar nicht auf die Config gelegt — beim
+Nachmessen im Playground am 07.09. war `webhook-manager` eines davon: der Bildschirm zeigte nach
+dem Neuladen den gespeicherten Wert, gelesen wurde die Paketvorgabe. Das trifft hier unter
+anderem die Wiederholungsstrategie, die Zeitgrenzen der Auslieferung und die Maskierung in den
+Protokollen. Dazu löschte bis 1.12 ein zweites Speichern desselben Abschnitts die Überschreibung
+des ersten, ohne Meldung, und ein zweites Feld im selben Abschnitt nachzutragen genügt dafür.
+
+Am Bildschirm, am Migrationsschritt aus 2.8.0 und am Recht `manage webhook settings` ändert sich
+nichts. Wer zwischen dem 06.09. und diesem Update Einstellungen gesetzt hat, sieht nach dem
+Aktualisieren nach, ob sie noch dastehen; verlorene Werte kommen nicht von selbst zurück.
+
+### Geändert: die Entwickler-Adresse zeigt auf adriangoldner.dev
+
+`extra.statamic.developer-url` stand noch auf gldnr.studio. Der Absender, den das Control Panel
+am Addon und Packagist auf der Paketseite anzeigt, lautet jetzt adriangoldner.dev, wie bei den
+übrigen Addons der Suite.
+
 ## 2.8.1 — 2026-09-06
 
 ### Doku: die README beschrieb noch den alten Einstellungs-Bildschirm
