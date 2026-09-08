@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.9.0 — 2026-09-08
+
+### Changed: the Control Panel screens show an empty state instead of HTTP 500 when tables are missing
+
+An installation that has the package but has never run its migrations answered HTTP 500 on every
+screen of this addon: the nav item is there, the route resolves, and the first query throws
+`no such table: webhook_outbounds` while the page is being built. All eight screens — overview,
+outbound, inbound, rules, templates, deliveries, logs and debug — now check before their first query
+and render a setup page that names the missing tables and says to run `php artisan migrate`.
+
+Which tables a screen demands depends on the active storage driver. Outbound webhooks, inbound
+endpoints, rules and templates live either in the database or in YAML files, so under the `flat`
+driver those four tables are never queried and are not required — demanding them would send a
+perfectly working installation to the setup screen. Deliveries and logs are database-only whatever
+the driver says.
+
+The reason does not vanish with the 500: a guarded page writes to the log why it turned somebody
+away. Otherwise the install would look finished and never work.
+
 ## 2.8.2 — 2026-09-07
 
 ### Changed: `goldnead/statamic-brand-context` 1.13 or later
