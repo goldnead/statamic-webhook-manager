@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
 use Goldnead\WebhookManager\Contracts\Repositories\OutboundWebhookRepositoryInterface;
 use Goldnead\WebhookManager\Services\DeliveryStatsService;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,6 +25,22 @@ class InsightsController extends CpController
             $request->user()?->can('view webhook deliveries'),
             403
         );
+
+        // Deliveries unconditionally: every number on this screen is an
+        // aggregate over webhook_deliveries, and that table is database-backed
+        // under every storage driver — the flat driver moves configuration to
+        // YAML, never the delivery history. Outbound hooks are the opposite
+        // case: the range picker's filter list and the "top failing" names both
+        // go through OutboundWebhookRepositoryInterface, which reads YAML under
+        // `flat` and touches no table at all, so it goes through configTables()
+        // like on the overview.
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.insights'),
+            'webhook_deliveries',
+            ...Setup::configTables('webhook_outbounds'),
+        )) {
+            return $setup;
+        }
 
         $days = (int) $request->integer('days', 30);
         if (! in_array($days, self::RANGES, true)) {

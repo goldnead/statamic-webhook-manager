@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.9.1 — 2026-09-08
+
+### Fixed: the Insights screen was left out of the setup check in 2.9.0
+
+The ninth screen went unnoticed because it builds its numbers through a stats service rather than
+a repository. It now demands `webhook_deliveries` unconditionally — the delivery history is
+database-backed under every storage driver — and `webhook_outbounds` only under the `eloquent`
+driver, since the range picker and the "top failing" names read the hooks through the repository,
+which is YAML under `flat`.
+
 ## 2.9.0 — 2026-09-08
 
 ### Changed: the Control Panel screens show an empty state instead of HTTP 500 when tables are missing

@@ -49,6 +49,10 @@ class SetupGuardTest extends CpTestCase
             'outbound' => ['webhook-manager.outbound.index', 'webhook_outbounds'],
             'inbound' => ['webhook-manager.inbound.index', 'webhook_inbounds'],
             'rules' => ['webhook-manager.rules.index', 'webhook_rules'],
+            // Deliveries, not outbounds: the Insights screen is an aggregate
+            // over the delivery history, which stays in the database under
+            // every driver, so that is the table its guard must always name.
+            'insights' => ['webhook-manager.insights', 'webhook_deliveries'],
             'deliveries' => ['webhook-manager.deliveries.index', 'webhook_deliveries'],
             'logs' => ['webhook-manager.logs.index', 'webhook_logs'],
             'templates' => ['webhook-manager.templates.index', 'webhook_templates'],
@@ -68,6 +72,7 @@ class SetupGuardTest extends CpTestCase
             'outbound' => ['webhook-manager.outbound.index', 'webhook-manager::Outbound/Index'],
             'inbound' => ['webhook-manager.inbound.index', 'webhook-manager::Inbound/Index'],
             'rules' => ['webhook-manager.rules.index', 'webhook-manager::Rules/Index'],
+            'insights' => ['webhook-manager.insights', 'webhook-manager::Insights/Index'],
             'deliveries' => ['webhook-manager.deliveries.index', 'webhook-manager::Deliveries/Index'],
             'logs' => ['webhook-manager.logs.index', 'webhook-manager::Logs/Index'],
             'templates' => ['webhook-manager.templates.index', 'webhook-manager::Templates/Index'],
