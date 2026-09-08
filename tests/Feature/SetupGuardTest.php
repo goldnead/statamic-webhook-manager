@@ -5,6 +5,7 @@ namespace Goldnead\WebhookManager\Tests\Feature;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Tests\CpTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -81,46 +82,61 @@ class SetupGuardTest extends CpTestCase
     }
 
     /**
-     * Drop this addon's tables, leaving the rest of the schema alone — the
-     * shape of a site that installed the package and stopped there.
+     * Run something against a database on which nothing has ever been migrated.
+     *
+     * An empty second connection rather than `Schema::drop()` on the real one,
+     * and the reason is worth writing down. MySQL commits DDL implicitly, so a
+     * dropped table is not something the RefreshDatabase transaction can put
+     * back; testbench then rolls its registered migrations back at the end of
+     * the run and meets a `down()` that cannot alter a table which is no longer
+     * there — `Table 'webhook_manager_test.webhook_outbounds' doesn't exist`,
+     * raised in teardown, the worst place to go looking for it. The MySQL leg
+     * had been red with exactly that since the guard was first written.
+     *
+     * An empty database is also the more faithful picture of the install this
+     * whole feature exists for: the addon is there, the tables never were. And
+     * it costs no DDL at all, so it behaves the same on both engines.
      */
-    private function dropAddonTables(): void
+    private function withUnmigratedDatabase(callable $work): mixed
     {
-        foreach ([
-            'webhook_secret_audits',
-            'webhook_deliveries',
-            'webhook_logs',
-            'webhook_settings',
-            'webhook_templates',
-            'webhook_rules',
-            'webhook_inbounds',
-            'webhook_outbounds',
-        ] as $table) {
-            Schema::dropIfExists($table);
+        config()->set('database.connections.unmigrated', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+        ]);
+
+        $previous = (string) config('database.default');
+
+        config()->set('database.default', 'unmigrated');
+        DB::setDefaultConnection('unmigrated');
+
+        try {
+            return $work();
+        } finally {
+            config()->set('database.default', $previous);
+            DB::setDefaultConnection($previous);
+            DB::purge('unmigrated');
         }
     }
 
     #[DataProvider('guardedRoutes')]
     public function test_the_page_answers_200_when_its_tables_are_missing(string $route, string $table): void
     {
-        $this->dropAddonTables();
-
-        $this->actingAs($this->superUser())
+        $this->withUnmigratedDatabase(fn () => $this->actingAs($this->superUser())
             ->withHeaders($this->inertiaHeaders())
             ->get(cp_route($route))
-            ->assertOk("$route stirbt ohne $table statt den Leerzustand zu zeigen");
+            ->assertOk("$route stirbt ohne $table statt den Leerzustand zu zeigen"));
     }
 
     #[DataProvider('guardedRoutes')]
     public function test_the_page_renders_the_setup_screen_and_names_the_missing_tables(string $route, string $table): void
     {
-        $this->dropAddonTables();
-
-        $page = $this->actingAs($this->superUser())
+        $page = $this->withUnmigratedDatabase(fn () => $this->actingAs($this->superUser())
             ->withHeaders($this->inertiaHeaders())
             ->get(cp_route($route))
             ->assertOk()
-            ->json();
+            ->json());
 
         $this->assertSame('webhook-manager::SetupRequired', $page['component'], "$route rendert nicht den Leerzustand");
         $this->assertContains($table, $page['props']['tables'], "$route nennt $table nicht als fehlend");
@@ -138,16 +154,16 @@ class SetupGuardTest extends CpTestCase
     #[DataProvider('guardedRoutes')]
     public function test_the_reason_reaches_the_log(string $route, string $table): void
     {
-        $this->dropAddonTables();
-
-        $this->assertFalse(Schema::hasTable($table), "$table sollte für diesen Fall weg sein");
-
         Log::spy();
 
-        $this->actingAs($this->superUser())
-            ->withHeaders($this->inertiaHeaders())
-            ->get(cp_route($route))
-            ->assertOk();
+        $this->withUnmigratedDatabase(function () use ($route, $table) {
+            $this->assertFalse(Schema::hasTable($table), "$table sollte für diesen Fall weg sein");
+
+            $this->actingAs($this->superUser())
+                ->withHeaders($this->inertiaHeaders())
+                ->get(cp_route($route))
+                ->assertOk();
+        });
 
         Log::shouldHaveReceived('error')
             ->withArgs(fn (string $message) => str_contains($message, 'statamic-webhook-manager')
@@ -179,14 +195,11 @@ class SetupGuardTest extends CpTestCase
     {
         $this->app->make(StorageDriverManager::class)->setDriver('flat');
 
-        Schema::dropIfExists('webhook_outbounds');
-        Schema::dropIfExists('webhook_templates');
-
-        $page = $this->actingAs($this->superUser())
+        $page = $this->withUnmigratedDatabase(fn () => $this->actingAs($this->superUser())
             ->withHeaders($this->inertiaHeaders())
             ->get(cp_route('webhook-manager.outbound.index'))
             ->assertOk()
-            ->json();
+            ->json());
 
         $this->assertSame('webhook-manager::Outbound/Index', $page['component']);
     }

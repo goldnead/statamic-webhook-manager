@@ -10,6 +10,16 @@ database-backed under every storage driver — and `webhook_outbounds` only unde
 driver, since the range picker and the "top failing" names read the hooks through the repository,
 which is YAML under `flat`.
 
+### Fixed: the MySQL test leg, red since the setup check was written
+
+`SetupGuardTest` reproduced the unmigrated install by dropping the addon's tables. On SQLite that
+is harmless; MySQL commits DDL implicitly, so the drop escaped the `RefreshDatabase` transaction
+and testbench's rollback at the end of the run met a `down()` that cannot alter a table which is
+no longer there — `Table 'webhook_manager_test.webhook_outbounds' doesn't exist`, raised in
+teardown rather than in an assertion. The test now points the default connection at an empty
+in-memory database for the duration of the request instead, which needs no DDL at all and reads
+the same on both engines. Nothing about the guard itself changed.
+
 ## 2.9.0 — 2026-09-08
 
 ### Changed: the Control Panel screens show an empty state instead of HTTP 500 when tables are missing
