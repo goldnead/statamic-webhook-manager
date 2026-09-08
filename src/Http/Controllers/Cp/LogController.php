@@ -4,6 +4,7 @@ namespace Goldnead\WebhookManager\Http\Controllers\Cp;
 
 use Goldnead\WebhookManager\Domain\Log\Models\LogEntry;
 use Goldnead\WebhookManager\Repositories\LogRepository;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -32,6 +33,12 @@ class LogController extends CpController
     public function index(Request $request, LogRepository $repository)
     {
         abort_unless($request->user()?->can('view webhooks'), 403);
+
+        // No configTables() here: the log is database-only under every storage
+        // driver, so the table is required unconditionally.
+        if ($setup = Setup::guard(__('webhook-manager::nav.logs'), 'webhook_logs')) {
+            return $setup;
+        }
 
         $perPage = (int) $request->get('perPage', 25) ?: 25;
         $search = (string) $request->get('search', $request->get('q', ''));

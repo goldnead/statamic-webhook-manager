@@ -11,6 +11,7 @@ use Goldnead\WebhookManager\Domain\Rule\Models\Rule;
 use Goldnead\WebhookManager\Http\Requests\SaveRuleRequest;
 use Goldnead\WebhookManager\Registries\ActionRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -23,6 +24,15 @@ class RuleController extends CpController
         TriggerRegistry $triggers,
     ) {
         $this->authorizeAny($request, 'manage webhook rules', 'view webhooks');
+
+        // Rules are configuration: table-backed under the eloquent driver,
+        // YAML under `flat`.
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.rules'),
+            ...Setup::configTables('webhook_rules'),
+        )) {
+            return $setup;
+        }
 
         // <Listing> sends `search`, `sort`, `order`, `page`, `perPage`.
         // We also accept the legacy `q` param to keep older bookmarks working.

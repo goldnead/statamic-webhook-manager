@@ -31,6 +31,11 @@ return [
     'storage_already_active' => ':driver storage is already active.',
     'storage_counts_line' => ':outbound outbound · :inbound inbound · :rules rules · :templates templates',
 
+    // The empty state instead of an HTTP 500, for an addon that is installed
+    // but was never migrated. The description names exactly one action.
+    'setup_required_heading' => 'This page needs its database tables, and they are not there yet.',
+    'setup_required_description' => 'Run `php artisan migrate` and the page loads as usual. The reason is in the log as well.',
+
     // Shown where a stored handle has no registered label — a scheme or
     // handler removed by an upgrade, or a row written by a newer version.
     // Never the handle itself: `static_header` at a reader is the schema's

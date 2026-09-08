@@ -22,6 +22,9 @@ import TemplatesEdit from './pages/templates/Edit.vue';
 import IntegrationsIndex from './pages/integrations/Index.vue';
 import IntegrationsSetup from './pages/integrations/Setup.vue';
 import InsightsIndex from './pages/insights/Index.vue';
+// One screen for every listing whose tables are missing — the addon installed
+// but never migrated. Registered once; Setup::guard() renders it by this name.
+import SetupRequired from './pages/SetupRequired.vue';
 import SubjectDeliveries from './components/SubjectDeliveries.vue';
 
 Statamic.booting(() => {
@@ -51,4 +54,5 @@ Statamic.booting(() => {
     Statamic.$inertia.register('webhook-manager::Integrations/Index', IntegrationsIndex);
     Statamic.$inertia.register('webhook-manager::Integrations/Setup', IntegrationsSetup);
     Statamic.$inertia.register('webhook-manager::Insights/Index', InsightsIndex);
+    Statamic.$inertia.register('webhook-manager::SetupRequired', SetupRequired);
 });

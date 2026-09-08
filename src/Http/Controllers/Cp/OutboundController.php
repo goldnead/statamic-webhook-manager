@@ -14,6 +14,7 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsOutboundWebhook
 use Goldnead\WebhookManager\Http\Requests\SaveOutboundWebhookRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -28,6 +29,16 @@ class OutboundController extends CpController
         TriggerRegistry $triggers,
     ) {
         $this->authorizeAny($request, 'manage outbound webhooks', 'view webhooks');
+
+        // Only under the eloquent driver: with `flat` the same repository
+        // contract resolves to the YAML implementation and never touches a
+        // table, so requiring one would blank a working install.
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.outbound'),
+            ...Setup::configTables('webhook_outbounds'),
+        )) {
+            return $setup;
+        }
 
         // Statamic's <Listing> sends `search`, `sort`, `order`, `page`,
         // `perPage`. We accept the legacy `q` param too to keep older

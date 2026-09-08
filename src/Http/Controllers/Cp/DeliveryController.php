@@ -8,6 +8,7 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryStatuse
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
 use Goldnead\WebhookManager\Services\DeliveryMaskingService;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -32,6 +33,12 @@ class DeliveryController extends CpController
     public function index(Request $request, DeliveryRepository $repository, TriggerRegistry $triggers)
     {
         abort_unless($request->user()?->can('view webhook deliveries'), 403);
+
+        // No configTables() here: delivery history is database-only under
+        // every storage driver, so the table is required unconditionally.
+        if ($setup = Setup::guard(__('webhook-manager::nav.deliveries'), 'webhook_deliveries')) {
+            return $setup;
+        }
 
         $perPage = (int) $request->get('perPage', 25) ?: 25;
         $search = (string) $request->get('search', $request->get('q', ''));

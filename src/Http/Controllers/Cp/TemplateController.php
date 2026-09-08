@@ -9,6 +9,7 @@ use Goldnead\WebhookManager\Domain\Template\Actions\UpdateTemplateAction;
 use Goldnead\WebhookManager\Domain\Template\Models\Template;
 use Goldnead\WebhookManager\Http\Requests\SaveTemplateRequest;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -22,6 +23,15 @@ class TemplateController extends CpController
     public function index(Request $request, TemplateRepositoryInterface $repository)
     {
         $this->authorizeAny($request, 'manage webhook templates', 'view webhooks');
+
+        // Templates are configuration: table-backed under the eloquent driver,
+        // YAML under `flat`.
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.templates'),
+            ...Setup::configTables('webhook_templates'),
+        )) {
+            return $setup;
+        }
 
         // Statamic Listing sends `search` / `perPage`; accept legacy `q` too.
         $perPage = (int) $request->get('perPage', 25) ?: 25;

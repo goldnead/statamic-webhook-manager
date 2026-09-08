@@ -7,6 +7,7 @@ use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Registries\VariableResolverRegistry;
 use Goldnead\WebhookManager\Storage\StorageDriverManager;
 use Goldnead\WebhookManager\Storage\StorageMigrator;
+use Goldnead\WebhookManager\Support\Setup;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -69,6 +70,20 @@ class DebugController extends CpController
         $canManageSettings = (bool) $request->user()?->can('manage webhook settings');
 
         abort_unless($canDebug || $canManageSettings, 403);
+
+        // The only query on this page is the storage panel's record count
+        // ({@see storagePayload()}), which walks all four configuration
+        // entities — and it is built for settings holders only. A debug-only
+        // user reads registries and config, never a table, so guarding them
+        // too would send them to a setup screen for a page that works.
+        if ($canManageSettings) {
+            if ($setup = Setup::guard(
+                __('webhook-manager::nav.debug'),
+                ...Setup::configTables('webhook_outbounds', 'webhook_inbounds', 'webhook_rules', 'webhook_templates'),
+            )) {
+                return $setup;
+            }
+        }
 
         $triggersData = collect($triggers->all())->map(fn ($t) => [
             'handle' => $t->handle(),

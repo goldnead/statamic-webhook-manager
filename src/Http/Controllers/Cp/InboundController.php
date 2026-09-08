@@ -11,6 +11,7 @@ use Goldnead\WebhookManager\Domain\InboundEndpoint\Models\InboundEndpoint;
 use Goldnead\WebhookManager\Http\Requests\SaveInboundEndpointRequest;
 use Goldnead\WebhookManager\Registries\AuthSchemeRegistry;
 use Goldnead\WebhookManager\Registries\InboundActionHandlerRegistry;
+use Goldnead\WebhookManager\Support\Setup;
 use Goldnead\WebhookManager\WebhookManagerServiceProvider;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,6 +26,15 @@ class InboundController extends CpController
         AuthSchemeRegistry $auth,
     ) {
         $this->authorizeAny($request, 'manage inbound endpoints', 'view webhooks');
+
+        // Endpoint configuration is table-backed only under the eloquent
+        // driver; `flat` reads the same records from YAML.
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.inbound'),
+            ...Setup::configTables('webhook_inbounds'),
+        )) {
+            return $setup;
+        }
 
         // Statamic's <Listing> sends `search`, `sort`, `order`, `page`,
         // `perPage`. We accept the legacy `q` param too to keep older

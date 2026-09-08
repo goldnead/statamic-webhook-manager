@@ -11,6 +11,7 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsDeliveryErrors;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Concerns\PresentsOutboundWebhooks;
 use Goldnead\WebhookManager\Registries\TriggerRegistry;
 use Goldnead\WebhookManager\Repositories\DeliveryRepository;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Statamic\Http\Controllers\CP\CpController;
@@ -29,6 +30,18 @@ class OverviewController extends CpController
         TriggerRegistry $triggers,
     ) {
         $this->authorizeAny($request, 'manage outbound webhooks', 'manage inbound endpoints', 'view webhooks');
+
+        // Four repositories feed this screen, so all four of their tables have
+        // to be there. Deliveries are database-only whatever the storage
+        // driver says; the other three are config and move to YAML under the
+        // flat driver, which is why they go through configTables().
+        if ($setup = Setup::guard(
+            __('webhook-manager::nav.overview'),
+            'webhook_deliveries',
+            ...Setup::configTables('webhook_outbounds', 'webhook_inbounds', 'webhook_rules'),
+        )) {
+            return $setup;
+        }
 
         $outboundCount = $outboundRepo->countActive();
         $inboundCount = $inboundRepo->countActive();
