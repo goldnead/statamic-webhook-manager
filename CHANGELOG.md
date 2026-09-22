@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.9.3 — 2026-09-22
+
+### Fixed: der Kopier-Knopf in der Inbound-Tabelle zentrierte sich selbst
+
+Der Standard-`text-align` eines `<button>` ist `center`. In der Pfad-Spalte der
+Inbound-Übersicht sass ein Icon-Kopierknopf ohne `text-start`, dieselbe fehlende Klasse wie bei
+den Titel-Buttons in `statamic-offers` und `statamic-products`. Ohne sichtbare Auswirkung
+bei einem einzeiligen Icon, aber derselbe Fehler, deshalb mitgenommen: `text-start` steht jetzt
+explizit dabei.
+
 ## 2.9.2 — 2026-09-22
 
 ### Fixed: installierbar auf aktuellem Statamic 6

@@ -173,7 +173,7 @@ const actionErrors = ref({});
                     <UrlCell :url="fullUrl(row)" class="min-w-56 flex-1" />
                     <button
                         type="button"
-                        class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                        class="text-start shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
                         :title="__('webhook-manager::messages.cp.btn_copy_url')"
                         :aria-label="__('webhook-manager::messages.cp.btn_copy_url')"
                         @click.prevent="$clipboard(fullUrl(row))"
