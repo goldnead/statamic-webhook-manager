@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased (Minor)
+## 2.10.0 — 2026-09-24
+
+### Upgrading
+
+- No migration, no new config key.
+- **Published language files:** if you ran `vendor:publish --tag=webhook-manager-lang` before,
+  publish again with `--force` (or merge by hand). Trigger labels now read "Group: moment"
+  ("Eintrag: gespeichert" instead of "Eintrag — gespeichert"), and the new group headings and
+  subject-type labels live there; an old copy keeps the old strings.
+- **A new webhook or rule starts without a trigger**, and the field is required. Nothing is
+  preselected any more; existing hooks keep theirs.
+- **Outbound requests now carry `X-Webhook-Id`**, and with the hook's Idempotency switch on also
+  `Idempotency-Key`. A receiver that rejects unknown headers needs to accept them; a header of the
+  same name configured on the hook wins.
+- Suite addons register their moments here as triggers from statamic-payments 1.26,
+  statamic-invoices 2.3, statamic-offers 1.13, statamic-courses 0.3, statamic-funnels 1.18 and
+  statamic-affiliates 0.2 on.
 
 ### Added: the trigger picker is grouped and searchable
 
