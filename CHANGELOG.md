@@ -41,6 +41,20 @@ The "Objekt" column showed `ucfirst()` of types it did not know: "Commission" in
 seat_pool and coupon now have German and English labels, and a type nobody translated shows its
 handle unchanged.
 
+### Fixed: settings labels printed their keys after an early settings read
+
+Since brand-context 1.14 `SettingsRegistry::register()` catches up on stored settings at once and
+reads every settings label. `bootAddon()` registered the settings before it loaded its own
+translation namespace, so that read cached the `settings` group as empty for the current locale.
+In a normal Statamic boot the addon's translations are loaded earlier and hid this; the test bed
+(and any host that calls `bootAddon()` itself) did not. Translations now load first.
+
+### Chore: PHPStan tolerates both Statamic docblocks for `$vite`
+
+Statamic 6.34 corrected the `AddonServiceProvider::$vite` docblock, which made the baseline
+entry for it unmatched in CI (latest dependencies) while it still matches locally (lock). The
+entry moved to `phpstan.neon` with `reportUnmatched: false`.
+
 ## 2.9.3 — 2026-09-22
 
 ### Fixed: der Kopier-Knopf in der Inbound-Tabelle zentrierte sich selbst

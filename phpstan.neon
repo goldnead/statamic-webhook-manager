@@ -28,3 +28,12 @@ parameters:
     scanFiles:
         - tests/Fakes/insights-contracts.php
         - tests/Fakes/insights-table-metric.php
+
+    ignoreErrors:
+        # Statamic up to 6.33 documents AddonServiceProvider::$vite as
+        # `list<string>`, 6.34 fixed the docblock. The lock (local) and CI
+        # (latest) resolve different versions, so this may or may not match.
+        -
+            identifier: property.defaultValue
+            path: src/WebhookManagerServiceProvider.php
+            reportUnmatched: false

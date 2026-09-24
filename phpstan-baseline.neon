@@ -612,8 +612,3 @@ parameters:
 			count: 1
 			path: src/Storage/StorageMigrator.php
 
-		-
-			message: '#^Property Goldnead\\WebhookManager\\WebhookManagerServiceProvider\:\:\$vite \(list\<string\>\) does not accept default value of type array\{hotFile\: literal\-string&non\-falsy\-string, publicDirectory\: ''resources/dist'', input\: array\{''resources/js/cp\.js'', ''resources/css/cp\.css''\}\}\.$#'
-			identifier: property.defaultValue
-			count: 1
-			path: src/WebhookManagerServiceProvider.php

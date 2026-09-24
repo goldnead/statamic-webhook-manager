@@ -199,6 +199,11 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
 
     public function bootAddon(): void
     {
+        // Translations first: registering the settings reads every settings
+        // label (brand-context catches up on stored values right away), and a
+        // lookup before the namespace exists leaves the group cached as empty
+        // for the rest of the process.
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'webhook-manager');
         $this->bootWebhookConfig();
         $this->bootSettingsRegistration();
         $this->bootMigrations();
@@ -787,7 +792,5 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/../resources/lang' => resource_path('lang/vendor/webhook-manager'),
         ], 'webhook-manager-lang');
-
-        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'webhook-manager');
     }
 }
