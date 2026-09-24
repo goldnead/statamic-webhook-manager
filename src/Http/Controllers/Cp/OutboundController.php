@@ -115,6 +115,7 @@ class OutboundController extends CpController
         return Inertia::render('webhook-manager::Outbound/Edit', [
             'webhook' => $this->editPayload($hook),
             'triggerOptions' => $triggers->options(),
+            'triggerChoices' => $triggers->groupedOptions(),
             'authOptions' => $auth->options(),
             'methodOptions' => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
             'payloadTypeOptions' => $this->payloadTypeOptions(),
@@ -153,6 +154,7 @@ class OutboundController extends CpController
         return Inertia::render('webhook-manager::Outbound/Edit', [
             'webhook' => $this->editPayload($webhookOutbound),
             'triggerOptions' => $triggers->options(),
+            'triggerChoices' => $triggers->groupedOptions(),
             'authOptions' => $auth->options(),
             'methodOptions' => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
             'payloadTypeOptions' => $this->payloadTypeOptions(),

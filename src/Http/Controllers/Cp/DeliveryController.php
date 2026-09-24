@@ -165,7 +165,9 @@ class DeliveryController extends CpController
         $key = 'webhook-manager::messages.subject_types.'.$type;
         $translated = __($key);
 
-        return is_string($translated) && $translated !== $key ? $translated : ucfirst($type);
+        // An untranslated type shows its handle as it is: `ucfirst()` turned
+        // `seat_pool` into "Seat_pool", which reads like a broken label.
+        return is_string($translated) && $translated !== $key ? $translated : $type;
     }
 
     /**

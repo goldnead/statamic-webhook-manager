@@ -47,6 +47,16 @@ class HttpRequestFactory
         $headers['X-Webhook-Correlation'] = $context->event->correlationId;
         $headers['X-Webhook-Trigger'] = $context->event->triggerHandle;
 
+        // The key has to reach the receiver, the one party that can drop a
+        // duplicate. Set before signing so the signed snapshot is what goes
+        // on the wire, and stored with the snapshot so a retry resends the
+        // same value. A header the operator configured wins.
+        $key = $this->idempotencyKey($hook, $context);
+        $headers['X-Webhook-Id'] = $headers['X-Webhook-Id'] ?? $key;
+        if ($hook->idempotency_enabled) {
+            $headers['Idempotency-Key'] = $headers['Idempotency-Key'] ?? $key;
+        }
+
         $request = [
             'method' => strtoupper($hook->method ?: 'POST'),
             'url' => $hook->url,
@@ -60,9 +70,7 @@ class HttpRequestFactory
         }
 
         return $request + [
-            'idempotency_key' => $hook->idempotency_enabled
-                ? $this->idempotencyKey($hook, $context)
-                : null,
+            'idempotency_key' => $hook->idempotency_enabled ? $key : null,
         ];
     }
 
@@ -113,8 +121,24 @@ class HttpRequestFactory
         return $this->renderer->render($inline, $context);
     }
 
+    /**
+     * The event's own `event_id` when the payload carries one: it names the
+     * event, not this dispatch, so it stays the same when the same event is
+     * dispatched again. Otherwise a hash over hook, trigger, source and the
+     * moment the event was built.
+     */
     protected function idempotencyKey(OutboundWebhook $hook, ExecutionContext $context): string
     {
+        $eventId = $context->event->payload['event_id'] ?? null;
+        if (is_string($eventId) || is_int($eventId)) {
+            $eventId = trim((string) $eventId);
+            // 128 is the width of `webhook_deliveries.idempotency_key`; a
+            // longer id falls through to the hash instead of being cut.
+            if ($eventId !== '' && strlen($eventId) <= 128) {
+                return $eventId;
+            }
+        }
+
         return sha1(implode('|', [
             $hook->id,
             $context->event->triggerHandle,

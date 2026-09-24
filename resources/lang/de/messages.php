@@ -138,6 +138,33 @@ return [
         'user' => 'Benutzer',
         'asset' => 'Datei',
         'form_submission' => 'Formulareingang',
+        'subscription' => 'Abo',
+        'invoice' => 'Rechnung',
+        'commission' => 'Provision',
+        'partner' => 'Partner',
+        'course' => 'Kurs',
+        'seat' => 'Platz',
+        'seat_pool' => 'Platzkontingent',
+        'coupon' => 'Gutschein',
+    ],
+
+    // Überschriften der Gruppen im Auslöser-Feld, je Quelltyp des Auslösers.
+    // Ein Typ ohne Eintrag nimmt das Präfix seiner Labels („Shop: …"),
+    // sonst seinen Handle.
+    'trigger_groups' => [
+        'entry' => 'Einträge',
+        'form_submission' => 'Formulare',
+        'user' => 'Benutzer',
+        'asset' => 'Dateien',
+        'event' => 'Eigene Ereignisse',
+        'payments' => 'Zahlungen',
+        'invoices' => 'Rechnungen',
+        'affiliates' => 'Partner',
+        'courses' => 'Kurse',
+        'funnels' => 'Funnels',
+        'offers' => 'Angebote',
+        'leadhub_contact' => 'LeadHub',
+        'marketing' => 'Marketing',
     ],
 
     /*
@@ -194,13 +221,16 @@ return [
         // (TriggerRegistry / AuthSchemeRegistry) and were the last English
         // strings on otherwise German screens: they render as badges in both
         // listings, on the delivery page and inside the editor's own tabs.
-        'trigger_entry_saved' => 'Eintrag — gespeichert',
-        'trigger_entry_published' => 'Eintrag — veröffentlicht',
-        'trigger_entry_unpublished' => 'Eintrag — Veröffentlichung zurückgenommen',
-        'trigger_entry_deleted' => 'Eintrag — gelöscht',
-        'trigger_form_submitted' => 'Formular — abgeschickt',
-        'trigger_user_saved' => 'Benutzer:in — gespeichert',
-        'trigger_asset_saved' => 'Datei — gespeichert',
+        // Eine Form für alle Auslöser, auch die der Suite-Addons:
+        // „<Gruppe>: <Moment>". Früher „Eintrag — gespeichert" neben
+        // „Zahlungen: Zahlung eingegangen" in derselben Liste.
+        'trigger_entry_saved' => 'Eintrag: gespeichert',
+        'trigger_entry_published' => 'Eintrag: veröffentlicht',
+        'trigger_entry_unpublished' => 'Eintrag: Veröffentlichung zurückgenommen',
+        'trigger_entry_deleted' => 'Eintrag: gelöscht',
+        'trigger_form_submitted' => 'Formular: abgeschickt',
+        'trigger_user_saved' => 'Benutzer: gespeichert',
+        'trigger_asset_saved' => 'Datei: gespeichert',
         'auth_none' => 'Keine Authentifizierung',
         'auth_static_header' => 'Fester Header mit Geheimnis',
         'auth_bearer' => 'Bearer-Token',

@@ -240,7 +240,7 @@ class NoGlobalTranslationKeysTest extends TestCase
      *  - `insights.status.*`    — WebhookMetric, for the sibling analytics addon
      *  - `messages.subject_types.*` — DeliveryController, for the types this
      *    addon ships defaults for. A type contributed by another package
-     *    legitimately has no entry and falls back to `ucfirst()`, so only the
+     *    legitimately has no entry and falls back to its handle, so only the
      *    configured ones are required.
      */
     public function test_every_delivery_status_has_a_label_in_both_languages(): void

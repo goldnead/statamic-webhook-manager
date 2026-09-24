@@ -130,6 +130,33 @@ return [
         'user' => 'User',
         'asset' => 'Asset',
         'form_submission' => 'Form submission',
+        'subscription' => 'Subscription',
+        'invoice' => 'Invoice',
+        'commission' => 'Commission',
+        'partner' => 'Partner',
+        'course' => 'Course',
+        'seat' => 'Seat',
+        'seat_pool' => 'Seat pool',
+        'coupon' => 'Coupon',
+    ],
+
+    // Group headings in the trigger picker, keyed by the trigger's source
+    // type. A type without an entry takes the prefix its labels share
+    // ("Shop: …"), else its handle.
+    'trigger_groups' => [
+        'entry' => 'Entries',
+        'form_submission' => 'Forms',
+        'user' => 'Users',
+        'asset' => 'Assets',
+        'event' => 'Custom events',
+        'payments' => 'Payments',
+        'invoices' => 'Invoices',
+        'affiliates' => 'Partners',
+        'courses' => 'Courses',
+        'funnels' => 'Funnels',
+        'offers' => 'Offers',
+        'leadhub_contact' => 'LeadHub',
+        'marketing' => 'Marketing',
     ],
 
     /*
@@ -185,13 +212,15 @@ return [
         // (TriggerRegistry / AuthSchemeRegistry) and were the last English
         // strings on otherwise German screens: they render as badges in both
         // listings, on the delivery page and inside the editor's own tabs.
-        'trigger_entry_saved' => 'Entry — saved',
-        'trigger_entry_published' => 'Entry — published',
-        'trigger_entry_unpublished' => 'Entry — unpublished',
-        'trigger_entry_deleted' => 'Entry — deleted',
-        'trigger_form_submitted' => 'Form — submitted',
-        'trigger_user_saved' => 'User — saved',
-        'trigger_asset_saved' => 'Asset — saved',
+        // One form for every trigger, the suite addons' included:
+        // "<Group>: <moment>".
+        'trigger_entry_saved' => 'Entry: saved',
+        'trigger_entry_published' => 'Entry: published',
+        'trigger_entry_unpublished' => 'Entry: unpublished',
+        'trigger_entry_deleted' => 'Entry: deleted',
+        'trigger_form_submitted' => 'Form: submitted',
+        'trigger_user_saved' => 'User: saved',
+        'trigger_asset_saved' => 'Asset: saved',
         'auth_none' => 'No authentication',
         'auth_static_header' => 'Static header secret',
         'auth_bearer' => 'Bearer token',

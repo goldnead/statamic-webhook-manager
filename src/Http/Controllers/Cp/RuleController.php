@@ -111,6 +111,7 @@ class RuleController extends CpController
         return Inertia::render('webhook-manager::Rules/Edit', [
             'rule' => $this->editPayload($rule),
             'triggerOptions' => $triggers->options(),
+            'triggerChoices' => $triggers->groupedOptions(),
             // Was a hard-coded `[]`, which made the "Available action handles"
             // list in Rules/Edit.vue render behind a `v-if` that could never be
             // true — a help panel nobody has ever seen, listing the nine rule
@@ -149,6 +150,7 @@ class RuleController extends CpController
         return Inertia::render('webhook-manager::Rules/Edit', [
             'rule' => $this->editPayload($webhookRule),
             'triggerOptions' => $triggers->options(),
+            'triggerChoices' => $triggers->groupedOptions(),
             // Was a hard-coded `[]`, which made the "Available action handles"
             // list in Rules/Edit.vue render behind a `v-if` that could never be
             // true — a help panel nobody has ever seen, listing the nine rule

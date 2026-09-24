@@ -78,7 +78,7 @@ return [
     |
     | Add your own types here; the CP labels them through
     | `webhook-manager::messages.subject_types.<type>` when a translation
-    | exists and falls back to the capitalised key otherwise.
+    | exists and show the key as it is otherwise.
     */
     'subjects' => [
         'payment' => ['keys' => ['payment_id', 'payment.id'], 'triggers' => ['payment.*', 'payments.*']],

@@ -1,5 +1,46 @@
 # Changelog
 
+## Unreleased (Minor)
+
+### Added: the trigger picker is grouped and searchable
+
+Six suite addons now register their moments as triggers, and the picker was one flat list of
+sixty entries sorted by handle. It is now core's searchable Combobox, grouped by the trigger's
+`source_type` (Einträge, Zahlungen, Kurse …) with the groups sorted by heading and the triggers by
+label. Search matches label, group heading and handle. Group headings come from
+`webhook-manager::messages.trigger_groups.<source_type>`; a type without a translation takes the
+prefix its labels share, else its handle. Core's Combobox has no option groups, so the headings
+are rows that cannot become the value. Outbound webhooks and rules both use it
+(`TriggerRegistry::groupedOptions()`, prop `triggerChoices`).
+
+### Changed: a new webhook or rule starts without a trigger
+
+The form preselected the first trigger of the list, which made "Partner: Provision verdient" the
+default of every new hook. The field now starts empty and stays required.
+
+### Changed: one label form for triggers, "Gruppe: Moment"
+
+The built-in labels read "Eintrag — gespeichert" next to the suite's "Zahlungen: Zahlung
+eingegangen". They now read "Eintrag: gespeichert", "Formular: abgeschickt", "Benutzer:
+gespeichert" (was "Benutzer:in"), "Datei: gespeichert"; in English "Entry: saved" and so on.
+Sites with published language files keep their old strings until they re-publish.
+
+### Added: outbound requests carry the idempotency key
+
+The key was computed and stored on the delivery row but never sent. Every outbound request now
+carries `X-Webhook-Id`, and with the hook's Idempotency switch on also `Idempotency-Key`; a
+header of the same name configured on the hook wins. When the payload has an `event_id`
+(string or integer, at most 128 characters) that is the key, so the same event keeps its key
+across dispatches. Retries and snapshot replays resend the first value. See the README section
+"Idempotency headers on outbound deliveries".
+
+### Fixed: subject types from the suite had no label
+
+The "Objekt" column showed `ucfirst()` of types it did not know: "Commission" in a German CP,
+"Seat_pool" with its underscore. subscription, invoice, commission, partner, course, seat,
+seat_pool and coupon now have German and English labels, and a type nobody translated shows its
+handle unchanged.
+
 ## 2.9.3 — 2026-09-22
 
 ### Fixed: der Kopier-Knopf in der Inbound-Tabelle zentrierte sich selbst

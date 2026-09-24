@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ref, computed, watch } from 'vue';
 import { Head } from '@statamic/cms/inertia';
 import { useForm, router } from '@statamic/cms/inertia';
+import TriggerSelect from '../../components/TriggerSelect.vue';
 import {
     Card,
     Header,
@@ -45,6 +46,7 @@ import {
 const props = defineProps({
     webhook: { type: Object, required: true },
     triggerOptions: { type: Object, required: true },
+    triggerChoices: { type: Array, default: null },
     authOptions: { type: Object, required: true },
     methodOptions: { type: Array, default: () => ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'] },
     payloadTypeOptions: { type: Object, default: () => ({}) },
@@ -65,7 +67,9 @@ const form = useForm({
     handle: props.webhook.handle ?? '',
     description: props.webhook.description ?? '',
     enabled: props.webhook.enabled ?? true,
-    trigger_type: props.webhook.trigger_type ?? Object.keys(props.triggerOptions)[0],
+    // Empty on a new hook, required on save. Preselecting the first trigger
+    // made whatever sorted first the default of every new hook.
+    trigger_type: props.webhook.trigger_type ?? null,
     url: props.webhook.url ?? '',
     method: props.webhook.method ?? 'POST',
     timeout_seconds: props.webhook.timeout_seconds ?? 15,
@@ -113,7 +117,6 @@ function objectToOptions(obj) {
     return Object.entries(obj).map(([value, label]) => ({ value, label }));
 }
 
-const triggerOptionsArray = computed(() => objectToOptions(props.triggerOptions));
 const authOptionsArray = computed(() => objectToOptions(props.authOptions));
 const methodOptionsArray = computed(() =>
     (props.methodOptions || []).map(m => ({ value: m, label: m }))
@@ -474,7 +477,7 @@ const authInstructions = computed(() => {
                             :error="form.errors.trigger_type"
                             :instructions="__('webhook-manager::messages.cp.field_trigger_type_hint')"
                         >
-                            <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
+                            <TriggerSelect id="trigger_type" v-model="form.trigger_type" :choices="triggerChoices" :options="triggerOptions" />
                         </Field>
                     </Card>
                 </Panel>

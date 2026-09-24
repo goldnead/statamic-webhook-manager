@@ -15,7 +15,6 @@ import {
     Field,
     Input,
     Textarea,
-    Select,
     Switch,
     CodeEditor,
     Tabs,
@@ -28,6 +27,7 @@ import {
     CommandPaletteItem,
 } from '@statamic/cms/ui';
 import ConditionGroup from '../../components/rules/ConditionGroup.vue';
+import TriggerSelect from '../../components/TriggerSelect.vue';
 
 /**
  * Rule edit/create page.
@@ -46,6 +46,7 @@ import ConditionGroup from '../../components/rules/ConditionGroup.vue';
 const props = defineProps({
     rule: { type: Object, required: true },
     triggerOptions: { type: Object, required: true },
+    triggerChoices: { type: Array, default: null },
     actionOptions: { type: Object, required: true },
     isNew: { type: Boolean, default: false },
     canDelete: { type: Boolean, default: false },
@@ -99,7 +100,8 @@ const form = useForm({
     handle: props.rule.handle ?? '',
     enabled: props.rule.enabled ?? true,
     description: props.rule.description ?? '',
-    trigger_type: props.rule.trigger_type ?? Object.keys(props.triggerOptions)[0] ?? '',
+    // Empty on a new rule, required on save (see outbound/Edit.vue).
+    trigger_type: props.rule.trigger_type ?? null,
     trigger_config: props.rule.trigger_config ?? null,
     conditions: props.rule.conditions ?? null,
     actions: props.rule.actions ?? [],
@@ -175,15 +177,6 @@ const samplePayload = ref('{\n  "id": 1,\n  "title": "Sample"\n}');
 
 const activeTab = ref('general');
 const showDelete = ref(false);
-
-// Statamic's <Select> wraps <Combobox>, which expects `:options` as an
-// Array of { value, label } objects — not nested HTML <option> tags.
-function objectToOptions(obj) {
-    if (!obj || typeof obj !== 'object') return [];
-    return Object.entries(obj).map(([value, label]) => ({ value, label }));
-}
-
-const triggerOptionsArray = computed(() => objectToOptions(props.triggerOptions));
 
 const pageTitle = computed(() =>
     props.isNew ? __('webhook-manager::messages.cp.rules_create_button') : (props.rule.name || __('webhook-manager::messages.cp.rules_fallback_title'))
@@ -485,7 +478,7 @@ async function runTest() {
                             :error="form.errors.trigger_type"
                             :instructions="__('webhook-manager::messages.cp.rules_trigger_hint')"
                         >
-                            <Select id="trigger_type" v-model="form.trigger_type" :options="triggerOptionsArray" />
+                            <TriggerSelect id="trigger_type" v-model="form.trigger_type" :choices="triggerChoices" :options="triggerOptions" />
                         </Field>
 
                         <Field inline

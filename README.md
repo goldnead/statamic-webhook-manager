@@ -121,6 +121,17 @@ Without that cron, deliveries will sit at "next retry in …" forever. If you wo
 
 A retry is claimed before it runs, so two overlapping scheduler runs cannot turn one planned attempt into two. Once a delivery is out of attempts it stops being scheduled, the circuit breaker records the failure and the failure alert goes out.
 
+### Idempotency headers on outbound deliveries
+
+A retry resends the stored request, so a receiver may see the same delivery more than once. Every outbound request carries an id the receiver can dedupe on:
+
+| Header | When | Value |
+|---|---|---|
+| `X-Webhook-Id` | always | the delivery's idempotency key |
+| `Idempotency-Key` | the hook's **Idempotency** switch is on | the same key; it is also stored on the delivery row |
+
+The key is the payload's own `event_id` when it carries one (a string or integer of at most 128 characters): it names the event, not the dispatch, so the same event dispatched twice keeps its key. Without one it is a hash over hook, trigger, source reference and the moment the event was built. A retry and a replay from the stored snapshot resend the value of the first attempt, so a receiver that already processed the delivery drops them as duplicates, as it should for the same event. A replay with re-rendering builds a new request, and its key differs from the original's. A header of the same name configured on the hook wins. Note that an `event_id` is the same for every hook the event fires, so two hooks posting the same event to one receiver share a key.
+
 ### The inbound endpoint URL
 
 ```
@@ -325,7 +336,7 @@ trigger picker (Outbound + Rules) automatically.
 'event_triggers' => [
     'order.shipped' => [
         'event'       => \App\Events\OrderShipped::class, // FQCN to listen for (required)
-        'label'       => 'Order — shipped',               // shown in the CP picker
+        'label'       => 'Order: shipped',                // shown in the CP picker
         'source_type' => 'order',                         // optional, default "event"
         'description' => 'Fires when an order ships',      // optional
         // Optional payload mapper: Closure, invokable class-string, or [class, method].
@@ -357,11 +368,20 @@ use Goldnead\WebhookManager\Facades\WebhookManager;
 
 WebhookManager::registerEventTrigger(\App\Events\OrderShipped::class, [
     'handle'      => 'order.shipped',
-    'label'       => 'Order — shipped',
+    'label'       => 'Order: shipped',
     'source_type' => 'order',
     'payload'     => fn (\App\Events\OrderShipped $e) => ['id' => $e->order->id],
 ]);
 ```
+
+**How the picker shows it.** The trigger field groups triggers by their
+`source_type` and sorts groups by heading, then triggers by label; the field is
+searchable (label, group and handle). The heading comes from
+`webhook-manager::messages.trigger_groups.<source_type>`; a type without a
+translation takes the prefix all of its labels share (`Order: shipped` and
+`Order: cancelled` → heading "Order", rows "Shipped", "Cancelled"), and failing
+that its handle. So write labels as `<Group>: <moment>`, the form every
+built-in trigger uses.
 
 When no `payload` mapper is given, the listener builds the payload from the
 event's `toArray()` if present, otherwise its public properties (and passes
