@@ -693,14 +693,10 @@ class WebhookManagerServiceProvider extends AddonServiceProvider
                 $children[] = $nav->item(__('webhook-manager::nav.templates'))->route('webhook-manager.templates.index')->can('manage webhook templates');
             }
 
-            // Kept, not removed, and still pointing at this addon's own URL.
-            // The settings themselves now live on the suite's shared screen,
-            // but the item stays here because that is where somebody looks for
-            // them — under Webhooks, next to the screens they configure. The
-            // route behind it is a redirect (routes/cp.php), so the one URL
-            // that has been bookmarked and linked for a year keeps working and
-            // there is exactly one place that knows where settings went.
-            $children[] = $nav->item(__('webhook-manager::nav.settings'))->route('webhook-manager.settings')->can('manage webhook settings');
+            // No settings child here: statamic-brand-context (>= 1.16) hangs a
+            // "Settings" child under this entry on its own, via
+            // `Support\Settings::settingsNavParent()`. The route
+            // `webhook-manager.settings` stays as a redirect for old bookmarks.
 
             if ($enabled('debug_tools')) {
                 $children[] = $nav->item(__('webhook-manager::nav.debug'))->route('webhook-manager.debug')->can('use webhook debug tools');
