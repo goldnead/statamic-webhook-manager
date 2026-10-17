@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.11.0 — 2026-10-17
+
+### Changed
+
+- Settings: the addon now declares `settingsNavParent()` (`[section, name]` of its own Control Panel navigation entry). With statamic-brand-context 1.16 or newer its settings show as the sub-item "Einstellungen" under that entry; addons without a navigation of their own share one "Addon-Suite" page under Settings. Older brand-context versions ignore the method and keep the previous layout.
+- The addon no longer registers its own settings sub-item under its navigation entry; statamic-brand-context 1.16 adds it. **With an older statamic-brand-context the sub-item is gone, so update that package to 1.16 or newer together with this one.**
+
+### Upgrading
+
+- No migration, no new config key. Update `goldnead/statamic-brand-context` to 1.16 or newer.
+
 ## 2.10.0 — 2026-09-24
 
 ### Upgrading
