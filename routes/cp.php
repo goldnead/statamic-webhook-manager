@@ -1,5 +1,6 @@
 <?php
 
+use Goldnead\BrandContext\Http\Middleware\GuardSetup;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\PreviewTemplateController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\ReplayDeliveryController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\Actions\SimulateTriggerController;
@@ -18,18 +19,28 @@ use Goldnead\WebhookManager\Http\Controllers\Cp\OverviewController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\PresetController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\RuleController;
 use Goldnead\WebhookManager\Http\Controllers\Cp\TemplateController;
+use Goldnead\WebhookManager\Support\Setup;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
+// The same title and table list each controller's index() hands to Setup::guard(),
+// so a detail page shows the same setup screen as its listing. The config tables
+// are read here, at load time, and are empty under the flat driver.
+$outbound = GuardSetup::using(Setup::class, 'webhook-manager::nav.outbound', ...Setup::configTables('webhook_outbounds'));
+$inbound = GuardSetup::using(Setup::class, 'webhook-manager::nav.inbound', ...Setup::configTables('webhook_inbounds'));
+$rules = GuardSetup::using(Setup::class, 'webhook-manager::nav.rules', ...Setup::configTables('webhook_rules'));
+$deliveries = GuardSetup::using(Setup::class, 'webhook-manager::nav.deliveries', 'webhook_deliveries');
+$templates = GuardSetup::using(Setup::class, 'webhook-manager::nav.templates', ...Setup::configTables('webhook_templates'));
+
+Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () use ($outbound, $inbound, $rules, $deliveries, $templates) {
     Route::get('/', [OverviewController::class, 'index'])->name('overview');
 
-    Route::prefix('integrations')->name('integrations.')->group(function () {
+    Route::prefix('integrations')->name('integrations.')->group(function () use ($outbound) {
         Route::get('/', [PresetController::class, 'index'])->name('index');
         Route::get('/{preset}', [PresetController::class, 'create'])->name('create');
-        Route::post('/{preset}', [PresetController::class, 'store'])->name('store');
+        Route::post('/{preset}', [PresetController::class, 'store'])->name('store')->middleware([$outbound]);
     });
 
-    Route::prefix('outbound')->name('outbound.')->group(function () {
+    Route::prefix('outbound')->name('outbound.')->group(function () use ($outbound) {
         Route::get('/', [OutboundController::class, 'index'])->name('index');
         // The two endpoints core's <Listing> posts to for row and bulk actions.
         // Declared before `{webhookOutbound}` so the literal segment cannot be
@@ -39,54 +50,54 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
         Route::post('/actions/list', [OutboundActionController::class, 'bulkActions'])->name('actions.list');
         Route::get('/create', [OutboundController::class, 'create'])->name('create');
         Route::post('/', [OutboundController::class, 'store'])->name('store');
-        Route::get('/{webhookOutbound}', [OutboundController::class, 'edit'])->name('edit');
-        Route::patch('/{webhookOutbound}', [OutboundController::class, 'update'])->name('update');
-        Route::delete('/{webhookOutbound}', [OutboundController::class, 'destroy'])->name('destroy');
-        Route::patch('/{webhookOutbound}/toggle', [OutboundController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookOutbound}', [OutboundController::class, 'edit'])->name('edit')->middleware([$outbound]);
+        Route::patch('/{webhookOutbound}', [OutboundController::class, 'update'])->name('update')->middleware([$outbound]);
+        Route::delete('/{webhookOutbound}', [OutboundController::class, 'destroy'])->name('destroy')->middleware([$outbound]);
+        Route::patch('/{webhookOutbound}/toggle', [OutboundController::class, 'toggle'])->name('toggle')->middleware([$outbound]);
     });
 
-    Route::prefix('inbound')->name('inbound.')->group(function () {
+    Route::prefix('inbound')->name('inbound.')->group(function () use ($inbound) {
         Route::get('/', [InboundController::class, 'index'])->name('index');
         Route::get('/create', [InboundController::class, 'create'])->name('create');
         Route::post('/', [InboundController::class, 'store'])->name('store');
-        Route::get('/{webhookInbound}', [InboundController::class, 'edit'])->name('edit');
-        Route::patch('/{webhookInbound}', [InboundController::class, 'update'])->name('update');
-        Route::delete('/{webhookInbound}', [InboundController::class, 'destroy'])->name('destroy');
-        Route::patch('/{webhookInbound}/toggle', [InboundController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookInbound}', [InboundController::class, 'edit'])->name('edit')->middleware([$inbound]);
+        Route::patch('/{webhookInbound}', [InboundController::class, 'update'])->name('update')->middleware([$inbound]);
+        Route::delete('/{webhookInbound}', [InboundController::class, 'destroy'])->name('destroy')->middleware([$inbound]);
+        Route::patch('/{webhookInbound}/toggle', [InboundController::class, 'toggle'])->name('toggle')->middleware([$inbound]);
     });
 
-    Route::prefix('rules')->name('rules.')->group(function () {
+    Route::prefix('rules')->name('rules.')->group(function () use ($rules) {
         Route::get('/', [RuleController::class, 'index'])->name('index');
         Route::get('/create', [RuleController::class, 'create'])->name('create');
         Route::post('/', [RuleController::class, 'store'])->name('store');
-        Route::get('/{webhookRule}', [RuleController::class, 'edit'])->name('edit');
-        Route::patch('/{webhookRule}', [RuleController::class, 'update'])->name('update');
-        Route::delete('/{webhookRule}', [RuleController::class, 'destroy'])->name('destroy');
-        Route::patch('/{webhookRule}/toggle', [RuleController::class, 'toggle'])->name('toggle');
+        Route::get('/{webhookRule}', [RuleController::class, 'edit'])->name('edit')->middleware([$rules]);
+        Route::patch('/{webhookRule}', [RuleController::class, 'update'])->name('update')->middleware([$rules]);
+        Route::delete('/{webhookRule}', [RuleController::class, 'destroy'])->name('destroy')->middleware([$rules]);
+        Route::patch('/{webhookRule}/toggle', [RuleController::class, 'toggle'])->name('toggle')->middleware([$rules]);
     });
 
     Route::get('/insights', [InsightsController::class, 'index'])->name('insights');
 
-    Route::prefix('deliveries')->name('deliveries.')->group(function () {
+    Route::prefix('deliveries')->name('deliveries.')->group(function () use ($deliveries) {
         Route::get('/', [DeliveryController::class, 'index'])->name('index');
         // Before `{delivery}`, or the literal segment binds as a delivery id.
         Route::get('/for-subject', [DeliveryController::class, 'forSubject'])->name('for-subject');
         Route::post('/actions', [DeliveryActionController::class, 'run'])->name('actions.run');
         Route::post('/actions/list', [DeliveryActionController::class, 'bulkActions'])->name('actions.list');
-        Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show');
+        Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show')->middleware([$deliveries]);
     });
 
     Route::prefix('logs')->name('logs.')->group(function () {
         Route::get('/', [LogController::class, 'index'])->name('index');
     });
 
-    Route::prefix('templates')->name('templates.')->group(function () {
+    Route::prefix('templates')->name('templates.')->group(function () use ($templates) {
         Route::get('/', [TemplateController::class, 'index'])->name('index');
         Route::get('/create', [TemplateController::class, 'create'])->name('create');
         Route::post('/', [TemplateController::class, 'store'])->name('store');
-        Route::get('/{webhookTemplate}', [TemplateController::class, 'edit'])->name('edit');
-        Route::patch('/{webhookTemplate}', [TemplateController::class, 'update'])->name('update');
-        Route::delete('/{webhookTemplate}', [TemplateController::class, 'destroy'])->name('destroy');
+        Route::get('/{webhookTemplate}', [TemplateController::class, 'edit'])->name('edit')->middleware([$templates]);
+        Route::patch('/{webhookTemplate}', [TemplateController::class, 'update'])->name('update')->middleware([$templates]);
+        Route::delete('/{webhookTemplate}', [TemplateController::class, 'destroy'])->name('destroy')->middleware([$templates]);
     });
 
     /*
@@ -133,11 +144,11 @@ Route::prefix('webhook-manager')->name('webhook-manager.')->group(function () {
      * /webhook-manager/webhook-manager/...) and also did NOT prefix the
      * route name with `statamic.cp.`, breaking every cp_route() lookup.
      */
-    Route::name('actions.')->group(function () {
-        Route::post('outbound/{webhookOutbound}/test', TestOutboundController::class)->name('test-outbound');
-        Route::post('inbound/{webhookInbound}/test', TestInboundController::class)->name('test-inbound');
-        Route::post('rules/{webhookRule}/test', TestRuleController::class)->name('test-rule');
-        Route::post('deliveries/{delivery}/replay', ReplayDeliveryController::class)->name('replay-delivery');
+    Route::name('actions.')->group(function () use ($outbound, $inbound, $rules, $deliveries) {
+        Route::post('outbound/{webhookOutbound}/test', TestOutboundController::class)->name('test-outbound')->middleware([$outbound]);
+        Route::post('inbound/{webhookInbound}/test', TestInboundController::class)->name('test-inbound')->middleware([$inbound]);
+        Route::post('rules/{webhookRule}/test', TestRuleController::class)->name('test-rule')->middleware([$rules]);
+        Route::post('deliveries/{delivery}/replay', ReplayDeliveryController::class)->name('replay-delivery')->middleware([$deliveries]);
         Route::post('templates/preview', PreviewTemplateController::class)->name('preview-template');
         Route::post('triggers/simulate', SimulateTriggerController::class)->name('simulate-trigger');
     });

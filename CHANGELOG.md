@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Control Panel: the detail pages of outbound webhooks, inbound endpoints, rules, templates and deliveries (edit, update, delete, toggle, show) show the same setup screen as their listing when the addon's tables are missing, instead of a query error (HTTP 500). They carry the `brand.setup-guard` middleware of statamic-brand-context 1.27, which runs before route-model binding. The configuration tables are only required under the database storage driver, as in the listings.
+
+### Upgrading
+
+- Requires statamic-brand-context 1.27 or newer. No migration, no new config key. With `route:cache`, the storage driver is read when the routes are cached.
+
 ## 2.11.0 — 2026-10-17
 
 ### Changed
