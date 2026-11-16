@@ -27,6 +27,17 @@ class SetupGuardTest extends CpTestCase
 {
     use RefreshDatabase;
 
+    protected function defineEnvironment($app): void
+    {
+        parent::defineEnvironment($app);
+
+        // The detail routes read the config tables when the route file loads,
+        // which happens at boot, before setUp(). A driver file left behind by an
+        // earlier test (the flat-driver case writes one) would empty that list
+        // for every test after it, so it is removed before the app boots.
+        @unlink($app->storagePath('webhook-manager/storage.json'));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -202,5 +213,48 @@ class SetupGuardTest extends CpTestCase
             ->json());
 
         $this->assertSame('webhook-manager::Outbound/Index', $page['component']);
+    }
+
+    /**
+     * The detail pages. Their first query is the route-model binding, which
+     * runs before the controller method, so the guard in `index()` never sees
+     * it: a missing table is an HTTP 500 there, not the setup screen.
+     *
+     * @return array<string, array{0:string}>
+     */
+    public static function detailRoutes(): array
+    {
+        return [
+            'outbound edit' => ['webhook-manager.outbound.edit'],
+            'inbound edit' => ['webhook-manager.inbound.edit'],
+            'rules edit' => ['webhook-manager.rules.edit'],
+            'templates edit' => ['webhook-manager.templates.edit'],
+            'deliveries show' => ['webhook-manager.deliveries.show'],
+        ];
+    }
+
+    #[DataProvider('detailRoutes')]
+    public function test_a_detail_page_shows_the_setup_screen_when_its_tables_are_missing(string $route): void
+    {
+        $page = $this->withUnmigratedDatabase(fn () => $this->actingAs($this->superUser())
+            ->withHeaders($this->inertiaHeaders())
+            ->get(cp_route($route, 1))
+            ->assertOk()
+            ->json());
+
+        $this->assertSame('webhook-manager::SetupRequired', $page['component'], "$route rendert nicht den Leerzustand");
+    }
+
+    // No guest test here: CpTestCase registers neither the `statamic.cp` group nor Statamic's login check, so a
+    // guest is not turned away in this suite whatever the route carries. That the setup screen stays behind the
+    // login is the job of GuardSetup in statamic-brand-context and is tested there.
+
+    #[DataProvider('detailRoutes')]
+    public function test_a_migrated_install_still_404s_an_unknown_id(string $route): void
+    {
+        $this->actingAs($this->superUser())
+            ->withHeaders($this->inertiaHeaders())
+            ->get(cp_route($route, 999))
+            ->assertNotFound();
     }
 }
