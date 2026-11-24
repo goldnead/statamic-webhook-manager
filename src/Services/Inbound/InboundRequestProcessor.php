@@ -151,7 +151,13 @@ class InboundRequestProcessor
         }
 
         // 7. Mapping
-        $mapped = $this->mapping->map($endpoint->mapping_config ?? null, $rawPayload);
+        try {
+            $mapped = $this->mapping->map($endpoint->mapping_config ?? null, $rawPayload);
+        } catch (\Throwable $e) {
+            $this->releaseReplayClaim($replayKey);
+
+            throw $e;
+        }
         if (! $mapped['ok']) {
             $this->releaseReplayClaim($replayKey);
             $this->logger->warning('inbound_mapping_failed',
@@ -163,7 +169,13 @@ class InboundRequestProcessor
         }
 
         // 8. Action dispatch
-        $result = $this->dispatcher->dispatch($endpoint, $mapped['data'], $rawPayload);
+        try {
+            $result = $this->dispatcher->dispatch($endpoint, $mapped['data'], $rawPayload);
+        } catch (\Throwable $e) {
+            $this->releaseReplayClaim($replayKey);
+
+            throw $e;
+        }
 
         if (! $result['ok']) {
             // A failed action did not do its work: the sender's retry must get through.

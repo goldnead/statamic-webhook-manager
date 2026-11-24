@@ -72,11 +72,38 @@ class DeliveryEngine implements DeliverySenderInterface
      */
     public function failInternally(Delivery $delivery, string $message): Delivery
     {
-        $delivery = ($this->markFailure)($delivery, FailureClassifier::INTERNAL, $message);
-        $delivery->next_retry_at = null;
-        $delivery->save();
-        $this->logger->failed($delivery, $message);
-        DeliveryFailedTerminally::dispatch($delivery);
+        // Atomic and only from `processing`: a delivery that already finished
+        // (success, or failed with its real cause and retry plan) must keep its
+        // state, and a late `failed()` must not race a worker that is still
+        // writing the result.
+        $closed = Delivery::query()
+            ->whereKey($delivery->getKey())
+            ->where('status', Delivery::STATUS_PROCESSING)
+            ->update([
+                'status' => Delivery::STATUS_FAILED,
+                'error_type' => FailureClassifier::INTERNAL,
+                'error_message' => $message,
+                'next_retry_at' => null,
+            ]);
+
+        $delivery->refresh();
+
+        if ($closed !== 1) {
+            return $delivery;
+        }
+
+        // Alert first: a broken logger must not swallow it.
+        try {
+            DeliveryFailedTerminally::dispatch($delivery);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        try {
+            $this->logger->failed($delivery, $message);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $delivery;
     }
