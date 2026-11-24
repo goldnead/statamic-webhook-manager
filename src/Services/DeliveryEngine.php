@@ -52,6 +52,37 @@ class DeliveryEngine implements DeliverySenderInterface
         $delivery->last_attempted_at = now();
         $delivery->save();
 
+        try {
+            return $this->dispatchRequest($delivery, $hook);
+        } catch (\Throwable $e) {
+            // The row is on `processing` and has no `next_retry_at`: nothing would
+            // ever pick it up again. The HTTP call may already have gone out, so
+            // no automatic retry (it could double-deliver) — close it as failed
+            // and alert.
+            report($e);
+
+            return $this->failInternally($delivery, $e->getMessage());
+        }
+    }
+
+    /**
+     * Close a delivery that is stuck on `processing` because something other
+     * than the HTTP exchange broke. Does not trip the circuit breaker: the
+     * receiving system is not at fault.
+     */
+    public function failInternally(Delivery $delivery, string $message): Delivery
+    {
+        $delivery = ($this->markFailure)($delivery, FailureClassifier::INTERNAL, $message);
+        $delivery->next_retry_at = null;
+        $delivery->save();
+        $this->logger->failed($delivery, $message);
+        DeliveryFailedTerminally::dispatch($delivery);
+
+        return $delivery;
+    }
+
+    protected function dispatchRequest(Delivery $delivery, $hook): Delivery
+    {
         $request = [
             'method' => $delivery->request_method,
             'url' => $delivery->request_url,

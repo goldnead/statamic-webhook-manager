@@ -138,6 +138,7 @@ class InboundRequestProcessor
         $rawPayload = $parsed['data'];
 
         // 6. Replay protection (optional)
+        $replayKey = null;
         if ($endpoint->replay_protection_enabled) {
             $key = $this->replayKey($request, $rawPayload, $endpoint);
             if (! $this->replay->check($key)) {
@@ -146,11 +147,13 @@ class InboundRequestProcessor
 
                 return $this->error($endpoint, 'Duplicate request.', 409);
             }
+            $replayKey = $key;
         }
 
         // 7. Mapping
         $mapped = $this->mapping->map($endpoint->mapping_config ?? null, $rawPayload);
         if (! $mapped['ok']) {
+            $this->releaseReplayClaim($replayKey);
             $this->logger->warning('inbound_mapping_failed',
                 'Mapping errors: '.implode('; ', $mapped['errors'] ?? []), $logCtx);
 
@@ -161,6 +164,11 @@ class InboundRequestProcessor
 
         // 8. Action dispatch
         $result = $this->dispatcher->dispatch($endpoint, $mapped['data'], $rawPayload);
+
+        if (! $result['ok']) {
+            // A failed action did not do its work: the sender's retry must get through.
+            $this->releaseReplayClaim($replayKey);
+        }
 
         if ($result['ok']) {
             $this->logger->info('inbound_action_succeeded',
@@ -177,6 +185,13 @@ class InboundRequestProcessor
                 $result['data'] ?? [],
             ),
         );
+    }
+
+    protected function releaseReplayClaim(?string $key): void
+    {
+        if ($key !== null) {
+            $this->replay->release($key);
+        }
     }
 
     /**
