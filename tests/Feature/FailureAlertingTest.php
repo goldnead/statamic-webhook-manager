@@ -144,7 +144,7 @@ class FailureAlertingTest extends TestCase
         Notification::fake();
         config()->set('webhook-manager.alerts.mail.enabled', false);
         config()->set('webhook-manager.alerts.slack.webhook_url', 'https://hooks.slack.com/alert');
-        Http::fake(['https://hooks.slack.com/*' => Http::response('down', 500)]);
+        Http::fake(['https://hooks.slack.com/*' => Http::sequence()->push('down', 500)->push('ok', 200)->push('ok', 200)]);
 
         $hook = $this->failingHook();
         $listener = app(SendFailureAlertListener::class);
@@ -152,11 +152,13 @@ class FailureAlertingTest extends TestCase
         // The only channel (Slack) answers 500: nobody was told, so the next
         // terminal failure must try again instead of waiting out 15 minutes.
         $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
-
-        Http::fake(['https://hooks.slack.com/*' => Http::response('ok', 200)]);
         $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
 
-        Http::assertSent(fn ($r) => str_contains($r->url(), 'hooks.slack.com'));
+        // The second try went through, and only that one arms the throttle: a
+        // third failure inside the window sends nothing.
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+
+        Http::assertSentCount(2);
     }
 
     public function test_missing_alert_channels_are_reported_once(): void

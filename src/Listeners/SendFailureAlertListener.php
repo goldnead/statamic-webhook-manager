@@ -43,23 +43,37 @@ class SendFailureAlertListener
             return;
         }
 
-        $mail = $this->sendMail($delivery);
-        $slack = $this->sendSlack($delivery, $hook?->name ?? 'Webhook');
-
-        if ($mail === null && $slack === null) {
-            // Nobody is configured to be told. Say so once per hour instead
-            // of failing silently on every terminal failure.
-            if ($this->cache->add('webhook-manager:alert:no-channel', true, now()->addHour())) {
-                Log::warning('[webhook-manager] no alert channel configured: terminal delivery failures raise no alert. Set webhook-manager.alerts.mail.recipients or alerts.slack.webhook_url.', [
-                    'delivery_id' => $delivery->id,
-                ]);
-            }
-
+        // Short claim while sending: the window opens only after the send, so
+        // parallel workers failing the same hook would otherwise all pass the
+        // check above and each send the alert.
+        $claim = $key.':sending';
+        if ($throttle > 0 && ! $this->cache->add($claim, true, now()->addMinute())) {
             return;
         }
 
-        if ($throttle > 0 && ($mail === true || $slack === true)) {
-            $this->cache->put($key, true, now()->addMinutes($throttle));
+        try {
+            $mail = $this->sendMail($delivery);
+            $slack = $this->sendSlack($delivery, $hook?->name ?? 'Webhook');
+
+            if ($mail === null && $slack === null) {
+                // Nobody is configured to be told. Say so once per hour instead
+                // of failing silently on every terminal failure.
+                if ($this->cache->add('webhook-manager:alert:no-channel', true, now()->addHour())) {
+                    Log::warning('[webhook-manager] no alert channel configured: terminal delivery failures raise no alert. Set webhook-manager.alerts.mail.recipients or alerts.slack.webhook_url.', [
+                        'delivery_id' => $delivery->id,
+                    ]);
+                }
+
+                return;
+            }
+
+            if ($throttle > 0 && ($mail === true || $slack === true)) {
+                $this->cache->put($key, true, now()->addMinutes($throttle));
+            }
+        } finally {
+            if ($throttle > 0) {
+                $this->cache->forget($claim);
+            }
         }
     }
 
