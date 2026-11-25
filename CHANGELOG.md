@@ -6,6 +6,7 @@
 
 - Inbound endpoints with replay protection give the key back when the request fails after the claim (mapping error, failing action), so the sender's retry is no longer answered with `409 Duplicate request`. A successful request is still blocked as a duplicate. New `ReplayProtectionService::release()`.
 - A delivery no longer stays on `processing` forever: a throw after the HTTP call closes it as `failed` (error type `internal`, no automatic retry, `DeliveryFailedTerminally` fires), and `ProcessOutboundDeliveryJob::failed()` does the same when the queue aborts the job (timeout, worker kill).
+- Failure alerts: the throttle window starts only after an alert actually went out (a failed mail or a Slack/Discord 4xx/5xx no longer swallows the only alarm of an outage for 15 minutes), and an install with no mail recipient and no webhook URL logs a warning once per hour instead of staying silent.
 
 ## 2.11.1 — 2026-11-16
 
