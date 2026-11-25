@@ -137,7 +137,7 @@ class ResolveInboundBrand
         $named = $request->route('brand');
 
         if ($named === null || $named === '') {
-            $this->once('defaulted', fn () => $this->logger->info(
+            $this->once('defaulted', $manager, fn () => $this->logger->info(
                 'inbound_brand_defaulted',
                 'Inbound delivery arrived without a brand segment; resolved to the default brand.', [
                     'handle' => (string) $request->route('handle'),
@@ -152,7 +152,7 @@ class ResolveInboundBrand
         if (! $brand) {
             // Same response as an unknown endpoint handle: the URL must not
             // tell an outsider which brands exist on this installation.
-            $this->once('unknown', fn () => $this->logger->warning(
+            $this->once('unknown', $manager, fn () => $this->logger->warning(
                 'inbound_brand_not_found',
                 "Inbound delivery named unknown brand '{$named}'.", [
                     'brand' => $named,
@@ -196,10 +196,22 @@ class ResolveInboundBrand
      * {@see CacheClaim}. Losing the row would hide a real operator problem
      * behind a cache setting.
      */
-    protected function once(string $key, callable $write): void
+    protected function once(string $key, $manager, callable $write): void
     {
         if (CacheClaim::first($this->cache, 'webhook-manager:inbound-brand:'.$key, self::LOG_THROTTLE_SECONDS)) {
-            $write();
+            // Both lines are written before this middleware has set a current
+            // brand, and `LogEntry` belongs to one. brand-context writes such a
+            // row to the default brand when no brand is current; newer releases
+            // refuse it (`NoCurrentBrand`) in multi-brand mode, which would turn
+            // a misaddressed delivery into a 500. Say so explicitly: the row goes
+            // to the default brand, as it always has, and nothing else changes.
+            if ($manager->hasCurrent()) {
+                $write();
+
+                return;
+            }
+
+            $manager->runFor($manager->default(), $write);
         }
     }
 

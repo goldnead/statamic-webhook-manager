@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Inbound: the two throttled log lines of `ResolveInboundBrand` (`inbound_brand_defaulted`, `inbound_brand_not_found`) are written explicitly under the default brand when no brand is current. They were written before a brand was current and relied on `HasBrand` falling back to the default brand; statamic-brand-context refuses that write in multi-brand mode (`NoCurrentBrand`), which would have answered a brand-less legacy URL or an unknown brand segment with 500 instead of processing / 404. The row lands in the same brand as before; nothing changes with current brand-context releases.
 - Inbound endpoints with replay protection give the key back when the request fails after the claim (mapping error, failing action), so the sender's retry is no longer answered with `409 Duplicate request`. A successful request is still blocked as a duplicate. New `ReplayProtectionService::release()`.
 - A delivery no longer stays on `processing` forever: a throw after the HTTP call closes it as `failed` (error type `internal`, no automatic retry, `DeliveryFailedTerminally` fires), and `ProcessOutboundDeliveryJob::failed()` does the same when the queue aborts the job (timeout, worker kill).
 - Failure alerts: the throttle window starts only after an alert actually went out (a failed mail or a Slack/Discord 4xx/5xx no longer swallows the only alarm of an outage for 15 minutes), and an install with no mail recipient and no webhook URL logs a warning once per hour instead of staying silent.
