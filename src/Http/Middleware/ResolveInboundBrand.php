@@ -205,6 +205,12 @@ class ResolveInboundBrand
             // refuse it (`NoCurrentBrand`) in multi-brand mode, which would turn
             // a misaddressed delivery into a 500. Say so explicitly: the row goes
             // to the default brand, as it always has, and nothing else changes.
+            if ($manager->hasCurrent()) {
+                $write();
+
+                return;
+            }
+
             $manager->runFor($manager->default(), $write);
         }
     }
