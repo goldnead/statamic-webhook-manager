@@ -45,7 +45,12 @@ class CircuitBreaker
                 $this->logger->warning(
                     'circuit_breaker_tripped',
                     "Outbound webhook '{$hook->handle}' auto-disabled after {$hook->consecutive_failures} consecutive failures.",
-                    ['outbound_webhook_id' => $hook->id, 'handle' => $hook->handle],
+                    [
+                        'outbound_webhook_id' => $hook->id,
+                        'webhook_id' => $hook->id,
+                        'threshold' => $threshold,
+                        'handle' => $hook->handle,
+                    ],
                 );
             }
         }
