@@ -47,6 +47,18 @@ class ReplayProtectionService
         return CacheClaim::first($this->cache, $this->cacheKey($key), $this->ttlSeconds);
     }
 
+    /**
+     * Give a claimed key back, so the sender's retry is not answered with 409.
+     *
+     * Called when the request was claimed but then failed before it did its
+     * work (mapping error, failing action): a duplicate is only a duplicate of
+     * something that succeeded.
+     */
+    public function release(string $key): void
+    {
+        $this->cache->forget($this->cacheKey($key));
+    }
+
     protected function cacheKey(string $key): string
     {
         return 'webhook-manager:replay:'.sha1($key);

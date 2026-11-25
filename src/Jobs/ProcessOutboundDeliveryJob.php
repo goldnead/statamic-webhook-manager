@@ -42,4 +42,18 @@ class ProcessOutboundDeliveryJob implements ShouldQueue
         }
         $engine->send($delivery);
     }
+
+    /**
+     * Queue-level abort (timeout, worker kill, exception outside the engine):
+     * a delivery left on `processing` would never be retried or alerted.
+     */
+    public function failed(\Throwable $e): void
+    {
+        $delivery = Delivery::find($this->deliveryId);
+        if (! $delivery || $delivery->status !== Delivery::STATUS_PROCESSING) {
+            return;
+        }
+
+        app(DeliveryEngine::class)->failInternally($delivery, 'Job aborted: '.$e->getMessage());
+    }
 }
