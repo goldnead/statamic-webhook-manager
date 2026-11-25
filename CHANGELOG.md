@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Inbound: the two throttled log lines of `ResolveInboundBrand` (`inbound_brand_defaulted`, `inbound_brand_not_found`) are written explicitly under the default brand. They were written before a brand was current and relied on `HasBrand` falling back to the default brand; statamic-brand-context refuses that write in multi-brand mode (`NoCurrentBrand`), which would have answered a brand-less legacy URL or an unknown brand segment with 500 instead of processing / 404. The row lands in the same brand as before; nothing changes with current brand-context releases.
+
 ## 2.11.1 — 2026-11-16
 
 ### Fixed
