@@ -15,6 +15,7 @@ use Goldnead\WebhookManager\ValueObjects\TriggerEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -120,5 +121,62 @@ class FailureAlertingTest extends TestCase
         Notification::fake();
         $listener->handle(new DeliveryFailedTerminally($delivery));
         Notification::assertNothingSent();
+    }
+
+    protected function failedDeliveryFor(OutboundWebhook $hook): Delivery
+    {
+        return Delivery::create([
+            'uuid' => (string) Str::uuid(),
+            'outbound_webhook_id' => $hook->id,
+            'trigger_type' => 'entry.published',
+            'status' => Delivery::STATUS_FAILED,
+            'request_method' => 'POST',
+            'request_url' => $hook->url,
+            'response_status' => 500,
+            'attempts' => 3,
+            'error_type' => 'server',
+            'error_message' => 'HTTP 500',
+        ]);
+    }
+
+    public function test_a_failed_alert_does_not_arm_the_throttle(): void
+    {
+        Notification::fake();
+        config()->set('webhook-manager.alerts.mail.enabled', false);
+        config()->set('webhook-manager.alerts.slack.webhook_url', 'https://hooks.slack.com/alert');
+        Http::fake(['https://hooks.slack.com/*' => Http::sequence()->push('down', 500)->push('ok', 200)->push('ok', 200)]);
+
+        $hook = $this->failingHook();
+        $listener = app(SendFailureAlertListener::class);
+
+        // The only channel (Slack) answers 500: nobody was told, so the next
+        // terminal failure must try again instead of waiting out 15 minutes.
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+
+        // The second try went through, and only that one arms the throttle: a
+        // third failure inside the window sends nothing.
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_missing_alert_channels_are_reported_once(): void
+    {
+        Notification::fake();
+        config()->set('webhook-manager.alerts.mail.recipients', []);
+        config()->set('webhook-manager.alerts.slack.webhook_url', '');
+        Log::spy();
+
+        $hook = $this->failingHook();
+        $listener = app(SendFailureAlertListener::class);
+
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+        $listener->handle(new DeliveryFailedTerminally($this->failedDeliveryFor($hook)));
+
+        Notification::assertNothingSent();
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains($message, 'no alert channel'))
+            ->once();
     }
 }
