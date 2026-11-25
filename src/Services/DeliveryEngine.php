@@ -52,6 +52,64 @@ class DeliveryEngine implements DeliverySenderInterface
         $delivery->last_attempted_at = now();
         $delivery->save();
 
+        try {
+            return $this->dispatchRequest($delivery, $hook);
+        } catch (\Throwable $e) {
+            // The row is on `processing` and has no `next_retry_at`: nothing would
+            // ever pick it up again. The HTTP call may already have gone out, so
+            // no automatic retry (it could double-deliver) — close it as failed
+            // and alert.
+            report($e);
+
+            return $this->failInternally($delivery, $e->getMessage());
+        }
+    }
+
+    /**
+     * Close a delivery that is stuck on `processing` because something other
+     * than the HTTP exchange broke. Does not trip the circuit breaker: the
+     * receiving system is not at fault.
+     */
+    public function failInternally(Delivery $delivery, string $message): Delivery
+    {
+        // Atomic and only from `processing`: a delivery that already finished
+        // (success, or failed with its real cause and retry plan) must keep its
+        // state, and a late `failed()` must not race a worker that is still
+        // writing the result.
+        $closed = Delivery::query()
+            ->whereKey($delivery->getKey())
+            ->where('status', Delivery::STATUS_PROCESSING)
+            ->update([
+                'status' => Delivery::STATUS_FAILED,
+                'error_type' => FailureClassifier::INTERNAL,
+                'error_message' => $message,
+                'next_retry_at' => null,
+            ]);
+
+        $delivery->refresh();
+
+        if ($closed !== 1) {
+            return $delivery;
+        }
+
+        // Alert first: a broken logger must not swallow it.
+        try {
+            DeliveryFailedTerminally::dispatch($delivery);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        try {
+            $this->logger->failed($delivery, $message);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return $delivery;
+    }
+
+    protected function dispatchRequest(Delivery $delivery, $hook): Delivery
+    {
         $request = [
             'method' => $delivery->request_method,
             'url' => $delivery->request_url,

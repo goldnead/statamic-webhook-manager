@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Inbound endpoints with replay protection give the key back when the request fails after the claim (mapping error, failing action), so the sender's retry is no longer answered with `409 Duplicate request`. A successful request is still blocked as a duplicate. New `ReplayProtectionService::release()`.
+- A delivery no longer stays on `processing` forever: a throw after the HTTP call closes it as `failed` (error type `internal`, no automatic retry, `DeliveryFailedTerminally` fires), and `ProcessOutboundDeliveryJob::failed()` does the same when the queue aborts the job (timeout, worker kill).
+
 ## 2.11.1 — 2026-11-16
 
 ### Fixed
